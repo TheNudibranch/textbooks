@@ -1,0 +1,15 @@
+---
+title: "Regression and Other Stories - Chapter 9"
+output: html_document
+---
+
+### Load dependencies
+
+
+```{r, warning=F, message=F}
+library(rstanarm)
+library(bayesplot)
+library(loo)
+```
+
+### 
