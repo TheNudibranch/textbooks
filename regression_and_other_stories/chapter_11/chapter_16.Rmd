@@ -11,8 +11,9 @@ output:
 ### Sample size to acheive a specified probability of obtaining stat sig
 Assume that we have some test of proportions. We wish to determine if $p > 1/2$ based on the estimate $\hat{p} = y/n$. Using a conservative s.e. of $\sqrt{0.5\cdot 0.5/n}$ (since for any binomial dist, the max variance is when $p=0.5$), the 95% conf interval is given by $[\hat{p}\pm 1.9\cdot 0.5 / \sqrt{n}]$, where 1.96 is 97.5% quantile of the standard normal. If our comparison point is 0.5, then we would have shown stat sig if $\hat{p} > 0.5 + 1.96\cdot 0.5/\sqrt{n}$. Consider the following null distribution for $H_0: p = 0.5$, with the area outside the 95% confidence interval shaded purple..
 
-```{r, fig.align='center', fig.width=10, fig.height=6}
+```{r, fig.align='center', fig.width=10, fig.height=6, warning=FALSE, message=FALSE}
 library(magrittr)
+library(rstanarm)
 se <- 0.5/sqrt(196)
 x <- seq(0.2, 0.8, length.out=1e3)
 d <- dnorm(x, mean=0.5, sd=se)
@@ -100,4 +101,75 @@ pnorm(2.8, 1.96, 1)
 &= \frac{2\sigma}{\sqrt{n}}
 \end{align}
 
-So what would be the power of your estimate if we assumed that the main effect and study was set up in such a way that we achieved 80% at 95% CI? Well, we would still only reject if the z-score is above 1.96, and we know that the effect size on the standardized scale is 2.8 for 80%, then the interaction would be at 1.4
+So what would be the power of your estimate if we assumed that the main effect and study was set up in such a way that we achieved 80% at 95% CI? Well, we would still only reject if the z-score is above 1.96, and we know that the effect size on the standardized scale is 2.8 for 80%, then the interaction would be at 1.4 (this is if we didn't perform the $4n$ correction above.
+
+```{r class.source = 'fold-show'}
+# Show two different methods
+pnorm(1.4, 1.96, 1) |> round(2)
+
+rnorm(1e6, 1.4) %>% `>`(1.96) %>% mean() %>% round(2) %>% print()
+```
+We can also use the simulation for the second method to show the problem of the "winners curse". If we condition on significance, what order of magnitude will we over estimate the effect?
+
+```{r class.source = 'fold-show'}
+raw <- rnorm(1e6, 1.4, 1)
+signif <- raw > 1.96
+mean(raw[signif]) |> round(2)
+```
+We will overestimate the size by a factor of 2.6!
+
+### You need 16 times the sample size to estimate an interaction that is half the size as the main effect
+- Lets do some simulations
+- Assume that the true coefficients are 0. 
+  - We don't really need a value since our main goal is looking at standard errors
+- Assume that predictors are independent
+- Let's use $x_1$ as our control/treatment variable and $x_2$ as our male/female variable. Our equation with group interactions then becomes
+
+$$y = \beta_1 x_1 + \beta_2 x_2 + \beta_3 (x_1\cdot x_2)$$
+
+Now, let's write out equation for our 4 set of possible points $\{(y_{T,M}, x_T, x_M), (y_{C,M}, x_C, x_M), (y_{T,W}, x_T, x_W), (y_{C,W}, x_C, x_W)\}$. Further, $x_T, x_C$ are the two indicator (not necessarily 0/1) values $x_1$ can take, and $x_M, x_W$ are the two values $x_2$ can take. Of course, the $y$ values will have some sort of measurement error in them which requires some estimation procedure and not some simple algebra. The four equations are as follows:
+
+\begin{align}
+y_{T,M} &= \beta_1 x_T + \beta_2 x_M + \beta_3 (x_T\cdot x_M) \\
+y_{C,M} &= \beta_1 x_C + \beta_2 x_M + \beta_3 (x_C\cdot x_M) \\
+y_{T,W} &= \beta_1 x_T + \beta_2 x_W + \beta_3 (x_T\cdot x_W) \\
+y_{C,W} &= \beta_1 x_C + \beta_2 x_W + \beta_3 (x_C\cdot x_W)
+\end{align}
+
+So how do we calculate the estimate for $(y_{T,M} - y_{C,M}) - (y_{T,W} - y_{C,W})$:
+\begin{align}
+(y_{T,M} - y_{C,M}) - (y_{T,W} - y_{C,W}) &= (\beta_1 x_T + \beta_2 x_M + \beta_3 (x_T\cdot x_M) - (\beta_1 x_C + \beta_2 x_M + \beta_3 (x_C\cdot x_M)) - (y_{T,W} - y_{C,W}) \\ 
+&= \beta_1 (x_T - x_C) + \beta_3 (x_T\cdot x_M - x_C\cdot x_M) - (y_{T,W} - y_{C,W}) \\
+&= \beta_1 (x_T - x_C) + \beta_3 (x_T\cdot x_M - x_C\cdot x_M) - (\beta_1 x_T + \beta_2 x_W + \beta_3 (x_T\cdot x_W) - \beta_1 x_C - \beta_2 x_W - \beta_3 (x_C\cdot x_W))\\
+&= \beta_3 ((x_T\cdot x_M - x_C\cdot x_M) - (x_T\cdot x_W - x_C\cdot x_W))
+\end{align}
+
+Then, $\beta_3 = \frac{(y_{T,M} - y_{C,M}) - (y_{T,W} - y_{C,W})}{(x_T\cdot x_M - x_C\cdot x_M) - (x_T\cdot x_W - x_C\cdot x_W)}$. \\
+
+From the same logic, it is also not hard to show $$\beta_1 = \frac{y_{T,M} - y_{C,M}}{}$$
+
+```{r class.source = 'fold-show', results='hide'}
+n <- 1e3; sigma <- 10
+y <- rnorm(n, 0, sigma)
+x1 <- sample(c(0.5, -0.5), n, replace=T)
+# x1 <- rnorm(n, 0, 1)
+y <- rnorm(n,(x1+0.5)*2,sigma)
+x2 <- sample(c(0.5, -0.5), n, replace=T)
+
+fake <- data.frame(y,x1,x2)
+
+fit_1 <- stan_glm(y ~ x1, data=fake)
+fit_2 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)
+```
+```{r}
+print(fit_1); print(fit_2)
+```
+
+My note to you when you get back to this: he is using -0.5 and 0.5 so the mean of the control and treated indicators is zero. The coefficient is not the ATE. Refer back to this: https://statmodeling.stat.columbia.edu/2023/11/09/you-need-16-times-the-sample-size-to-estimate-an-interaction-than-to-estimate-a-main-effect-explained/
+
+
+```{r}
+2*10/sqrt(1e3)
+sqrt(8)*10/sqrt(1e3)
+```
+

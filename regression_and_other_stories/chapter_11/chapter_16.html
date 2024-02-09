@@ -465,6 +465,7 @@ If our comparison point is 0.5, then we would have shown stat sig if
 <span class="math inline">\(H_0: p = 0.5\)</span>, with the area outside
 the 95% confidence interval shaded purple..</p>
 <pre class="r"><code>library(magrittr)
+library(rstanarm)
 se &lt;- 0.5/sqrt(196)
 x &lt;- seq(0.2, 0.8, length.out=1e3)
 d &lt;- dnorm(x, mean=0.5, sd=se)
@@ -586,6 +587,130 @@ that</li>
 &amp;= \frac{4\sigma}{2\sqrt{n}}\\
 &amp;= \frac{2\sigma}{\sqrt{n}}
 \end{align}\]</span></p>
+<p>So what would be the power of your estimate if we assumed that the
+main effect and study was set up in such a way that we achieved 80% at
+95% CI? Well, we would still only reject if the z-score is above 1.96,
+and we know that the effect size on the standardized scale is 2.8 for
+80%, then the interaction would be at 1.4 (this is if we didn’t perform
+the <span class="math inline">\(4n\)</span> correction above.</p>
+<pre class="r fold-show"><code># Show two different methods
+pnorm(1.4, 1.96, 1) |&gt; round(2)</code></pre>
+<pre><code>## [1] 0.29</code></pre>
+<pre class="r fold-show"><code>rnorm(1e6, 1.4) %&gt;% `&gt;`(1.96) %&gt;% mean() %&gt;% round(2) %&gt;% print()</code></pre>
+<pre><code>## [1] 0.29</code></pre>
+<p>We can also use the simulation for the second method to show the
+problem of the “winners curse”. If we condition on significance, what
+order of magnitude will we over estimate the effect?</p>
+<pre class="r fold-show"><code>raw &lt;- rnorm(1e6, 1.4, 1)
+signif &lt;- raw &gt; 1.96
+mean(raw[signif]) |&gt; round(2)</code></pre>
+<pre><code>## [1] 2.58</code></pre>
+<p>We will overestimate the size by a factor of 2.6!</p>
+</div>
+<div id="you-need-16-times-the-sample-size-to-estimate-an-interaction-that-is-half-the-size-as-the-main-effect" class="section level3">
+<h3>You need 16 times the sample size to estimate an interaction that is
+half the size as the main effect</h3>
+<ul>
+<li>Lets do some simulations</li>
+<li>Assume that the true coefficients are 0.
+<ul>
+<li>We don’t really need a value since our main goal is looking at
+standard errors</li>
+</ul></li>
+<li>Assume that predictors are independent</li>
+<li>Let’s use <span class="math inline">\(x_1\)</span> as our
+control/treatment variable and <span class="math inline">\(x_2\)</span>
+as our male/female variable. Our equation with group interactions then
+becomes</li>
+</ul>
+<p><span class="math display">\[y = \beta_1 x_1 + \beta_2 x_2 + \beta_3
+(x_1\cdot x_2)\]</span></p>
+<p>Now, let’s write out equation for our 4 set of possible points <span class="math inline">\(\{(y_{T,M}, x_T, x_M), (y_{C,M}, x_C, x_M),
+(y_{T,W}, x_T, x_W), (y_{C,W}, x_C, x_W)\}\)</span>. Further, <span class="math inline">\(x_T, x_C\)</span> are the two indicator (not
+necessarily 0/1) values <span class="math inline">\(x_1\)</span> can
+take, and <span class="math inline">\(x_M, x_W\)</span> are the two
+values <span class="math inline">\(x_2\)</span> can take. Of course, the
+<span class="math inline">\(y\)</span> values will have some sort of
+measurement error in them which requires some estimation procedure and
+not some simple algebra. The four equations are as follows:</p>
+<p><span class="math display">\[\begin{align}
+y_{T,M} &amp;= \beta_1 x_T + \beta_2 x_M + \beta_3 (x_T\cdot x_M) \\
+y_{C,M} &amp;= \beta_1 x_C + \beta_2 x_M + \beta_3 (x_C\cdot x_M) \\
+y_{T,W} &amp;= \beta_1 x_T + \beta_2 x_W + \beta_3 (x_T\cdot x_W) \\
+y_{C,W} &amp;= \beta_1 x_C + \beta_2 x_W + \beta_3 (x_C\cdot x_W)
+\end{align}\]</span></p>
+<p>So how do we calculate the estimate for <span class="math inline">\((y_{T,M} - y_{C,M}) - (y_{T,W} -
+y_{C,W})\)</span>: <span class="math display">\[\begin{align}
+(y_{T,M} - y_{C,M}) - (y_{T,W} - y_{C,W}) &amp;= (\beta_1 x_T + \beta_2
+x_M + \beta_3 (x_T\cdot x_M) - (\beta_1 x_C + \beta_2 x_M + \beta_3
+(x_C\cdot x_M)) - (y_{T,W} - y_{C,W}) \\
+&amp;= \beta_1 (x_T - x_C) + \beta_3 (x_T\cdot x_M - x_C\cdot x_M) -
+(y_{T,W} - y_{C,W}) \\
+&amp;= \beta_1 (x_T - x_C) + \beta_3 (x_T\cdot x_M - x_C\cdot x_M) -
+(\beta_1 x_T + \beta_2 x_W + \beta_3 (x_T\cdot x_W) - \beta_1 x_C -
+\beta_2 x_W - \beta_3 (x_C\cdot x_W))\\
+&amp;= \beta_3 ((x_T\cdot x_M - x_C\cdot x_M) - (x_T\cdot x_W - x_C\cdot
+x_W))
+\end{align}\]</span></p>
+<p>Then, <span class="math inline">\(\beta_3 = \frac{(y_{T,M} - y_{C,M})
+- (y_{T,W} - y_{C,W})}{(x_T\cdot x_M - x_C\cdot x_M) - (x_T\cdot x_W -
+x_C\cdot x_W)}\)</span>. \</p>
+<p>From the same logic, it is also not hard to show <span class="math display">\[\beta_1 = \frac{y_{T,M} - y_{C,M}}{}\]</span></p>
+<pre class="r fold-show"><code>n &lt;- 1e3; sigma &lt;- 10
+y &lt;- rnorm(n, 0, sigma)
+x1 &lt;- sample(c(0.5, -0.5), n, replace=T)
+# x1 &lt;- rnorm(n, 0, 1)
+y &lt;- rnorm(n,(x1+0.5)*2,sigma)
+x2 &lt;- sample(c(0.5, -0.5), n, replace=T)
+
+fake &lt;- data.frame(y,x1,x2)
+
+fit_1 &lt;- stan_glm(y ~ x1, data=fake)
+fit_2 &lt;- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)</code></pre>
+<pre class="r"><code>print(fit_1); print(fit_2)</code></pre>
+<pre><code>## stan_glm
+##  family:       gaussian [identity]
+##  formula:      y ~ x1
+##  observations: 1000
+##  predictors:   2
+## ------
+##             Median MAD_SD
+## (Intercept) 0.9    0.3   
+## x1          2.3    0.7   
+## 
+## Auxiliary parameter(s):
+##       Median MAD_SD
+## sigma 10.2    0.2  
+## 
+## ------
+## * For help interpreting the printed output see ?print.stanreg
+## * For info on the priors used see ?prior_summary.stanreg</code></pre>
+<pre><code>## stan_glm
+##  family:       gaussian [identity]
+##  formula:      y ~ x1 + x2 + x1:x2
+##  observations: 1000
+##  predictors:   4
+## ------
+##             Median MAD_SD
+## (Intercept) 0.9    0.3   
+## x1          2.3    0.7   
+## x2          0.3    0.7   
+## x1:x2       0.3    1.3   
+## 
+## Auxiliary parameter(s):
+##       Median MAD_SD
+## sigma 10.2    0.2  
+## 
+## ------
+## * For help interpreting the printed output see ?print.stanreg
+## * For info on the priors used see ?prior_summary.stanreg</code></pre>
+<p>My note to you when you get back to this: he is using -0.5 and 0.5 so
+the mean of the control and treated indicators is zero. The coefficient
+is not the ATE. Refer back to this: <a href="https://statmodeling.stat.columbia.edu/2023/11/09/you-need-16-times-the-sample-size-to-estimate-an-interaction-than-to-estimate-a-main-effect-explained/" class="uri">https://statmodeling.stat.columbia.edu/2023/11/09/you-need-16-times-the-sample-size-to-estimate-an-interaction-than-to-estimate-a-main-effect-explained/</a></p>
+<pre class="r"><code>2*10/sqrt(1e3)</code></pre>
+<pre><code>## [1] 0.6324555</code></pre>
+<pre class="r"><code>sqrt(8)*10/sqrt(1e3)</code></pre>
+<pre><code>## [1] 0.8944272</code></pre>
 </div>
 </div>
 
