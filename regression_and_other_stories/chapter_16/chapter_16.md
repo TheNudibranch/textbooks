@@ -3,6 +3,7 @@ title: ROS Chapter 16 - Design and Sample Size Decisions
 output: 
   html_document:
     code_folding: hide
+    keep_md: true
 ---
 # 16.2 General principles of design
 
@@ -11,7 +12,8 @@ output:
 ### Sample size to acheive a specified probability of obtaining stat sig
 Assume that we have some test of proportions. We wish to determine if $p > 1/2$ based on the estimate $\hat{p} = y/n$. Using a conservative s.e. of $\sqrt{0.5\cdot 0.5/n}$ (since for any binomial dist, the max variance is when $p=0.5$), the 95% conf interval is given by $[\hat{p}\pm 1.9\cdot 0.5 / \sqrt{n}]$, where 1.96 is 97.5% quantile of the standard normal. If our comparison point is 0.5, then we would have shown stat sig if $\hat{p} > 0.5 + 1.96\cdot 0.5/\sqrt{n}$. Consider the following null distribution for $H_0: p = 0.5$, with the area outside the 95% confidence interval shaded purple..
 
-```{r, fig.align='center', fig.width=10, fig.height=6, warning=FALSE, message=FALSE}
+
+```r
 library(magrittr)
 library(rstanarm)
 se <- 0.5/sqrt(196)
@@ -31,9 +33,12 @@ polygon(c(x[x<crit_value], rev(x[x < crit_value])),
         col=adjustcolor('purple', 0.7), border=NA)
 lines(x, d, lwd=4, type='l', col='darkblue')
 ```
+
+<img src="chapter_16_files/figure-html/unnamed-chunk-1-1.png" style="display: block; margin: auto;" />
 Now, if we want to find the power, we must assume some effect size. For instance, $p=0.6$. It might be tempting to test whether $p = 0.6 > 0.5 + 1.96 \cdot  0.5/\sqrt{n}$ and then find a sample size from this formula, but this is incorrect. The assumption is that $p=0.6$, which in turn makes the standard error $\sqrt{0.6\cdot 0.4/n}$. So how would one find the right sample size - we need to specify the power of the test. Notice the null $H_0: p=0.5$ and alternative $H_A:p=0.6$ plotted below:
 
-```{r, fig.align='center', fig.width=10, fig.height=6}
+
+```r
 x <- seq(0.2, 0.8, length.out=1e3)
 d1 <- dnorm(x, mean=0.5, sd=se)
 d2 <- dnorm(x, mean=0.6, sd=se)
@@ -42,9 +47,12 @@ lines(x, d2, lwd=4, type='l', col='darkred')
 abline(v=0.5, lty=2, col='darkblue', lwd=3)
 abline(v=0.6, lty=2, col='darkred', lwd=3)
 ```
+
+<img src="chapter_16_files/figure-html/unnamed-chunk-2-1.png" style="display: block; margin: auto;" />
 Power is the defined as the probability of that we will correctly reject the null when the alternative is true. This is the probability that $\hat{p} > 0.5 + 1.96\cdot se$, given that $p=0.6$. The shaded region below shows this:
 
-```{r, fig.align='center', fig.width=10, fig.height=6}
+
+```r
 x <- seq(0.2, 0.8, length.out=1e3)
 d1 <- dnorm(x, mean=0.5, sd=se)
 d2 <- dnorm(x, mean=0.6, sd=se)
@@ -57,8 +65,9 @@ polygon(c(x[x>crit_value], rev(x[x > crit_value])),
 lines(x, d2, lwd=4, type='l', col='darkred')
 abline(v=0.5, lty=2, col='darkblue', lwd=3)
 abline(v=0.6, lty=2, col='darkred', lwd=3)
-
 ```
+
+<img src="chapter_16_files/figure-html/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
 
 Notice, we can also find the start of the rejection region using a given power value. If we set power at 80%, then the start of the rejection region is given by $0.6 - \text{qnorm(0.2)}\cdot se = 0.6+0.84\cdot se$. Thus, we can set the two equations for the start of the rejection region equal and obtain $$0.5 + 1.96\cdot se = 0.6 + 0.84\cdot se$$
 
@@ -79,8 +88,13 @@ A bit more algebra shows that $n = (0.49 \cdot 2.8/0.1)^2$.
 ### You need 4 times the sample size to estimate an interaction that is the same size as the main effect
 - If a study is designed to have 80% power to detect a main effect at a 95% confidence interval, then that implies that the true effect size is 2.8 s.e. away from zero.
 
-```{r class.source = 'fold-show'}
+
+```{.r .fold-show}
 pnorm(2.8, 1.96, 1)
+```
+
+```
+## [1] 0.7995458
 ```
 - Suppose that the interaction of interest is the same size as the main effect
 - If the average treatment effect on the entire population is $\theta$
@@ -103,18 +117,34 @@ pnorm(2.8, 1.96, 1)
 
 So what would be the power of your estimate if we assumed that the main effect and study was set up in such a way that we achieved 80% at 95% CI? Well, we would still only reject if the z-score is above 1.96, and we know that the effect size on the standardized scale is 2.8 for 80%, then the interaction would be at 1.4 (this is if we didn't perform the $4n$ correction above.
 
-```{r class.source = 'fold-show'}
+
+```{.r .fold-show}
 # Show two different methods
 pnorm(1.4, 1.96, 1) |> round(2)
+```
 
+```
+## [1] 0.29
+```
+
+```{.r .fold-show}
 rnorm(1e6, 1.4) %>% `>`(1.96) %>% mean() %>% round(2) %>% print()
+```
+
+```
+## [1] 0.29
 ```
 We can also use the simulation for the second method to show the problem of the "winners curse". If we condition on significance, what order of magnitude will we over estimate the effect?
 
-```{r class.source = 'fold-show'}
+
+```{.r .fold-show}
 raw <- rnorm(1e6, 1.4, 1)
 signif <- raw > 1.96
 mean(raw[signif]) |> round(2)
+```
+
+```
+## [1] 2.59
 ```
 We will overestimate the size by a factor of 2.6!
 
@@ -148,7 +178,8 @@ Then, $\beta_3 = \frac{(y_{T,M} - y_{C,M}) - (y_{T,W} - y_{C,W})}{(x_T\cdot x_M 
 
 From the same logic, it is also not hard to show $$\beta_1 = \frac{y_{T,M} - y_{C,M}}{}$$
 
-```{r class.source = 'fold-show', results='hide'}
+
+```{.r .fold-show}
 n <- 1e3; sigma <- 10
 y <- rnorm(n, 0, sigma)
 x1 <- sample(c(0.5, -0.5), n, replace=T)
@@ -161,15 +192,70 @@ fake <- data.frame(y,x1,x2)
 fit_1 <- stan_glm(y ~ x1, data=fake)
 fit_2 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)
 ```
-```{r}
+
+```r
 print(fit_1); print(fit_2)
+```
+
+```
+## stan_glm
+##  family:       gaussian [identity]
+##  formula:      y ~ x1
+##  observations: 1000
+##  predictors:   2
+## ------
+##             Median MAD_SD
+## (Intercept) 0.9    0.3   
+## x1          1.6    0.6   
+## 
+## Auxiliary parameter(s):
+##       Median MAD_SD
+## sigma 10.3    0.2  
+## 
+## ------
+## * For help interpreting the printed output see ?print.stanreg
+## * For info on the priors used see ?prior_summary.stanreg
+```
+
+```
+## stan_glm
+##  family:       gaussian [identity]
+##  formula:      y ~ x1 + x2 + x1:x2
+##  observations: 1000
+##  predictors:   4
+## ------
+##             Median MAD_SD
+## (Intercept)  0.9    0.3  
+## x1           1.6    0.6  
+## x2          -0.1    0.6  
+## x1:x2       -1.4    1.3  
+## 
+## Auxiliary parameter(s):
+##       Median MAD_SD
+## sigma 10.3    0.2  
+## 
+## ------
+## * For help interpreting the printed output see ?print.stanreg
+## * For info on the priors used see ?prior_summary.stanreg
 ```
 
 My note to you when you get back to this: he is using -0.5 and 0.5 so the mean of the control and treated indicators is zero. The coefficient is not the ATE. Refer back to this: https://statmodeling.stat.columbia.edu/2023/11/09/you-need-16-times-the-sample-size-to-estimate-an-interaction-than-to-estimate-a-main-effect-explained/
 
 
-```{r}
+
+```r
 2*10/sqrt(1e3)
+```
+
+```
+## [1] 0.6324555
+```
+
+```r
 sqrt(8)*10/sqrt(1e3)
+```
+
+```
+## [1] 0.8944272
 ```
 
