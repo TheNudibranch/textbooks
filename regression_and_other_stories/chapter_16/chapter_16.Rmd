@@ -3,7 +3,6 @@ title: ROS Chapter 16 - Design and Sample Size Decisions
 output: 
   html_document:
     code_folding: hide
-    keep_md: true
 ---
 # 16.2 General principles of design
 
@@ -128,7 +127,7 @@ We will overestimate the size by a factor of 2.6!
 
 $$y = \beta_1 x_1 + \beta_2 x_2 + \beta_3 (x_1\cdot x_2)$$
 
-Now, let's write out equation for our 4 set of possible points $\{(y_{T,M}, x_T, x_M), (y_{C,M}, x_C, x_M), (y_{T,W}, x_T, x_W), (y_{C,W}, x_C, x_W)\}$. Further, $x_T, x_C$ are the two indicator (not necessarily 0/1) values $x_1$ can take, and $x_M, x_W$ are the two values $x_2$ can take. Of course, the $y$ values will have some sort of measurement error in them which requires some estimation procedure and not some simple algebra. The four equations are as follows:
+Now, let's write out equation for our 4 set of possible points $\{(y_{T,M}, x_T, x_M), (y_{C,M}, x_C, x_M), (y_{T,W}, x_T, x_W), (y_{C,W}, x_C, x_W)\}$. Truthfully, the $y$ variables should be averages at the specified $x$ coordinates, but added the bar to all the notation further down would be too much of a hassle. Further, $x_T, x_C$ are the two indicator (not necessarily 0/1) values $x_1$ can take, and $x_M, x_W$ are the two values $x_2$ can take. Of course, the $y$ values will have some sort of measurement error in them which requires some estimation procedure and not some simple algebra. The four equations are as follows:
 
 \begin{align}
 y_{T,M} &= \beta_1 x_T + \beta_2 x_M + \beta_3 (x_T\cdot x_M) \\
@@ -145,32 +144,103 @@ So how do we calculate the estimate for $(y_{T,M} - y_{C,M}) - (y_{T,W} - y_{C,W
 &= \beta_3 ((x_T\cdot x_M - x_C\cdot x_M) - (x_T\cdot x_W - x_C\cdot x_W))
 \end{align}
 
-Then, $\beta_3 = \frac{(y_{T,M} - y_{C,M}) - (y_{T,W} - y_{C,W})}{(x_T\cdot x_M - x_C\cdot x_M) - (x_T\cdot x_W - x_C\cdot x_W)}$. \\
+Then, $\beta_3 = \frac{(y_{T,M} - y_{C,M}) - (y_{T,W} - y_{C,W})}{(x_T\cdot x_M - x_C\cdot x_M) - (x_T\cdot x_W - x_C\cdot x_W)}$. In most cases, $x_1$ (treatment) and $x_2$ (male/female) will take on values such that $(x_T\cdot x_M - x_C\cdot x_M) + (x_T\cdot x_W - x_C\cdot x_W)$ will be 1. If this is the case, then $$\beta_3 = (y_{T,M} - y_{C,M}) - (y_{T,W} - y_{C,W})$$
+the difference in treated and control for male and treated and control for female.
+\newline
+\newline
 
-From the same logic, it is also not hard to show $$\beta_1 = \frac{y_{T,M} - y_{C,M}}{}$$
+Alright, we are almost there. Let's do $\beta_1$ and then move onto the standard errors of the parameters. 
+
+\begin{align}
+y_{T,M} - y_{C,M} &= (\beta_1 x_T + \beta_2 x_M + \beta_3 (x_T\cdot x_M)) - (\beta_1 x_C + \beta_2 x_M + \beta_3 (x_C\cdot x_M)) \\
+&= \beta_1 (x_T - x_C) + \beta_3 (x_T\cdot x_M - x_C\cdot x_M) \\
+&= \beta_1 (x_T - x_C) + \beta_3 x_M (x_T - x_C)
+\end{align}
+
+Thus, $$\beta_1 = \frac{y_{T,M} - y_{C,M}}{(x_T - x_C)} - \beta_3x_M$$
+
+Enough equations, let's get estimating! Let's use 0.5 and -0.5 for coding $x_T$ and $x_C$, respectively. Same pattern for $x_M$ and $x_C$. 
 
 ```{r class.source = 'fold-show', results='hide'}
 n <- 1e3; sigma <- 10
 y <- rnorm(n, 0, sigma)
 x1 <- sample(c(0.5, -0.5), n, replace=T)
-# x1 <- rnorm(n, 0, 1)
-y <- rnorm(n,(x1+0.5)*2,sigma)
 x2 <- sample(c(0.5, -0.5), n, replace=T)
 
 fake <- data.frame(y,x1,x2)
 
-fit_1 <- stan_glm(y ~ x1, data=fake)
-fit_2 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)
+fit_1 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)
 ```
-```{r}
-print(fit_1); print(fit_2)
-```
-
-My note to you when you get back to this: he is using -0.5 and 0.5 so the mean of the control and treated indicators is zero. The coefficient is not the ATE. Refer back to this: https://statmodeling.stat.columbia.edu/2023/11/09/you-need-16-times-the-sample-size-to-estimate-an-interaction-than-to-estimate-a-main-effect-explained/
-
 
 ```{r}
-2*10/sqrt(1e3)
-sqrt(8)*10/sqrt(1e3)
+print(fit_1)
 ```
 
+Again, ignore the estimates since they are pure noise. Our standard errors make sense. For $\beta_3$, we are performing addition and subtraction to 4 random variables (the mean of $y$ at any of the four specified $x$ combinations) with standard error $10/\sqrt{n}$. Thus, the standard error of $\beta_3$ is given by $4\sigma/\sqrt{n}=1.3$, which we calculated above.
+
+Now, $\beta_1$, and by extension $\beta_2$ are a little trickier. We haven't really decided how to interpret them yet, and the issues lies within the coding of $x$. For the simulation above, we let $x$, for either covariates, take values of 0.5 and -0.5. Thus, the denominator for both $\beta_3$ and the first term of $\beta_1$ equal to 1. Thus $\beta_1$ becomes:
+
+\begin{align}
+\beta_1 &= y_{T,M} - y_{C,M} - x_M(\beta_3)\\
+&= y_{T,M} - y_{C,M} - x_M(y_{T,M} - y_{C,M} - y_{T,W} + y_{C,W})\\
+&= y_{T,M} - x_M y_{T,M} - y_{C,M} + x_M y_{C,M} + x_M y_{T,W} - x_M y_{C,W}\\ 
+&= (1-x_M)y_{T,M} - (1-x_M)y_{C,M} + x_M(y_{T,W} - y_{C,W}) \\
+&= (1-x_M)(y_{T,M} - y_{C,M}) + x_M(y_{T,W} - y_{C,W})
+\end{align}
+
+If we plug in $x_M=0.5$ for the coding above, we get $\beta_1 = (0.5)(y_{T,M} - y_{C,M}) + 0.5(y_{T,W} - y_{C,W})$ the average of the treatment effect observed in the male and treatment effect observed in the females! So, what is the variance of this estimate:
+
+\begin{align}
+V[\beta_1] &= V[0.5 (y_{T,M} - y_{C,M}) + V[0.5 (y_{T,W} - y_{C,W})]\\
+&= 0.25 V[y_{T,M} - y_{C,M}] + 0.25 V[y_{T,W} - y_{C,W}] \\
+&= 0.25\left(\frac{4\sigma^2}{n/4}\right)\\
+&= \frac{4 \sigma^2}{n}
+\end{align}
+
+Taking the square root to get the standard error yields: $2\sigma/\sqrt{n}=0.3$
+
+\newline
+
+Now, what if we had coded our indicators as 1 and 0:
+
+```{r class.source = 'fold-show', results='hide'}
+n <- 1e3; sigma <- 10
+y <- rnorm(n, 0, sigma)
+x1 <- sample(c(1, 0), n, replace=T)
+x2 <- sample(c(1, 0), n, replace=T)
+
+fake <- data.frame(y,x1,x2)
+
+fit_1 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)
+```
+
+```{r}
+print(fit_1)
+```
+
+Our standard errors increase by 50%! This is because $\beta_1$ is reporting a different quantity. I'll let you work through the math again, but if we use 1 and 0 for our indicators then $\beta_1$ becomes $$\beta_1 = y_{T,W} - y_{C,W}$$
+
+The average treatment effect among females. Thus, the standard error is given by $\sqrt{4\sigma^2/n + 4\sigma^2/n} = \sigma\sqrt{8/n} \approx 0.9$.
+
+\newline
+
+Alright, last one. What if we used 1 and -1 as the indicators:
+
+```{r class.source = 'fold-show', results='hide'}
+n <- 1e3; sigma <- 10
+y <- rnorm(n, 0, sigma)
+x1 <- sample(c(1, -1), n, replace=T)
+x2 <- sample(c(1, -1), n, replace=T)
+
+fake <- data.frame(y,x1,x2)
+
+fit_1 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)
+```
+
+```{r}
+print(fit_1)
+```
+
+Hmm, our standard errors went down by 50% from our original 0.5,-0.5 encoding of $x$. ROS gives a gives a great intuitive understanding: if $x$ is multiplied by a factor of 2, and $\beta x$ does not change, then $\beta$ must decrease by a factor of 2. Why does $\beta x$ not change? Because our $y$ generating process has not changed.  
+
+For a more in-depth understanding of this particular scenario, I went into more detail in a [issue for AsKurz on github](https://github.com/ASKurz/Working-through-Regression-and-other-stories/issues/3).
