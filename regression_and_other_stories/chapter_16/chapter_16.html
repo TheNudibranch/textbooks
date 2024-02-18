@@ -689,14 +689,14 @@ fit_1 &lt;- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)</code></pre>
 ##  predictors:   4
 ## ------
 ##             Median MAD_SD
-## (Intercept)  0.0    0.3  
-## x1          -0.4    0.6  
-## x2           1.0    0.6  
-## x1:x2       -1.1    1.3  
+## (Intercept)  0.6    0.3  
+## x1           0.0    0.7  
+## x2          -1.1    0.6  
+## x1:x2       -1.3    1.2  
 ## 
 ## Auxiliary parameter(s):
 ##       Median MAD_SD
-## sigma 9.9    0.2   
+## sigma 9.8    0.2   
 ## 
 ## ------
 ## * For help interpreting the printed output see ?print.stanreg
@@ -755,14 +755,14 @@ fit_1 &lt;- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)</code></pre>
 ##  predictors:   4
 ## ------
 ##             Median MAD_SD
-## (Intercept)  0.1    0.7  
-## x1           0.2    0.9  
-## x2           0.1    0.9  
-## x1:x2       -0.1    1.3  
+## (Intercept) -0.5    0.6  
+## x1           0.0    0.8  
+## x2           1.1    0.9  
+## x1:x2       -0.9    1.3  
 ## 
 ## Auxiliary parameter(s):
 ##       Median MAD_SD
-## sigma 10.0    0.2  
+## sigma 10.2    0.2  
 ## 
 ## ------
 ## * For help interpreting the printed output see ?print.stanreg
@@ -792,14 +792,14 @@ fit_1 &lt;- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)</code></pre>
 ##  predictors:   4
 ## ------
 ##             Median MAD_SD
-## (Intercept)  0.0    0.3  
-## x1           0.1    0.3  
-## x2          -0.5    0.3  
+## (Intercept)  0.1    0.3  
+## x1           0.0    0.3  
+## x2           0.1    0.3  
 ## x1:x2       -0.2    0.3  
 ## 
 ## Auxiliary parameter(s):
 ##       Median MAD_SD
-## sigma 10.0    0.2  
+## sigma 9.8    0.2   
 ## 
 ## ------
 ## * For help interpreting the printed output see ?print.stanreg
@@ -815,6 +815,45 @@ changed.</p>
 <p>For a more in-depth understanding of this particular scenario, I went
 into more detail in a <a href="https://github.com/ASKurz/Working-through-Regression-and-other-stories/issues/3">issue
 for AsKurz on github</a>.</p>
+</div>
+</div>
+<div id="section-1" class="section level1">
+<h1>16.5</h1>
+<div id="design-calculations-afer-the-data-have-been-collected" class="section level3">
+<h3>Design calculations afer the data have been collected</h3>
+<p>There is a study that was introduced in chapter 9.4 talking about how
+attractive parents are more likely to have girls. The study observed a
+significant effect with an estimate of 8% (female-male birth rate), with
+a standard error of 3%. Chapter nine does a good job diving into some
+reasons why this shouldn’t be trusted, but here we’ll talk about the
+implications of sign (type S) errors.</p>
+<p>Moving forward, we are going to drop the 8% and only focus on the
+standard error of 3%. With a standard error of 3%, we would need to
+observe an effect of at least 6% (<span class="math inline">\(1.96\approx 2\)</span>), in either direction, to
+make the claim of stat sig.</p>
+<p>Assume that the true difference is 0.2% and we keep our standard
+error of 3%, then conditioning on significance we’ll observe an effect
+of:</p>
+<pre class="r"><code>se &lt;- 0.03
+raw &lt;- rnorm(1e6, mean=0.002, se)
+signif &lt;- raw &gt; se*2
+mean(raw[signif]) |&gt; round(4)</code></pre>
+<pre><code>## [1] 0.0714</code></pre>
+<p>So on average we’ll overestimate our actual effect by 0.07/0.002 -
+almost 35 times! A very high type M error.</p>
+<p>Now, onto the sign error. That is, given that we have observed
+significance and that the true effect is 0.2%, what is the probability
+that it is the correct sign.</p>
+<pre class="r"><code># Probability that sign is positive
+pos &lt;- 1 - pnorm(0.06, 0.002, 0.03)
+
+# Probability that sign is negative
+neg &lt;- pnorm(-0.06, 0.002, 0.03)
+
+(pos / (neg + pos)) |&gt; round(2)</code></pre>
+<pre><code>## [1] 0.58</code></pre>
+<p>That is crazy! Only about a 60/40 chance that we will get the sign
+correct.</p>
 </div>
 </div>
 

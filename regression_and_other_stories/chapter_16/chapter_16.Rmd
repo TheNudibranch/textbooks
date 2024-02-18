@@ -4,6 +4,9 @@ output:
   html_document:
     code_folding: hide
 ---
+```{r, echo=F}
+knitr::opts_chunk$set(cache = T)
+```
 # 16.2 General principles of design
 
 - In designing a study, it is generally better the double the effect size $\theta$ rather than double the sample size $n$. This is because standard errors decrease with the *square root* of sample size, not the full magnitude (or half if we are saying double).
@@ -244,3 +247,33 @@ print(fit_1)
 Hmm, our standard errors went down by 50% from our original 0.5,-0.5 encoding of $x$. ROS gives a gives a great intuitive understanding: if $x$ is multiplied by a factor of 2, and $\beta x$ does not change, then $\beta$ must decrease by a factor of 2. Why does $\beta x$ not change? Because our $y$ generating process has not changed.  
 
 For a more in-depth understanding of this particular scenario, I went into more detail in a [issue for AsKurz on github](https://github.com/ASKurz/Working-through-Regression-and-other-stories/issues/3).
+
+# 16.5
+### Design calculations afer the data have been collected
+
+There is a study that was introduced in chapter 9.4 talking about how attractive parents are more likely to have girls. The study observed a significant effect with an estimate of 8% (female-male birth rate), with a standard error of 3%. Chapter nine does a good job diving into some reasons why this shouldn't be trusted, but here we'll talk about the implications of sign (type S) errors.
+
+Moving forward, we are going to drop the 8% and only focus on the standard error of 3%. With a standard error of 3%, we would need to observe an effect of at least 6%  ($1.96\approx 2$), in either direction, to make the claim of stat sig.
+
+Assume that the true difference is 0.2% and we keep our standard error of 3%, then conditioning on significance we'll observe an effect of:
+
+```{r}
+se <- 0.03
+raw <- rnorm(1e6, mean=0.002, se)
+signif <- raw > se*2
+mean(raw[signif]) |> round(4)
+```
+So on average we'll overestimate our actual effect by 0.07/0.002 - almost 35 times! A very high type M error.
+
+Now, onto the sign error. That is, given that we have observed significance and that the true effect is 0.2%, what is the probability that it is the correct sign.
+
+```{r}
+# Probability that sign is positive
+pos <- 1 - pnorm(0.06, 0.002, 0.03)
+
+# Probability that sign is negative
+neg <- pnorm(-0.06, 0.002, 0.03)
+
+(pos / (neg + pos)) |> round(2)
+```
+That is crazy! Only about a 60/40 chance that we will get the sign correct.
