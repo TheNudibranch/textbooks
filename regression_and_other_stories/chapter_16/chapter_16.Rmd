@@ -164,7 +164,7 @@ Thus, $$\beta_1 = \frac{y_{T,M} - y_{C,M}}{(x_T - x_C)} - \beta_3x_M$$
 
 Enough equations, let's get estimating! Let's use 0.5 and -0.5 for coding $x_T$ and $x_C$, respectively. Same pattern for $x_M$ and $x_C$. 
 
-```{r class.source = 'fold-show', results='hide'}
+```{r class.source = 'fold-show'}
 n <- 1e3; sigma <- 10
 y <- rnorm(n, 0, sigma)
 x1 <- sample(c(0.5, -0.5), n, replace=T)
@@ -172,12 +172,10 @@ x2 <- sample(c(0.5, -0.5), n, replace=T)
 
 fake <- data.frame(y,x1,x2)
 
-fit_1 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)
-```
-
-```{r}
+fit_1 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake, refresh=0)
 print(fit_1)
 ```
+
 
 Again, ignore the estimates since they are pure noise. Our standard errors make sense. For $\beta_3$, we are performing addition and subtraction to 4 random variables (the mean of $y$ at any of the four specified $x$ combinations) with standard error $10/\sqrt{n}$. Thus, the standard error of $\beta_3$ is given by $4\sigma/\sqrt{n}=1.3$, which we calculated above.
 
@@ -206,7 +204,7 @@ Taking the square root to get the standard error yields: $2\sigma/\sqrt{n}=0.3$
 
 Now, what if we had coded our indicators as 1 and 0:
 
-```{r class.source = 'fold-show', results='hide'}
+```{r class.source = 'fold-show'}
 n <- 1e3; sigma <- 10
 y <- rnorm(n, 0, sigma)
 x1 <- sample(c(1, 0), n, replace=T)
@@ -214,10 +212,7 @@ x2 <- sample(c(1, 0), n, replace=T)
 
 fake <- data.frame(y,x1,x2)
 
-fit_1 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)
-```
-
-```{r}
+fit_1 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake, refresh=0)
 print(fit_1)
 ```
 
@@ -229,7 +224,7 @@ The average treatment effect among females. Thus, the standard error is given by
 
 Alright, last one. What if we used 1 and -1 as the indicators:
 
-```{r class.source = 'fold-show', results='hide'}
+```{r class.source = 'fold-show'}
 n <- 1e3; sigma <- 10
 y <- rnorm(n, 0, sigma)
 x1 <- sample(c(1, -1), n, replace=T)
@@ -237,10 +232,7 @@ x2 <- sample(c(1, -1), n, replace=T)
 
 fake <- data.frame(y,x1,x2)
 
-fit_1 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake)
-```
-
-```{r}
+fit_1 <- stan_glm(y ~ x1 + x2 + x1:x2, data=fake, refresh=0)
 print(fit_1)
 ```
 
@@ -277,3 +269,112 @@ neg <- pnorm(-0.06, 0.002, 0.03)
 (pos / (neg + pos)) |> round(2)
 ```
 That is crazy! Only about a 60/40 chance that we will get the sign correct.
+
+# 16.6
+### Simulating randomized experiments
+
+```{r class.source = 'fold-show'}
+n <- 100
+y_if_control <- rnorm(n, 60, 20)
+y_if_treated <- y_if_control + 5 # Intervention adds 5 points
+
+z <- sample(rep(c(0,1), n/2))
+y <- ifelse(z == 1, y_if_treated, y_if_control)
+fake <- data.frame(y, z)
+
+diff <- mean(y[z == 1]) - mean(y[z == 0])
+se <- sqrt(var(y[z==0])/(n/2) + var(y[z==1])/(n/2))
+```
+
+We can also run a regression to estimate the parameters we just calculated
+
+```{r class.source = 'fold-show'}
+fit <- stan_glm(y ~ z, data=fake, refresh=0)
+
+print(fit)
+cat('Mean diff from analytical solution', diff, 'se', se)
+```
+
+Our standard error is very noisy, around 4.3.
+
+### Includng a pre-treatment predictor
+
+```{r class.source = 'fold-show'}
+fake$x <- rnorm(n, 50, 20)
+fit_1b <- stan_glm(y ~ z + x, data=fake, refresh=0)
+print(fit_1b)
+```
+
+Notice that our standard error for the coefficient of $z$, our a treatment effect, did not decrease. This is because $x$ is uncorrelated with $z$. 
+
+To simulate a correlation we do follow an example of pre and post test scores for chapter 6. We say that there is some true ability plus some random noise that effects the pre-test score $x$. We then say that the post test score is again the true ability plus random noise and then some improvement factor. We will say that those that were treated will receive an additional improvement factor of 5.
+
+```{r, class.source = 'fold-show'}
+n <- 100
+true_ability <- rnorm(n, 50, 16)
+x <- true_ability + rnorm(n,0,12) # pre-test score
+y_if_control <- true_ability + rnorm(n,0,12) + 10
+y_if_treated <- y_if_control + 5
+
+z <- sample(rep(c(1,0), n/2))
+y <- ifelse(z == 1, y_if_treated, y_if_control)
+fake_2 <- data.frame(x, y, z)
+
+fit_2a <- stan_glm(y ~ z, data=fake_2, refresh=0)
+print(fit_2a)
+
+```
+
+Standard error is still around 4.3. If we add $x$:
+
+```{r class.source = 'fold-show'}
+fit_2b <- stan_glm(y ~ z + x, data=fake_2, refresh=0)
+print(fit_2b)
+```
+
+
+Our standard error for $z$ goes down by a third.
+
+### Simulating an experiment with selection bias
+The previous simulations assumed an RCT. Let's say now that students who performed poorly in the pre-test were more likely to receive the treatment. We'll say that $P(z_i = 1) = \text{logit}^{-1}(-(x_i-50)/20)$.
+
+```{r class.source = 'fold-show', fig.align='center', fig.width=10, fig.height=6}
+z <- rbinom(n, 1, invlogit(-(x-50)/20))
+plot(x,z, ylab='P(z_i = 1)', pch=16)
+seq(-5,120, length.out=1e4) %>%
+  {lines(., invlogit(-(.-50)/20), lwd=3)}
+```
+
+We now run some simulations to show that if we do not condition on the pre-test, we end up with a horribly biased estimate:
+
+```{r}
+experiment <- function(n){
+  true_ability <- rnorm(n, 50, 16)
+  x <- true_ability + rnorm(n,0,12) # pre-test score
+  y_if_control <- true_ability + rnorm(n,0,12) + 10
+  y_if_treated <- y_if_control + 5
+  
+  z <- rbinom(n, 1, invlogit(-(x-50)/20))
+  y <- ifelse(z == 1, y_if_treated, y_if_control)
+  fake_3 <- data.frame(x, y, z)
+  
+  fit_3a <- stan_glm(y ~ z, data=fake_3, refresh=0)
+  fit_3b <- stan_glm(y ~ z + x, data=fake_3, refresh=0)
+  rbind(c(coef(fit_3a)['z'], se(fit_3a)['z']), c(coef(fit_3b)['z'], se(fit_3b)['z']))
+}
+
+n <- 100
+n_loop <- 50
+results <- array(NA, c(n_loop, 2, 2), 
+                 dimnames <- list(1:n_loop, c('Simple', 'Adjusted'), 
+                                  c('Estimate', 'SE')))
+for (loop in 1:n_loop){
+  results[loop,,] <- experiment(n)
+}
+
+apply(results, c(2,3), mean)
+```
+
+
+
+
