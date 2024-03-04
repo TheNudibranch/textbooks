@@ -375,6 +375,4 @@ for (loop in 1:n_loop){
 apply(results, c(2,3), mean)
 ```
 
-
-
-
+Wow, look at how the bias in sample for treated effect our outcome! It is very clear that we needed to adjust for the pre-test in order to get an accurate result.
