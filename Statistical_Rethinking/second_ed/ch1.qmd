@@ -1,0 +1,45 @@
+---
+title: "Rethinking - Chapter 1"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+
+
+
+
+
+
+
+### Loo Who?
+If you're like me, when you first saw the [loo](https://mc-stan.org/loo/) package and all the accompanying research, you probably thought it was something close to magic. Coming from a traditional ML world, leave-one-out (loo) cross-validation (cv) is the gold standard for model checking and validation, but it is usually quite time consuming to do in practice. 
+
+To perform clascical loo, you loop over your data set $n$ times, where $n$ is the number points in your data. For each iteration you remove or "hold out" $(X_i, y_i)$, where $X$ and $y$ are the covariates and response, respectively. The remaining data $(X_{-i}, y_{-i})$ is used to train the model. After training you predict using the held out covariate $X_i$ to produce $\tilde{y}_i$. Comparison can then be made between $\tilde{y}_i$ and $y_i$ using whichever error function fits your domain: MSE, accuracy, ELPD, etc.
+
+Here is a short demo for linear regression with one covariate. We'll perform loo and plot the absolute difference between $\tilde{y}_i$ and $y_i$:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+set.seed(1235)
+n <- 100
+x <- rnorm(n)
+y <- x*2 + -2 + ifelse(1:100 %% 40 == 0, 15, rnorm(n,0,1))
+data <- cbind(co=x,resp=y) |> as.data.frame()
+
+loo_pred <- rep(NA, n)
+slope_pred <- rep(NA, n)
+for (i in 1:n){
+  mod <- lm(resp ~ co, data=data[-i,])
+  loo_pred[i] <- predict(mod, newdata=data[i,])
+  slope_pred[i] <- mod$coefficients[2]
+}
+diff <- abs(loo_pred - data$resp)
+plot(diff, ylab='Abs. Difference between pred and actual y', 
+     xlab='LOO Iteration', pch=16, col=ifelse(diff > 4, 'blue','black'))
+legend('topleft', col=c('blue'), pch=c(16), legend=c('Influential Points'))
+```
+
+
+An immediate result of this testing framework is that each point can be compared independent of the other. They are not batched into testing/training sets, each point is a predicted value where the model never got to see it during training. We can already start to see which points might be causing issues for the model or does not fit our data generating process. Another benefit that I'll briefly show is how the *coefficients* of the $n$ trained models differ. Thus showing how influential some points in the data might be.
