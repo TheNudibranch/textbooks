@@ -1,0 +1,58 @@
+---
+title: "Rethinking - Chapter 1"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+## 1.1 Statistical Golems
+- E.T Jaynes had a metaphor comparing statistical models to robots
+- Statistics is a branch of engineering
+- The classical statistical tests are just pre-constructed Golems
+
+## 1.2 Statistical Rethinking
+- Popper is a big proponent for falsifying hypothesis
+  - Good has a lot to say about Popper
+  - But it seems like it was misinterpreted by the larger audience 
+- Null hypothesis falsification is not the answer
+- Hypotheses are not models
+  - We can't really say that a hypothesis is false, just that we reject a model derived from it
+  - Think about the conditional in the p-value
+- Different hypotheses can lead to the same model, through different process model
+  - I think of this as:
+    - There is a single or multiple hypotheses
+    - This hypotheses , if true, can give rise to different generating processes
+    - These generating processes can be modeled with different statistical techniques
+    - But, there can be overlap between all parts of the above flow (i.e. multiple data generating processes can give rise to the same model)
+  - This is why we have to make multiple models and actually model the DGP
+- Measurement error can lead to issues with null hypothesis falsification
+  - Especially when measurements are discrete
+
+## 1.3 Tools for golem engineering
+- Probability is just a calculus for counting
+- Frequentest uncertainty is based on imaginary resampling of the data
+  - This also means: parameters and models cannot have uncertainties - only data can!!
+- Bayesian golems treat randomness as a property of the information, not the world
+  - The model encodes the randomness, not the world
+  - A coin flip is not random to the coin, but to the golem
+- Really comes down to Epistemic uncertainty versus Aleatoric uncertainty
+  - Epistemic uncertainty is uncertainty arising from uncertainty in the data generating process
+  - Aleatoric uncertainty is uncertainty arising from uncertainty in the data collection process
+- This book follows the "logical" interpretation of probability
+  - Good refers to logical probability as "Subjective probability in the mind of a hypothetical perfectly rational man... often called credibility"
+    - Good defines subjective probability as psychological probability where some canons of consistency have been applied
+- Information criteria and cross-validation
+  - Expectations of predictive accuracy
+  - Estimate of the tendency for a model to overfit
+  - Highlighting influential observations (pareto-k)
+- Multilevel models are the way to go. Big reason is they reduce overfitting by partial pooling regularization
+- Paired $t$-test is just a multilevel model is disguise
+- Multilevel modeling will be the default in the future
+- *Models that are causally incorrect can make better predictions than models that are causally correct*
+- DAGs for causal inference are subjective, it is the only way we can possibly make them
+  - Statistical analysis can never verify all of our assumptions (especially causal)
+
+## 1.4 Sumary
+- Best to build and analyze multiple non-null models
+- Chapter 16 will get into what I was taking about all along
+  - Bayesian analysis lets you play Legos in a world dominated by push button statistical philosophy
