@@ -1,0 +1,28 @@
+---
+title: "Rethinking - Chapter 2"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+## 2.0
+- Savage (Jimmy) is credited with the notion that models are *small worlds*, are representations of only a small part of reality.
+- Small world versus large world
+  - Model is most always a representations of a subset of reality (small world)
+  - Allows for things such as optimality, but we are not guaranteed this in the real world
+    - Consider data drift, concept drift, etc.
+
+## 2.2 - Building a model
+- Many different stories correspond to the same model
+  - This is what we were talking about with the previous chapter. There can be multiple data generating process that give rise to the same model
+- Updating steps can be done backwards instead of forwards
+  - This is why frequentist tests are not really objective
+  - We can always work backwards and get what their implicit prior was
+- You are not done when the model is fit
+  - Need to interrogate the model
+  - Ask questions that are fringe and or check understanding
+  - Posterior retrodictive checks
+
+## 2.3 - Components of the model
+- Bayesian priors are no more subjective than the likelihoods or repeated sampling assumption of classical significance testing
+- Priors should be interrogated
