@@ -5,6 +5,13 @@ format:
     code-fold: show
 toc: true
 ---
+```{r}
+#| output: false
+#| code-fold: true
+library(rethinking)
+```
+
+
 ## 2.0
 - Savage (Jimmy) is credited with the notion that models are *small worlds*, are representations of only a small part of reality.
 - Small world versus large world
@@ -26,3 +33,60 @@ toc: true
 ## 2.3 - Components of the model
 - Bayesian priors are no more subjective than the likelihoods or repeated sampling assumption of classical significance testing
 - Priors should be interrogated
+
+## 2.4 - Making the model go
+- Grid Approximation
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+p_grid <- seq(0,1,length.out=50) # grid for y
+prior <- rep(1,length(p_grid)) #flat prior
+like <- dbinom(6, size=9, prob=p_grid)
+
+post_uns <- like*prior
+post <- post_uns/sum(post_uns)
+
+par(mfrow=c(1,2))
+plot(p_grid, prior, type='b', xlab='prob of water', ylab='prior prob')
+plot(p_grid, post, type='b', xlab='prob of water', ylab='posterior prob')
+```
+
+- Quadratic approximation
+  - Using gradients to find the MAP
+  - At the MAP, uses estimates of the curvature to find the parameters of the normal approximation
+    - It's Hessian times boys
+```{r}
+global_qa <- quap(
+  alist(
+    W ~ dbinom(W+L, p),
+    p ~ dunif(0,1)
+  ),
+  data = list(W=6, L=3)
+)
+precis(global_qa)
+```
+- Assuming that the posterior is Gaussian, it is maximized at 0.67 and has a standard deviation of 0.16.
+
+
+- Now, let's assume that we are using conjugacey, where the prior distribution is $\text{Beta}(1,1)$. The conjugate posterior with a binomial likelihood would be $\text{Beta}(W+1, L+1)$.
+  - For more info: https://en.wikipedia.org/wiki/Conjugate_prior#Table_of_conjugate_distributions
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+W <- 6
+L <- 3
+curve(dbeta(x, W+1, L+1), 0, 1, lwd=2)
+curve(dnorm(x, 0.67, 0.16), col='darkblue', lwd=2, add=T)
+legend('topleft', legend=c('Conjugate', 'Quadratic Approx.'), col=c(1, 'darkblue'), lwd=2)
+```
+
+- Quadratic approximation can be sometimes equivalent to the estimate obtained by MLE.
+- log of Gaussian only needs the second derivative since it is a parabola
+
+
+
