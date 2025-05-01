@@ -88,5 +88,133 @@ legend('topleft', legend=c('Conjugate', 'Quadratic Approx.'), col=c(1, 'darkblue
 - Quadratic approximation can be sometimes equivalent to the estimate obtained by MLE.
 - log of Gaussian only needs the second derivative since it is a parabola
 
+- Simple metropolis hastings algorithm
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+n_samp <- 1e3
+p <- rep(NA, n_samp)
+p[1] <- 0.5
+
+W <- 6; L <- 3
+for (i in 2:n_samp){
+  p_new <- rnorm(1, p[i-1], 0.1) |> abs() # proposal
+  if (p_new > 1) p_new <- p_new - 1
+  q0 <- dbinom(W, W+L, p[i-1])
+  q1 <- dbinom(W, W+L, p_new)
+  p[i] <- ifelse(runif(1) < q1/q0, p_new, p[i-1])
+}
+par(mfrow=c(1,2))
+hist(p)
+plot(p, type='l', lwd=2)
+```
+
+Let's see how well it did:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+#| code-fold: true
+
+dens_p <- density(p)
+x_seq <- seq(0,1,length.out=1e3)
+conj <-  x_seq |> dbeta(W+1, L+1)
+plot(dens_p, ylim=range(conj, dens_p$y), lwd=3, col='darkred', main='', xlab='p')
+lines(x_seq, conj, col='darkblue', lwd=3)
+legend('topleft', legend=c('Metropolis Hastings', 'Conjugate'), col=c('darkred', 'darkblue'), lwd=2)
+```
+
+## Exercises
+### E.2
+- (1)
+
+### M.1
+- Using a uniform prior, compute posterior with the following data
+  1. W,W,W
+  2. W,W,W,L
+  3. L,W,W,L,W,W
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+get_post <- function(grid, n_W, n_L){
+  prior <- rep(1,length(grid)) #flat prior
+  like <- dbinom(n_W, size=n_L+n_W, prob=grid)
+  post_uns <- like*prior
+  like*prior / sum(like*prior)
+}
+
+p_grid <- seq(0,1,length.out=50) # grid for y
+
+plot(p_grid, get_post(p_grid, 3,0), type='b', xlab='prob of water', ylab='posterior prob', col='darkblue')
+lines(p_grid, get_post(p_grid, 3,1), type='b', xlab='prob of water', ylab='posterior prob', col='darkgreen')
+lines(p_grid, get_post(p_grid, 4,2), type='b', xlab='prob of water', ylab='posterior prob', col='darkred')
+legend('topleft', legend=c('Data 1', 'Data 2', 'Data 3'), col=c('darkblue', 'darkgreen', 'darkred'), lwd=2)
+```
+
+### M.2
+- Assume a prior of $p=0$ when $p< 0.5$
+- Doesn't matter what constant is used since it all gets washed out in the end
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+#| code-fold: true
+
+get_post <- function(grid, n_W, n_L){
+  prior <- rep(1,length(grid)) #flat prior
+  prior[grid < 0.5] <- 0
+  like <- dbinom(n_W, size=n_L+n_W, prob=grid)
+  post_uns <- like*prior
+  like*prior / sum(like*prior)
+}
+
+p_grid <- seq(0,1,length.out=50) # grid for y
+
+plot(p_grid, get_post(p_grid, 3,0), type='b', xlab='prob of water', ylab='posterior prob', col='darkblue')
+lines(p_grid, get_post(p_grid, 3,1), type='b', xlab='prob of water', ylab='posterior prob', col='darkgreen')
+lines(p_grid, get_post(p_grid, 4,2), type='b', xlab='prob of water', ylab='posterior prob', col='darkred')
+legend('topleft', legend=c('Data 1', 'Data 2', 'Data 3'), col=c('darkblue', 'darkgreen', 'darkred'), lwd=2)
+```
+### M.3
+- From the problem we know that $P(\text{Land} | \text{Earth}) = 0.3$ and $P(\text{Land} | \text{Mars}) = 1$.
+- Prior of 0.5 for both having been tossed
+- Therefore $P(\text{Land}) = 0.5\cdot P(\text{Land} | \text{Earth}) + 0.5\cdot P(\text{Land} | \text{Mars}) = 0.65$
+- Note
+\begin{align}
+P(\text{Earth}|\text{Land}) &= \frac{P(\text{Land} | \text{Earth})\cdot P(\text{Earth})}{P(\text{Land})} \\
+&= \frac{0.3\cdot 0.5}{0.65} \\
+&= 0.23
+\end{align}
+
+
+### H.1
+- Pandas bears, both equally likely in the wild
+- $P(t|A) = 0.1$, $P(t|B) = 0.2$
+- Find $P(t_2|t_1)$
+- $P(t_1,t_2) = P(t_2|t_1) * P(t_1)$
+- We have $p(t_1) = 0.5 * P(t_1|a) + 0.5 * P(t_1|b) = 0.5*0.1 + 0.5*0.2=0.15$
+- $p(t_1, t_2) = 0.5 * P(t_1,t_2|a) + 0.5 * P(t_1,t_2|b) = 0.5*0.1^2 + 0.5*0.2^2 = 0.025$
+- Therefore: $P(t_2|t_1) = 0.025/0.15 = 0.1667$
+
+### H.2
+- Find $p(a|t)$
+- Some logic as M.3
+- $p(t) = 0.15$, $p(a) = 0.5$, $p(t|a) = 0.1$
+- Therefore: $p(a|t) = p(t|a)*p(a)/p(t) = 0.1*0.5/0.15 = 0.333$
+
+### H.3
+- Just use previous posterior as prior, that is $p(a)^\prime=p(a|t)$
+- $p(a|t_1, \neg t_2) = p(\neg t_2|a) * p(a)^\prime/p(\neg t_2)^\prime$
+- **You can't just do** $p(t) = 0.15$, then have $p(\neg t) = 0.85$,
+  - This is because we have the prior information
+  - It is really $p(\neg t)^\prime = p(\neg t_2|t_1)$, but we can still do the averging with the pervious info
+  - $p(\neg t)^\prime = p(a)^\prime*p(\neg t) + p(b)^\prime*p(\neg t) = 0.33*0.9 + 0.67*0.8 = 0.84$
+- and from our initial information, $p(t|a) = 0.1$, therefore $p(\neg t|a) = 0.9$
+- Thus, $p(a|t_1, \neg t_2) = p(\neg t_2|a) * p(a)^\prime/p(\neg t_2)^\prime = 0.9*0.333/0.84 = 0.36$
 
 

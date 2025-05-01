@@ -112,6 +112,16 @@ window.Quarto = {
   <li><a href="#building-a-model" id="toc-building-a-model" class="nav-link" data-scroll-target="#building-a-model">2.2 - Building a model</a></li>
   <li><a href="#components-of-the-model" id="toc-components-of-the-model" class="nav-link" data-scroll-target="#components-of-the-model">2.3 - Components of the model</a></li>
   <li><a href="#making-the-model-go" id="toc-making-the-model-go" class="nav-link" data-scroll-target="#making-the-model-go">2.4 - Making the model go</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises">Exercises</a>
+  <ul class="collapse">
+  <li><a href="#e.2" id="toc-e.2" class="nav-link" data-scroll-target="#e.2">E.2</a></li>
+  <li><a href="#m.1" id="toc-m.1" class="nav-link" data-scroll-target="#m.1">M.1</a></li>
+  <li><a href="#m.2" id="toc-m.2" class="nav-link" data-scroll-target="#m.2">M.2</a></li>
+  <li><a href="#m.3" id="toc-m.3" class="nav-link" data-scroll-target="#m.3">M.3</a></li>
+  <li><a href="#h.1" id="toc-h.1" class="nav-link" data-scroll-target="#h.1">H.1</a></li>
+  <li><a href="#h.2" id="toc-h.2" class="nav-link" data-scroll-target="#h.2">H.2</a></li>
+  <li><a href="#h.3" id="toc-h.3" class="nav-link" data-scroll-target="#h.3">H.3</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -234,7 +244,7 @@ window.Quarto = {
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>       mean        sd      5.5%     94.5%
-p 0.6666663 0.1571339 0.4155361 0.9177966</code></pre>
+p 0.6666664 0.1571338 0.4155361 0.9177966</code></pre>
 </div>
 </div>
 <ul>
@@ -261,6 +271,186 @@ p 0.6666663 0.1571339 0.4155361 0.9177966</code></pre>
 </div>
 </div>
 </div>
+<ul>
+<li><p>Quadratic approximation can be sometimes equivalent to the estimate obtained by MLE.</p></li>
+<li><p>log of Gaussian only needs the second derivative since it is a parabola</p></li>
+<li><p>Simple metropolis hastings algorithm</p></li>
+</ul>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>n_samp <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n_samp)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>p[<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>W <span class="ot">&lt;-</span> <span class="dv">6</span>; L <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>n_samp){</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  p_new <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, p[i<span class="dv">-1</span>], <span class="fl">0.1</span>) <span class="sc">|&gt;</span> <span class="fu">abs</span>() <span class="co"># proposal</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (p_new <span class="sc">&gt;</span> <span class="dv">1</span>) p_new <span class="ot">&lt;-</span> p_new <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  q0 <span class="ot">&lt;-</span> <span class="fu">dbinom</span>(W, W<span class="sc">+</span>L, p[i<span class="dv">-1</span>])</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  q1 <span class="ot">&lt;-</span> <span class="fu">dbinom</span>(W, W<span class="sc">+</span>L, p_new)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  p[i] <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">runif</span>(<span class="dv">1</span>) <span class="sc">&lt;</span> q1<span class="sc">/</span>q0, p_new, p[i<span class="dv">-1</span>])</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(p)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(p, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">lwd=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch2_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s see how well it did:</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>dens_p <span class="ot">&lt;-</span> <span class="fu">density</span>(p)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>x_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">length.out=</span><span class="fl">1e3</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>conj <span class="ot">&lt;-</span>  x_seq <span class="sc">|&gt;</span> <span class="fu">dbeta</span>(W<span class="sc">+</span><span class="dv">1</span>, L<span class="sc">+</span><span class="dv">1</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(dens_p, <span class="at">ylim=</span><span class="fu">range</span>(conj, dens_p<span class="sc">$</span>y), <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">col=</span><span class="st">'darkred'</span>, <span class="at">main=</span><span class="st">''</span>, <span class="at">xlab=</span><span class="st">'p'</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_seq, conj, <span class="at">col=</span><span class="st">'darkblue'</span>, <span class="at">lwd=</span><span class="dv">3</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Metropolis Hastings'</span>, <span class="st">'Conjugate'</span>), <span class="at">col=</span><span class="fu">c</span>(<span class="st">'darkred'</span>, <span class="st">'darkblue'</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch2_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="exercises" class="level2">
+<h2 class="anchored" data-anchor-id="exercises">Exercises</h2>
+<section id="e.2" class="level3">
+<h3 class="anchored" data-anchor-id="e.2">E.2</h3>
+<ul>
+<li><ol type="1">
+<li></li>
+</ol></li>
+</ul>
+</section>
+<section id="m.1" class="level3">
+<h3 class="anchored" data-anchor-id="m.1">M.1</h3>
+<ul>
+<li>Using a uniform prior, compute posterior with the following data
+<ol type="1">
+<li>W,W,W</li>
+<li>W,W,W,L</li>
+<li>L,W,W,L,W,W</li>
+</ol></li>
+</ul>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>get_post <span class="ot">&lt;-</span> <span class="cf">function</span>(grid, n_W, n_L){</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  prior <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>,<span class="fu">length</span>(grid)) <span class="co">#flat prior</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  like <span class="ot">&lt;-</span> <span class="fu">dbinom</span>(n_W, <span class="at">size=</span>n_L<span class="sc">+</span>n_W, <span class="at">prob=</span>grid)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  post_uns <span class="ot">&lt;-</span> like<span class="sc">*</span>prior</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  like<span class="sc">*</span>prior <span class="sc">/</span> <span class="fu">sum</span>(like<span class="sc">*</span>prior)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>p_grid <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">length.out=</span><span class="dv">50</span>) <span class="co"># grid for y</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(p_grid, <span class="fu">get_post</span>(p_grid, <span class="dv">3</span>,<span class="dv">0</span>), <span class="at">type=</span><span class="st">'b'</span>, <span class="at">xlab=</span><span class="st">'prob of water'</span>, <span class="at">ylab=</span><span class="st">'posterior prob'</span>, <span class="at">col=</span><span class="st">'darkblue'</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(p_grid, <span class="fu">get_post</span>(p_grid, <span class="dv">3</span>,<span class="dv">1</span>), <span class="at">type=</span><span class="st">'b'</span>, <span class="at">xlab=</span><span class="st">'prob of water'</span>, <span class="at">ylab=</span><span class="st">'posterior prob'</span>, <span class="at">col=</span><span class="st">'darkgreen'</span>)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(p_grid, <span class="fu">get_post</span>(p_grid, <span class="dv">4</span>,<span class="dv">2</span>), <span class="at">type=</span><span class="st">'b'</span>, <span class="at">xlab=</span><span class="st">'prob of water'</span>, <span class="at">ylab=</span><span class="st">'posterior prob'</span>, <span class="at">col=</span><span class="st">'darkred'</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Data 1'</span>, <span class="st">'Data 2'</span>, <span class="st">'Data 3'</span>), <span class="at">col=</span><span class="fu">c</span>(<span class="st">'darkblue'</span>, <span class="st">'darkgreen'</span>, <span class="st">'darkred'</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch2_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="m.2" class="level3">
+<h3 class="anchored" data-anchor-id="m.2">M.2</h3>
+<ul>
+<li>Assume a prior of <span class="math inline">\(p=0\)</span> when <span class="math inline">\(p&lt; 0.5\)</span></li>
+<li>Doesn’t matter what constant is used since it all gets washed out in the end</li>
+</ul>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>get_post <span class="ot">&lt;-</span> <span class="cf">function</span>(grid, n_W, n_L){</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  prior <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>,<span class="fu">length</span>(grid)) <span class="co">#flat prior</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  prior[grid <span class="sc">&lt;</span> <span class="fl">0.5</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  like <span class="ot">&lt;-</span> <span class="fu">dbinom</span>(n_W, <span class="at">size=</span>n_L<span class="sc">+</span>n_W, <span class="at">prob=</span>grid)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  post_uns <span class="ot">&lt;-</span> like<span class="sc">*</span>prior</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  like<span class="sc">*</span>prior <span class="sc">/</span> <span class="fu">sum</span>(like<span class="sc">*</span>prior)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>p_grid <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">length.out=</span><span class="dv">50</span>) <span class="co"># grid for y</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(p_grid, <span class="fu">get_post</span>(p_grid, <span class="dv">3</span>,<span class="dv">0</span>), <span class="at">type=</span><span class="st">'b'</span>, <span class="at">xlab=</span><span class="st">'prob of water'</span>, <span class="at">ylab=</span><span class="st">'posterior prob'</span>, <span class="at">col=</span><span class="st">'darkblue'</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(p_grid, <span class="fu">get_post</span>(p_grid, <span class="dv">3</span>,<span class="dv">1</span>), <span class="at">type=</span><span class="st">'b'</span>, <span class="at">xlab=</span><span class="st">'prob of water'</span>, <span class="at">ylab=</span><span class="st">'posterior prob'</span>, <span class="at">col=</span><span class="st">'darkgreen'</span>)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(p_grid, <span class="fu">get_post</span>(p_grid, <span class="dv">4</span>,<span class="dv">2</span>), <span class="at">type=</span><span class="st">'b'</span>, <span class="at">xlab=</span><span class="st">'prob of water'</span>, <span class="at">ylab=</span><span class="st">'posterior prob'</span>, <span class="at">col=</span><span class="st">'darkred'</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Data 1'</span>, <span class="st">'Data 2'</span>, <span class="st">'Data 3'</span>), <span class="at">col=</span><span class="fu">c</span>(<span class="st">'darkblue'</span>, <span class="st">'darkgreen'</span>, <span class="st">'darkred'</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch2_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="m.3" class="level3">
+<h3 class="anchored" data-anchor-id="m.3">M.3</h3>
+<ul>
+<li>From the problem we know that <span class="math inline">\(P(\text{Land} | \text{Earth}) = 0.3\)</span> and <span class="math inline">\(P(\text{Land} | \text{Mars}) = 1\)</span>.</li>
+<li>Prior of 0.5 for both having been tossed</li>
+<li>Therefore <span class="math inline">\(P(\text{Land}) = 0.5\cdot P(\text{Land} | \text{Earth}) + 0.5\cdot P(\text{Land} | \text{Mars}) = 0.65\)</span></li>
+<li>Note <span class="math display">\[\begin{align}
+P(\text{Earth}|\text{Land}) &amp;= \frac{P(\text{Land} | \text{Earth})\cdot P(\text{Earth})}{P(\text{Land})} \\
+&amp;= \frac{0.3\cdot 0.5}{0.65} \\
+&amp;= 0.23
+\end{align}\]</span></li>
+</ul>
+</section>
+<section id="h.1" class="level3">
+<h3 class="anchored" data-anchor-id="h.1">H.1</h3>
+<ul>
+<li>Pandas bears, both equally likely in the wild</li>
+<li><span class="math inline">\(P(t|A) = 0.1\)</span>, <span class="math inline">\(P(t|B) = 0.2\)</span></li>
+<li>Find <span class="math inline">\(P(t_2|t_1)\)</span></li>
+<li><span class="math inline">\(P(t_1,t_2) = P(t_2|t_1) * P(t_1)\)</span></li>
+<li>We have <span class="math inline">\(p(t_1) = 0.5 * P(t_1|a) + 0.5 * P(t_1|b) = 0.5*0.1 + 0.5*0.2=0.15\)</span></li>
+<li><span class="math inline">\(p(t_1, t_2) = 0.5 * P(t_1,t_2|a) + 0.5 * P(t_1,t_2|b) = 0.5*0.1^2 + 0.5*0.2^2 = 0.025\)</span></li>
+<li>Therefore: <span class="math inline">\(P(t_2|t_1) = 0.025/0.15 = 0.1667\)</span></li>
+</ul>
+</section>
+<section id="h.2" class="level3">
+<h3 class="anchored" data-anchor-id="h.2">H.2</h3>
+<ul>
+<li>Find <span class="math inline">\(p(a|t)\)</span></li>
+<li>Some logic as M.3</li>
+<li><span class="math inline">\(p(t) = 0.15\)</span>, <span class="math inline">\(p(a) = 0.5\)</span>, <span class="math inline">\(p(t|a) = 0.1\)</span></li>
+<li>Therefore: <span class="math inline">\(p(a|t) = p(t|a)*p(a)/p(t) = 0.1*0.5/0.15 = 0.333\)</span></li>
+</ul>
+</section>
+<section id="h.3" class="level3">
+<h3 class="anchored" data-anchor-id="h.3">H.3</h3>
+<ul>
+<li>Just use previous posterior as prior, that is <span class="math inline">\(p(a)^\prime=p(a|t)\)</span></li>
+<li><span class="math inline">\(p(a|t_1, \neg t_2) = p(\neg t_2|a) * p(a)^\prime/p(\neg t_2)^\prime\)</span></li>
+<li><strong>You can’t just do</strong> <span class="math inline">\(p(t) = 0.15\)</span>, then have <span class="math inline">\(p(\neg t) = 0.85\)</span>,
+<ul>
+<li>This is because we have the prior information</li>
+<li>It is really <span class="math inline">\(p(\neg t)^\prime = p(\neg t_2|t_1)\)</span>, but we can still do the averging with the pervious info</li>
+<li><span class="math inline">\(p(\neg t)^\prime = p(a)^\prime*p(\neg t) + p(b)^\prime*p(\neg t) = 0.33*0.9 + 0.67*0.8 = 0.84\)</span></li>
+</ul></li>
+<li>and from our initial information, <span class="math inline">\(p(t|a) = 0.1\)</span>, therefore <span class="math inline">\(p(\neg t|a) = 0.9\)</span></li>
+<li>Thus, <span class="math inline">\(p(a|t_1, \neg t_2) = p(\neg t_2|a) * p(a)^\prime/p(\neg t_2)^\prime = 0.9*0.333/0.84 = 0.36\)</span></li>
+</ul>
+</section>
 </section>
 
 </main>
