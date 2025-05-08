@@ -1,0 +1,130 @@
+---
+title: "Rethinking - Chapter 3"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+```{r}
+#| output: false
+#| code-fold: true
+library(rethinking)
+```
+
+## 3.0
+- Base rate fallacy
+- Randomness is a property of information, not of the real world
+
+## 3.1 - Sampling from a grid-approximate posterior
+- Use the same globe tossing example as before
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+n_grid <- 1e3
+p_grid <- seq(0,1,length.out=n_grid)
+prob_p <- rep(1,n_grid)
+prob_data <- dbinom(6,9,p_grid)
+posterior <- prob_data * prob_p
+posterior <- posterior / sum(posterior)
+
+samps <- sample(p_grid, prob=posterior, size=1e4, replace=T)
+
+par(mfrow=c(1,2))
+plot(samps)
+dens(samps)
+```
+- You cannot do `sample(posterior, replace=T)`, this is because the posterior is literally giving the values of $p(\text{param}|\text{data})$, which is not the usual samples we get from mcmc.
+
+## 3.2 Sampling to summarize
+- 3 types of questions from these samples
+  1. Intervals of defined boundaries
+  2. defined probability mass (confidence/credible/comptaible intervals)
+  3. questions about point estaimtes
+
+- Get the probability that parameter is below 0.5 using grid as well as samples
+```{r}
+posterior[p_grid < 0.5] |> sum()
+(samps < 0.5) |> mean()
+```
+- Richard is going to call credible intervals *compatibility intervals*
+- What are the boundaries that define some mass of probability (e.g. quantile)
+- There are discrepancies between percent interval (PI) and Highest posterior density interval (HPDI)
+  - Consider the three water scenario
+  - A 50% PI assigns 25% probability at one extreme and 25% probability at the other.
+    - Therefore it is finding the central 50% interval
+  - The HPDI finds the smallest interval the meets the 50% criteria
+    - This includes the most probable values of $p=1$
+  
+  
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+n_grid <- 1e3
+p_grid <- seq(0,1,length.out=n_grid)
+prob_p <- rep(1,n_grid)
+prob_data <- dbinom(3,3,p_grid)
+posterior <- prob_data * prob_p
+posterior <- posterior / sum(posterior)
+
+samps <- sample(p_grid, prob=posterior, size=1e4, replace=T)
+
+pi <- PI(samps, prob=0.5)
+x_for_pi_graph <- p_grid[p_grid >= pi[1] & p_grid <= pi[2]]
+y_for_pi_graph <- posterior[p_grid >= pi[1] & p_grid <= pi[2]]
+
+hpdi <- HPDI(samps, prob=0.5)
+x_for_hpdi_graph <- p_grid[p_grid >= hpdi[1] & p_grid <= hpdi[2]]
+y_for_hpdi_graph <- posterior[p_grid >= hpdi[1] & p_grid <= hpdi[2]]
+
+par(mfrow=c(1,2))
+plot(p_grid, posterior, type = 'l', lwd=2, main='50% PI')
+polygon(c(x_for_pi_graph, rev(x_for_pi_graph)), c(rep(0, length(x_for_pi_graph)), rev(y_for_pi_graph)), col='darkblue')
+
+plot(p_grid, posterior, type = 'l', lwd=2, main='50% HPDI')
+polygon(c(x_for_hpdi_graph, rev(x_for_hpdi_graph)), c(rep(0, length(y_for_hpdi_graph)), rev(y_for_hpdi_graph)), col='darkblue')
+```
+
+- "If the choice of the interval changes to conclusion, then you are better off plotting the entire posterior"
+- Point estimates
+  - MAP, mean, and median
+  - Use a loss function - different loss functions imply different point summaries
+    - We maximize expected winnings (minimize expected loss) when we choose the median
+- For a given decisions $p^\prime$, the loss is proportional to $|p^\prime - p|$. 
+
+Thus, $E[|p^\prime - p|] = \int |p^\prime - p| \cdot Pr(p|\text{data}) dp$
+
+Calculated if $p^\prime=0.5$ as:
+```{r}
+sum(posterior*abs(0.5 - p_grid))
+```
+
+We can do all at once with `vapply`:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+loss <- vapply(p_grid, \(x) sum(posterior*abs(x - p_grid)), numeric(1))
+plot(p_grid, loss, type='l', lwd=2)
+cat('Median: ', median(samps), 'Lowest loss', p_grid[which.min(loss)])
+```
+- Absolute loss produces the median, while square loss produces the mean
+
+## 3.3 Sampling to Simulate
+- Simulate draws from binomial likelihood with $N=9$ and $p=0.7$
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+dummy_w <- rbinom(1e5, 9, 0.7)
+simplehist(dummy_w)
+```
+- Sampling here is not a physical act, it is a tool that helps use to explore the various distributions we are working with
+- Retrodictive checks, not predictive since we already have the data and are seeing how well the model fit our current data
+- For this case we can use the conjugate posterior to check exactly so we won't be doing that here
+
