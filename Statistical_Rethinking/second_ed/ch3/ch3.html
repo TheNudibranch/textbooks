@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.553">
+<meta name="generator" content="quarto-1.5.57">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -33,7 +33,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -68,7 +68,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="ch3_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="ch3_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 <script type="text/javascript">
@@ -114,6 +114,22 @@ window.Quarto = {
   <li><a href="#sampling-to-simulate" id="toc-sampling-to-simulate" class="nav-link" data-scroll-target="#sampling-to-simulate">3.3 Sampling to Simulate</a>
   <ul class="collapse">
   <li><a href="#posterior-predictive" id="toc-posterior-predictive" class="nav-link" data-scroll-target="#posterior-predictive">Posterior Predictive</a></li>
+  </ul></li>
+  <li><a href="#excersises" id="toc-excersises" class="nav-link" data-scroll-target="#excersises">Excersises</a>
+  <ul class="collapse">
+  <li><a href="#set-up" id="toc-set-up" class="nav-link" data-scroll-target="#set-up">Set up</a></li>
+  <li><a href="#e.1" id="toc-e.1" class="nav-link" data-scroll-target="#e.1">E.1</a></li>
+  <li><a href="#e.2" id="toc-e.2" class="nav-link" data-scroll-target="#e.2">E.2</a></li>
+  <li><a href="#e.3" id="toc-e.3" class="nav-link" data-scroll-target="#e.3">E.3</a></li>
+  <li><a href="#m.1" id="toc-m.1" class="nav-link" data-scroll-target="#m.1">M.1</a></li>
+  <li><a href="#m.2" id="toc-m.2" class="nav-link" data-scroll-target="#m.2">M.2</a></li>
+  <li><a href="#m.3" id="toc-m.3" class="nav-link" data-scroll-target="#m.3">M.3</a></li>
+  <li><a href="#m.4" id="toc-m.4" class="nav-link" data-scroll-target="#m.4">M.4</a></li>
+  <li><a href="#h.1" id="toc-h.1" class="nav-link" data-scroll-target="#h.1">H.1</a></li>
+  <li><a href="#h.2" id="toc-h.2" class="nav-link" data-scroll-target="#h.2">H.2</a></li>
+  <li><a href="#h.3" id="toc-h.3" class="nav-link" data-scroll-target="#h.3">H.3</a></li>
+  <li><a href="#h.4" id="toc-h.4" class="nav-link" data-scroll-target="#h.4">H.4</a></li>
+  <li><a href="#h.5" id="toc-h.5" class="nav-link" data-scroll-target="#h.5">H.5</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -209,7 +225,7 @@ window.Quarto = {
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(samps <span class="sc">&lt;</span> <span class="fl">0.5</span>) <span class="sc">|&gt;</span> <span class="fu">mean</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.1697</code></pre>
+<pre><code>[1] 0.1715</code></pre>
 </div>
 </div>
 <ul>
@@ -305,7 +321,7 @@ window.Quarto = {
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">'Median: '</span>, <span class="fu">median</span>(samps), <span class="st">'Lowest loss'</span>, p_grid[<span class="fu">which.min</span>(loss)])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Median:  0.8398398 Lowest loss 0.8408408</code></pre>
+<pre><code>Median:  0.8388388 Lowest loss 0.8408408</code></pre>
 </div>
 </div>
 <ul>
@@ -379,6 +395,290 @@ window.Quarto = {
 <p>Now, you might have noticed that <span class="math inline">\(p(\theta |d)\)</span> doesn’t have <span class="math inline">\(\tilde{d}\)</span> in its conditional. In truth, it doesn’t actually matter since <span class="math inline">\(\theta\)</span> is independent of the new data drawn. In the generative graph, there is no information that flows form <span class="math inline">\(\tilde{d}\)</span> back into <span class="math inline">\(\theta\)</span>. Thus, we are fine to ignore it when drawing from <span class="math inline">\(p(\theta |d)\)</span>, the posterior.</p>
 </section>
 </section>
+<section id="excersises" class="level2">
+<h2 class="anchored" data-anchor-id="excersises">Excersises</h2>
+<section id="set-up" class="level3">
+<h3 class="anchored" data-anchor-id="set-up">Set up</h3>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>p_grid <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">length.out=</span>n)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>prior <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>,<span class="fu">length</span>(n))</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>likelihood <span class="ot">&lt;-</span> <span class="fu">dbinom</span>(<span class="dv">6</span>, <span class="dv">9</span>, <span class="at">prob=</span>p_grid)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> likelihood<span class="sc">*</span>prior</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> post <span class="sc">/</span> <span class="fu">sum</span>(post)</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>samp <span class="ot">&lt;-</span> <span class="fu">sample</span>(p_grid, <span class="at">prob=</span>post, <span class="at">size=</span><span class="fl">1e4</span>, <span class="at">replace=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="e.1" class="level3">
+<h3 class="anchored" data-anchor-id="e.1">E.1</h3>
+<ul>
+<li>Posterior prob below <span class="math inline">\(p = 0.2\)</span></li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(samp <span class="sc">&lt;=</span> <span class="fl">0.2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 4e-04</code></pre>
+</div>
+</div>
+</section>
+<section id="e.2" class="level3">
+<h3 class="anchored" data-anchor-id="e.2">E.2</h3>
+<ul>
+<li>Posterior prob above <span class="math inline">\(p = 0.8\)</span></li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(samp <span class="sc">&gt;=</span> <span class="fl">0.8</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.1116</code></pre>
+</div>
+</div>
+</section>
+<section id="e.3" class="level3">
+<h3 class="anchored" data-anchor-id="e.3">E.3</h3>
+<ul>
+<li>Posterior prob for <span class="math inline">\(p \in [0.2,0.8]\)</span></li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(samp <span class="sc">&gt;=</span> <span class="fl">0.2</span> <span class="sc">&amp;</span> samp <span class="sc">&lt;=</span> <span class="fl">0.8</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.888</code></pre>
+</div>
+</div>
+</section>
+<section id="m.1" class="level3">
+<h3 class="anchored" data-anchor-id="m.1">M.1</h3>
+<ul>
+<li>Redo the experiment except <span class="math inline">\(W=8\)</span> and <span class="math inline">\(N=15\)</span></li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>p_grid <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">length.out=</span>n)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>prior <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>,<span class="fu">length</span>(n))</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>likelihood <span class="ot">&lt;-</span> <span class="fu">dbinom</span>(<span class="dv">8</span>, <span class="dv">15</span>, <span class="at">prob=</span>p_grid)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> likelihood<span class="sc">*</span>prior</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> post <span class="sc">/</span> <span class="fu">sum</span>(post)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>samp <span class="ot">&lt;-</span> <span class="fu">sample</span>(p_grid, <span class="at">prob=</span>post, <span class="at">size=</span><span class="fl">1e4</span>, <span class="at">replace=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="m.2" class="level3">
+<h3 class="anchored" data-anchor-id="m.2">M.2</h3>
+<ul>
+<li>Calculate the 90% HPDI</li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">HPDI</span>(samp, <span class="at">prob=</span><span class="fl">0.9</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>     |0.9      0.9| 
+0.3343343 0.7217217 </code></pre>
+</div>
+</div>
+</section>
+<section id="m.3" class="level3">
+<h3 class="anchored" data-anchor-id="m.3">M.3</h3>
+<ul>
+<li>Using the posterior predictive, what is the probability of observing 8 waters in 15 tosses</li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>post_pred <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="fu">length</span>(samp), <span class="at">size=</span><span class="dv">15</span>, <span class="at">prob=</span>samp)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(post_pred <span class="sc">==</span> <span class="dv">8</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.1499</code></pre>
+</div>
+</div>
+</section>
+<section id="m.4" class="level3">
+<h3 class="anchored" data-anchor-id="m.4">M.4</h3>
+<ul>
+<li>Using the same samples of <span class="math inline">\(p\)</span>, calculate the posterior predictive for 9 tosses and find the probability of 6 waters</li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>post_pred <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="fu">length</span>(samp), <span class="at">size=</span><span class="dv">9</span>, <span class="at">prob=</span>samp)</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(post_pred <span class="sc">==</span> <span class="dv">6</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.1842</code></pre>
+</div>
+</div>
+</section>
+<section id="h.1" class="level3">
+<h3 class="anchored" data-anchor-id="h.1">H.1</h3>
+<ul>
+<li>Two vectors of birth data <code>birth1</code> and <code>birth2</code></li>
+<li>Use grid approx to get the posterior distribution for the prob of a birth being a boy, assuming a uniform prior</li>
+</ul>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(homeworkch3)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>p_grid <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">length.out=</span>n)</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>prior <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>,<span class="fu">length</span>(n))</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>likelihood <span class="ot">&lt;-</span> <span class="fu">dbinom</span>(<span class="fu">sum</span>(<span class="fu">c</span>(birth1, birth2)), <span class="fu">length</span>(<span class="fu">c</span>(birth1, birth2)), <span class="at">prob=</span>p_grid)</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> likelihood <span class="sc">*</span> prior</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> post<span class="sc">/</span><span class="fu">sum</span>(post)</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(p_grid, post, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">main=</span><span class="st">'Posterior for Prob of boy'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch3_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li>Find MAP</li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>p_grid[<span class="fu">which.max</span>(post)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.5545546</code></pre>
+</div>
+</div>
+</section>
+<section id="h.2" class="level3">
+<h3 class="anchored" data-anchor-id="h.2">H.2</h3>
+<ul>
+<li>Sample from the posterior and construct the 50%, 89%, and 97% HPDI</li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>samp <span class="ot">&lt;-</span> <span class="fu">sample</span>(p_grid, <span class="fl">1e4</span>, <span class="at">prob=</span>post, <span class="at">replace=</span>T)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>hpdi_50 <span class="ot">&lt;-</span> <span class="fu">HPDI</span>(samp, <span class="at">prob=</span><span class="fl">0.5</span>)</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>hpdi_89 <span class="ot">&lt;-</span> <span class="fu">HPDI</span>(samp, <span class="at">prob=</span><span class="fl">0.89</span>)</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>hpdi_97 <span class="ot">&lt;-</span> <span class="fu">HPDI</span>(samp, <span class="at">prob=</span><span class="fl">0.97</span>)</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">' 50% HPDI: '</span>, hpdi_50, <span class="st">'</span><span class="sc">\n</span><span class="st">'</span>, <span class="st">'89% HPDI: '</span>, hpdi_89, <span class="st">'</span><span class="sc">\n</span><span class="st">'</span>, <span class="st">'97% HPDI: '</span>, hpdi_97, <span class="st">'</span><span class="sc">\n</span><span class="st">'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code> 50% HPDI:  0.5255255 0.5725726 
+ 89% HPDI:  0.5005005 0.6106106 
+ 97% HPDI:  0.4734735 0.6276276 </code></pre>
+</div>
+</div>
+</section>
+<section id="h.3" class="level3">
+<h3 class="anchored" data-anchor-id="h.3">H.3</h3>
+<ul>
+<li>Get the posterior predictive for 200 births and see how well the model fits</li>
+</ul>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>post_pred <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="fu">length</span>(samp), <span class="at">size=</span><span class="dv">200</span>, <span class="at">prob=</span>samp)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dens</span>(post_pred, <span class="at">lwd=</span><span class="dv">3</span>)</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> <span class="fu">sum</span>(birth1, birth2), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="st">'darkred'</span>)</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Posterior Pred.'</span>, <span class="st">'Actual Count'</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">c</span>(<span class="st">'black'</span>, <span class="st">'darkred'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch3_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li>Looks good!</li>
+</ul>
+</section>
+<section id="h.4" class="level3">
+<h3 class="anchored" data-anchor-id="h.4">H.4</h3>
+<ul>
+<li>See how the model compares if our posterior predictive is for 100 births and we compare the <code>birth1</code></li>
+</ul>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>post_pred <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="fu">length</span>(samp), <span class="at">size=</span><span class="dv">100</span>, <span class="at">prob=</span>samp)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dens</span>(post_pred, <span class="at">lwd=</span><span class="dv">3</span>)</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> <span class="fu">sum</span>(birth1), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="st">'darkred'</span>)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Posterior Pred.'</span>, <span class="st">'Actual Count'</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">c</span>(<span class="st">'black'</span>, <span class="st">'darkred'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch3_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li>Does not look as good. There is something in the data that we are not capturing</li>
+</ul>
+</section>
+<section id="h.5" class="level3">
+<h3 class="anchored" data-anchor-id="h.5">H.5</h3>
+<ul>
+<li>How does the model look if we condition on the first birth being a girl</li>
+<li>Does the model adequately capture the pattern observed if we condition on boy or girl in the first birth?</li>
+</ul>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>n_first_girl <span class="ot">&lt;-</span> <span class="fu">sum</span>(birth1 <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>post_pred <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="fu">length</span>(samp), <span class="at">size=</span>n_first_girl, <span class="at">prob=</span>samp)</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dens</span>(post_pred)</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> <span class="fu">sum</span>(birth2[birth1 <span class="sc">==</span> <span class="dv">0</span>]), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="st">'darkred'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch3_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li>Looks like there is some negative correlation going on in the data
+<ul>
+<li>That is, if a family had a boy in the first birth, they are more likely to have a girl, and vice versa</li>
+</ul></li>
+<li>We can quickly see this with a table</li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(birth1, birth2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>      birth2
+birth1  0  1
+     0 10 39
+     1 30 21</code></pre>
+</div>
+</div>
+</section>
+</section>
 
 </main>
 <!-- /main column -->
@@ -417,18 +717,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const clipboard = new window.ClipboardJS('.code-copy-button', {
-    text: function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-    }
-  });
-  clipboard.on('success', function(e) {
+  const onCopySuccess = function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -460,7 +749,29 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
   });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
     var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
     var mailtoRegex = new RegExp(/^mailto:/);
       var filterRegex = new RegExp('/' + window.location.host + '/');
@@ -468,7 +779,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
     // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
     for (var i=0; i<links.length; i++) {
       const link = links[i];
       if (!isInternal(link.href)) {

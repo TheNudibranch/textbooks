@@ -169,3 +169,142 @@ We can actually express the integrand as $p(\tilde{d}|\theta,d) p(\theta|d) = p(
 Gibbs sampling states that we can obtain samples from the joint distribution $p(\theta_1, \theta_2)$ if we can draw samples from the conditional distributions $p(\theta_2 | \theta_1)$ and $p(\theta_2 | \theta_1)$. We essentaily draw a theta from one of the conditionals, and plug it back into the other, pinging back and forth. For our present case, we are drawing samples from our posterior $p(\theta |d)$ and plugging them into our next conditional $p(\tilde{d}|\theta)$, doing this iteratively produces samples from the joint, where we can then ignore samples for $\theta$ and obtain draws from the posterior predictive $p(\sim{d}|d)$. 
 
 Now, you might have noticed that $p(\theta |d)$ doesn't have $\tilde{d}$ in its conditional. In truth, it doesn't actually matter since $\theta$ is independent of the new data drawn. In the generative graph, there is no information that flows form $\tilde{d}$ back into $\theta$. Thus, we are fine to ignore it when drawing from $p(\theta |d)$, the posterior.
+
+## Excersises
+### Set up
+```{r}
+n <- 1e3
+p_grid <- seq(0,1,length.out=n)
+prior <- rep(1,length(n))
+likelihood <- dbinom(6, 9, prob=p_grid)
+post <- likelihood*prior
+post <- post / sum(post)
+set.seed(100)
+samp <- sample(p_grid, prob=post, size=1e4, replace=T)
+```
+
+### E.1
+- Posterior prob below $p = 0.2$
+```{r}
+mean(samp <= 0.2)
+```
+### E.2
+- Posterior prob above $p = 0.8$
+```{r}
+mean(samp >= 0.8)
+```
+### E.3
+- Posterior prob for $p \in [0.2,0.8]$
+```{r}
+mean(samp >= 0.2 & samp <= 0.8)
+```
+### M.1
+- Redo the experiment except $W=8$ and $N=15$
+```{r}
+n <- 1e3
+p_grid <- seq(0,1,length.out=n)
+prior <- rep(1,length(n))
+likelihood <- dbinom(8, 15, prob=p_grid)
+post <- likelihood*prior
+post <- post / sum(post)
+set.seed(100)
+samp <- sample(p_grid, prob=post, size=1e4, replace=T)
+```
+
+### M.2
+- Calculate the 90% HPDI
+```{r}
+HPDI(samp, prob=0.9)
+```
+### M.3
+- Using the posterior predictive, what is the probability of observing 8 waters in 15 tosses
+```{r}
+post_pred <- rbinom(length(samp), size=15, prob=samp)
+mean(post_pred == 8)
+```
+### M.4
+- Using the same samples of $p$, calculate the posterior predictive for 9 tosses and find the probability of 6 waters
+```{r}
+post_pred <- rbinom(length(samp), size=9, prob=samp)
+mean(post_pred == 6)
+```
+### H.1
+- Two vectors of birth data `birth1` and `birth2`
+- Use grid approx to get the posterior distribution for the prob of a birth being a boy, assuming a uniform prior
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+data(homeworkch3)
+
+n <- 1e3
+p_grid <- seq(0,1,length.out=n)
+prior <- rep(1,length(n))
+likelihood <- dbinom(sum(c(birth1, birth2)), length(c(birth1, birth2)), prob=p_grid)
+post <- likelihood * prior
+post <- post/sum(post)
+plot(p_grid, post, type='l', lwd=2, main='Posterior for Prob of boy')
+```
+
+- Find MAP
+```{r}
+p_grid[which.max(post)]
+```
+### H.2
+- Sample from the posterior and construct the 50%, 89%, and 97% HPDI
+```{r}
+samp <- sample(p_grid, 1e4, prob=post, replace=T)
+hpdi_50 <- HPDI(samp, prob=0.5)
+hpdi_89 <- HPDI(samp, prob=0.89)
+hpdi_97 <- HPDI(samp, prob=0.97)
+cat(' 50% HPDI: ', hpdi_50, '\n', '89% HPDI: ', hpdi_89, '\n', '97% HPDI: ', hpdi_97, '\n')
+```
+### H.3
+- Get the posterior predictive for 200 births and see how well the model fits
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+post_pred <- rbinom(length(samp), size=200, prob=samp)
+dens(post_pred, lwd=3)
+abline(v = sum(birth1, birth2), lwd=2, col='darkred')
+legend('topleft', legend=c('Posterior Pred.', 'Actual Count'), lwd=2, col=c('black', 'darkred'))
+```
+- Looks good!
+
+### H.4
+- See how the model compares if our posterior predictive is for 100 births and we compare the `birth1`
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+post_pred <- rbinom(length(samp), size=100, prob=samp)
+dens(post_pred, lwd=3)
+abline(v = sum(birth1), lwd=2, col='darkred')
+legend('topleft', legend=c('Posterior Pred.', 'Actual Count'), lwd=2, col=c('black', 'darkred'))
+```
+- Does not look as good. There is something in the data that we are not capturing
+
+### H.5
+- How does the model look if we condition on the first birth being a girl
+- Does the model adequately capture the pattern observed if we condition on boy or girl in the first birth?
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+n_first_girl <- sum(birth1 == 0)
+post_pred <- rbinom(length(samp), size=n_first_girl, prob=samp)
+dens(post_pred)
+abline(v = sum(birth2[birth1 == 0]), lwd=2, col='darkred')
+```
+- Looks like there is some negative correlation going on in the data
+  - That is, if a family had a boy in the first birth, they are more likely to have a girl, and vice versa
+- We can quickly see this with a table
+```{r}
+table(birth1, birth2)
+```
+
+
