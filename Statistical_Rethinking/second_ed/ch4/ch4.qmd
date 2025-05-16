@@ -1,0 +1,192 @@
+---
+title: "Rethinking - Chapter 4"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+```{r}
+#| output: false
+#| code-fold: true
+library(rethinking)
+```
+
+## 4.0
+- Ptolemaic strategy is the same as a fourier series
+  - Was able to decompose the orbits into a series of sine and cosine waves
+  - Geocentric model can approximate any orbital pattern by applying enough epicycles
+
+## 4.1 Why normal distributions are normal
+- Central limit theorem
+  - The average of multiple draws from the same distribution will be normal (the sample of repeated draws and averages)
+- Footnote 65: famous textbook that says even when we prove why the central limit theorem occurs, it is not intuitive
+- Example where we sum 16 draws from a $U(-1,1)$ dist.    
+  - $V[U(-1,1)] = \frac{4}{12}$
+  - $V[X=\sum^{16}_{i=1}U(-1,1)] = 16 V[U(-1,1)]$
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+pos <- replicate(1e3, sum(runif(16,-1,1)))
+dens(pos, lwd=2, col='darkblue')
+curve(dnorm(x, 0, sqrt(16*(4/12))), -10,10, add=T, col=2, lwd=2)
+```
+
+- Footnote 66 talks about proving the CLT using fourier series
+- CLT works as intended only when the original distribution has finite variance
+  - Going to see more about this when talking about $\hat{k}$ in LOO-CV
+
+
+- CLT also works nice when we use products of small increases
+  - This is becuase all the small multiplications can be approximated with additions
+    - $1.1 \times 1.1 = (1 + 0.1)(1 + 0.1) = 1 + 0.2 + 0.2 + 0.01 \approx 1.2$
+  - If we use 1.5 instead of 1.1, it does not look so normal
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+growth <- replicate(1e3, prod(runif(12,1,1.1)))
+dens(growth, col='darkblue', lwd=2)
+```
+
+- We also get Gaussian back when we log multiplicative effects
+
+## 4.3 A Gausian model of height
+
+```{r}
+data(Howell1)
+d <- Howell1
+precis(d)
+```
+
+- Remove all non-adults and plot height
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+d2 <- d[d$age >= 18, ]
+hist(d2$height)
+```
+
+- Prior predictive checks for model:
+\begin{align}
+h_i &\sim \text{Normal}(\mu, \sigma)\\
+\mu &\sim \text{Normal}(178, 20) \\
+\sigma &\sim \text{Uniform}(0,50)
+\end{align}
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+n <- 1e4
+mu <- rnorm(n, 178, 20)
+sig <- runif(n,0,50)
+prior_pred <- rnorm(n,mu,sig)
+par(mfrow=c(2,2))
+dens(mu, lwd=2, col='darkblue', main='mu')
+dens(sig, lwd=2, col='darkblue', main='sigma')
+dens(prior_pred, lwd=2, col='darkblue', main='prior pred.')
+par(mfrow=c(1,1))
+```
+
+- Grid Approximation of this model
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+post <- expand.grid(mu=seq(150, 160, length.out=100), 
+                    sig=seq(7, 9, length.out=100))
+post$LL <- apply(post, 1, \(x) {
+  sum(dnorm(d2$height, x[1], x[2], log=T)) +  # likelihood
+    dnorm(x[1], 178, 20, log=T) + dunif(x[2], 0, 50, log=T) #priors
+})
+
+# To not get a vector of all zeros (just doing exp(...)), we need to scale by the max
+post$prob <- exp(post$LL - max(post$LL))
+
+par(mfrow=c(1,2))
+contour_xyz(post$mu, post$sig, post$prob)
+image_xyz(post$mu, post$sig, post$prob)
+par(mfrow=c(1,1))
+```
+
+- Let's sample the posterior predictive
+  - We want to sample the **combination** of parameters (joint posterior). Not each param. independently
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+samp <- sample(nrow(post), replace=T, prob=post$prob)
+par(mfrow=c(2,2))
+with(post[samp,], {
+  plot(mu, sig, pch=16, asp=1, cex=0.5, col=col.alpha(rangi2,0.1))
+  dens(mu, adj=0.8)
+  dens(sig)
+})
+par(mfrow=c(1,1))
+```
+
+- Everything looks approximately normal, but what happens if we use only twenty data points:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+#| code-fold: true
+
+d3 <- sample(d2$height, 20)
+post <- expand.grid(mu=seq(150, 160, length.out=100), 
+                    sig=seq(7, 9, length.out=100))
+post$LL <- apply(post, 1, \(x) {
+  sum(dnorm(d3, x[1], x[2], log=T)) +  # likelihood
+    dnorm(x[1], 178, 20, log=T) + dunif(x[2], 0, 50, log=T) #priors
+})
+
+# To not get a vector of all zeros (just doing exp(...)), we need to scale by the max
+post$prob <- exp(post$LL - max(post$LL))
+
+samp <- sample(nrow(post), replace=T, prob=post$prob)
+par(mfrow=c(2,2))
+with(post[samp,], {
+  plot(mu, sig, pch=16, asp=1, cex=0.5, col=col.alpha(rangi2,0.1))
+  dens(mu, adj=0.8)
+  dens(sig)
+})
+par(mfrow=c(1,1))
+```
+
+- Quadratic approximation time!
+```{r}
+# `alist` does not evaluate the code inside, `list` does
+flist <- alist(
+  height ~ dnorm(mu, sigma),
+  mu ~ dnorm(178, 20),
+  sigma ~ dunif(0, 50)
+)
+
+# can also provide starting values to start the climb at
+m4.1 <- quap(flist, data=d2) 
+precis(m4.1)
+```
+- Because the quadratic approximation is just a guassian approximation, we are left with a mean and variance of said approximation
+
+```{r}
+vcov(m4.1)
+```
+- Sampling the posterior is of course the same as sampling from a multivariate normal
+```{r}
+post <- extract.samples(m4.1, n=1e4)
+# Same as:
+post1 <- MASS::mvrnorm(n=1e4, mu=coef(m4.1), Sigma=vcov(m4.1))
+head(post)
+```
+
+
