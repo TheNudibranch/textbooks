@@ -189,4 +189,289 @@ post1 <- MASS::mvrnorm(n=1e4, mu=coef(m4.1), Sigma=vcov(m4.1))
 head(post)
 ```
 
+## 4.4 Linear Prediction
+- How does height covary with weight
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+d <- Howell1; d2 <- d[d$age >= 18,]
+with(d2, plot(weight, height))
+```
+
+Introduce a new model for height:
+
+\begin{align}
+h_i &\sim \text{Normal}(\mu_i, \sigma)\\
+\mu_i &= \alpha + \beta (x_i - \bar{x})\\
+\mu &\sim \text{Normal}(178, 20) \\
+\sigma &\sim \text{Uniform}(0,50)
+\end{align}
+
+- We want to parameters to not just be names that persist across contexts (i.e. **intercept** and **slope**), but to actually mean something
+  - Here $\alpha$ is the expected height when weight is at its average value
+  - Here $\beta$ is the expected change in height for one unit change in weight
+- There is nothing special about the linear relationship, we are free to do whatever you want!
+
+Let's simulate  some prior predictive checks for the model. We'll also see what happens if we let $\beta \sim \text{Log-Normal}(0,1)$ since we know that $\beta$ should be constrained to be positive.
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+par(mfrow=c(1,2))
+N <- 100 # Number of lines
+a <- rnorm(N, 178, 20)
+b <- rnorm(N, 0, 10)
+plot(NULL, xlim=range(d2$weight), ylim=c(-100, 400), xlab='weight', ylab='height', main='b ~ Normal(0,10)')
+abline(h=0, lty=2)
+abline(h=272, lty=1, lwd=0.5)
+
+xbar <- mean(d2$weight)
+for (i in 1:N) curve(
+  a[i] + b[i]*(x - xbar),
+  from=min(d2$weight), to=max(d2$weight), add=T, col=col.alpha('black', 0.2)
+)
+
+b <- rlnorm(N, 0, 1)
+plot(NULL, xlim=range(d2$weight), ylim=c(-100, 400), xlab='weight', ylab='height', main='b ~ Normal(0,10)')
+abline(h=0, lty=2)
+abline(h=272, lty=1, lwd=0.5) # World's tallest person is 272
+
+for (i in 1:N) curve(
+  a[i] + b[i]*(x - xbar),
+  from=min(d2$weight), to=max(d2$weight), add=T, col=col.alpha('black', 0.2)
+)
+par(mfrow=c(1,1))
+```
+
+Let's now fit this model using `quap`:
+```{r}
+m4.3 <- quap(alist(
+  height ~ dnorm(mu, sigma),
+  mu <- a + b*(weight - xbar),
+  a ~ dnorm(178, 20),
+  b ~ dlnorm(0,1),
+  sigma ~ dunif(0,50)
+), data=d2)
+
+precis(m4.3)
+vcov(m4.3) |> round(3)
+```
+The lack of covariance here is actually do the centering. Refer to exercise at the end of the chapter.
+
+Let's now build the posterior predictive.
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+with(d2, plot(weight, height, col=rangi2, pch=16))
+post <- extract.samples(m4.3)
+a_map <- mean(post$a)
+b_map <- mean(post$b)
+curve(a_map + b_map*(x-xbar), add=T, lwd=2)
+```
+
+That is just the mean. How is the cloud of equally likely regression lines distributed around that mean? Let's vary the data fed into the model to find out:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+plot_post <- function(n){
+  new_d <- d2[sample(nrow(d2), n), ]
+  with(new_d, plot(weight, height, col=rangi2, pch=16, xlim=range(d2$weight), ylim=range(d2$height), main=paste0('N=',n)))
+  m <- quap(alist(
+    height ~ dnorm(mu, sigma),
+    mu <- a + b*(weight - xbar),
+    a ~ dnorm(178, 20),
+    b ~ dlnorm(0,1),
+    sigma ~ dunif(0,50)
+  ), data=new_d)
+  
+  post <- extract.samples(m, 20)
+  
+  for (i in 1:20) curve(post$a[i] + post$b[i]*(x-xbar), add=T, col=col.alpha('black', 0.3))
+}
+
+par(mfrow=c(2,2))
+for(j in c(10, 50, 150, 352)) plot_post(j)
+par(mfrow=c(1,1))
+```
+
+We can use the `link` function, which is basically `rstanarm`'s `posterior_linpred`. We can also feed new data into it to get:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+weight_seq <- seq(25,70)
+mu <- link(m4.3, data=data.frame(weight=weight_seq))
+
+par(mfrow=c(1,2))
+with(d2, plot(weight, height, type='n'))
+for(i in 1:100) points(weight_seq, mu[i,], pch=16, col=col.alpha(rangi2,0.1))
+
+with(d2, plot(weight, height, col=rangi2))
+lines(weight_seq, colMeans(mu))
+shade(apply(mu, 2, PI, prob=0.89), weight_seq)
+
+par(mfrow=c(1,1))
+```
+
+Great, we have the posterior predictive distribution for the mean. But we need the *prediction interval*. This is what is actually "reproducing" the data. Everyone is always so concerned with the mean, but if we only look at the mean, we will fail. We can use the `sim` function to simulate from the Gaussian distribution of height:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+sim_height <- sim(m4.3, data=data.frame(weight=weight_seq))
+
+plot(height ~ weight, data=d2, col=col.alpha(rangi2,0.5))
+lines(weight_seq, colMeans(mu))
+shade(apply(mu, 2, PI, 0.89), weight_seq)
+shade(apply(sim_height, 2, PI, 0.89), weight_seq)
+```
+There are two types of uncertainty we have encountered so far: parameter and sampling. The parameter uncertainty is from the model and how inference is done. The sampling (Gaussian noise here) is how the data is "replicated". If we add more parameters to the model and better model the actual process that generates the models, our sampling uncertainty will decrease. 
+
+## 4.5 Curves from Lines
+### Polynomial Regression
+We will start will *polynomial regression*. Two key differences here is that the $x$'s are now standardized, and we are going to consider the full dataset. Not just the adults.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+d <- Howell1
+d$weight_s <- (d$weight - mean(d$weight))/sd(d$weight)
+d$weight_s2 <- d$weight_s^2
+
+plot(height ~ weight, data=d, col=rangi2)
+```
+
+The model is defined below: 
+
+\begin{align}
+h_i &\sim \text{Normal}(\mu_i, \sigma)\\
+\mu_i &= \alpha + \beta_1 (x_i) + \beta_2 (x_i)\\
+\beta_1 &\sim \text{Log-Normal}(0,1) \\
+\beta_2 &\sim \text{Normal}(0, 1) \\
+\alpha &\sim \text{Normal}(178, 20) \\
+\sigma &\sim \text{Uniform}(0,50)
+\end{align}
+
+We fit as usual:
+
+```{r}
+m4.5 <- quap(alist(
+  height ~ dnorm(mu, sigma),
+  mu <- a + b1*weight_s + b2*weight_s2,
+  a ~ dnorm(178, 20),
+  b1 ~ dlnorm(0,1),
+  b2 ~ dnorm(0,1),
+  sigma ~ dunif(0,50)
+), data=d)
+
+precis(m4.5)
+```
+The parameters are no longer interpretable in the same way. We still might want to interpret $\alpha$ as the average value of height when the data takes the average, but this is no longer true. Look at footnote 76 for more context.
+
+For completeness, let's graph the posterior predictive of the mean and response.
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+ws_seq <- seq(-3,2,length.out=500)
+new_d <- list(weight_s=ws_seq, weight_s2=ws_seq^2)
+mu <- link(m4.5, data=new_d)
+height_sim <- sim(m4.5, data=new_d)
+plot(height ~ weight, data=d, col=col.alpha(rangi2, 0.3), pch=16)
+mu |> apply(2, PI, .89) |> shade(ws_seq*sd(d$weight) + mean(d$weight))
+height_sim |> apply(2, PI, .89) |> shade(ws_seq*sd(d$weight) + mean(d$weight))
+
+```
+
+
+We also are not equipped with any way to say whether one model is better than another. Is the linear better than the quadratic? What about a cubic? Answers will come in chapter 7.
+
+### Splines
+For our splines we are going to be using cherry blossom data
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+data(cherry_blossoms)
+d <- cherry_blossoms
+
+plot(doy ~ year, data=d, col=rangi2)
+```
+
+Let's choose 15 knots for our spline. We are also going to let R create a basis for a cubic spline (degree 3) with the 15 knots.
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+
+d2 <- d[!is.na(d$doy), ]
+num_knots <- 15
+knot_list <- quantile(d2$year, probs=seq(0,1,length.out=num_knots))
+
+library(splines)
+B <- bs(
+  d2$year, knots=knot_list[-c(1,num_knots)], degree=3,intercept=T
+)
+
+plot(NULL, xlim=range(d2$year), ylim=c(0,1), xlab='year', ylab='basis')
+for(i in 1:ncol(B)) lines(d2$year, B[,i])
+```
+
+The model now takes the following form:
+
+\begin{align}
+D_i &\sim \text{Normal}(\mu_i, \sigma)\\
+\mu_i &= \alpha + \sum_{k=1}^K w_k B_{k,i}\\
+\alpha &\sim \text{Normal}(100, 10) \\
+w_j &\sim \text{Normal}(0,10)\\
+\sigma &\sim \text{Exponential}(1)
+\end{align}
+
+We will use matrix multiplication to fit this in `quap`
+
+```{r}
+m4.7 <- quap(alist(
+  D ~ dnorm(mu, sigma),
+  mu <- a + B %*% w,
+  a ~ dnorm(100, 10),
+  w ~ dnorm(0,10),
+  sigma ~ dexp(1)
+), 
+data = list(D=d2$doy, B=B),
+start = list(w=rep(0,ncol(B)))
+)
+```
+
+Let's finally plot the posterior:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+post <- extract.samples(m4.7)
+w <- apply(post$w, 2, mean)
+
+par(mfrow=c(2,1))
+plot(NULL, xlim=range(d2$year), ylim=c(-6,6), xlab='year', ylab='basis * weight')
+for(i in 1:ncol(B)) lines(d2$year, w[i]*B[,i])
+
+mu <- link(m4.7)
+plot(d2$year, d2$doy, pch=16, col=col.alpha(rangi2,0.3))
+mu |> apply(2,PI,.89) |> shade(d2$year, col=col.alpha('black', 0.5))
+par(mfrow=c(1,1))
+```
 

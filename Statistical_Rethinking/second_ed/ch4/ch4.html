@@ -111,6 +111,12 @@ window.Quarto = {
   <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">4.0</a></li>
   <li><a href="#why-normal-distributions-are-normal" id="toc-why-normal-distributions-are-normal" class="nav-link" data-scroll-target="#why-normal-distributions-are-normal">4.1 Why normal distributions are normal</a></li>
   <li><a href="#a-gausian-model-of-height" id="toc-a-gausian-model-of-height" class="nav-link" data-scroll-target="#a-gausian-model-of-height">4.3 A Gausian model of height</a></li>
+  <li><a href="#linear-prediction" id="toc-linear-prediction" class="nav-link" data-scroll-target="#linear-prediction">4.4 Linear Prediction</a></li>
+  <li><a href="#curves-from-lines" id="toc-curves-from-lines" class="nav-link" data-scroll-target="#curves-from-lines">4.5 Curves from Lines</a>
+  <ul class="collapse">
+  <li><a href="#polynomial-regression" id="toc-polynomial-regression" class="nav-link" data-scroll-target="#polynomial-regression">Polynomial Regression</a></li>
+  <li><a href="#splines" id="toc-splines" class="nav-link" data-scroll-target="#splines">Splines</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -385,9 +391,9 @@ h_i &amp;\sim \text{Normal}(\mu, \sigma)\\
 <span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m4<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>            mean        sd      5.5%      94.5%
-mu    154.606987 0.4119939 153.94854 155.265433
-sigma   7.731319 0.2913847   7.26563   8.197008</code></pre>
+<pre><code>            mean        sd       5.5%      94.5%
+mu    154.607022 0.4120076 153.948554 155.265490
+sigma   7.731577 0.2914090   7.265849   8.197304</code></pre>
 </div>
 </div>
 <ul>
@@ -400,8 +406,8 @@ sigma   7.731319 0.2913847   7.26563   8.197008</code></pre>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>                mu        sigma
-mu    0.1697389746 0.0002172218
-sigma 0.0002172218 0.0849050298</code></pre>
+mu    0.1697502977 0.0002180215
+sigma 0.0002180215 0.0849191940</code></pre>
 </div>
 </div>
 <ul>
@@ -417,14 +423,394 @@ sigma 0.0002172218 0.0849050298</code></pre>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>        mu    sigma
-1 154.4401 7.512484
-2 154.7320 7.568433
-3 154.8825 7.664807
-4 154.0697 7.280697
-5 154.8446 7.753576
-6 154.5324 7.780535</code></pre>
+1 154.7411 7.950750
+2 154.5575 7.632704
+3 154.4883 7.533313
+4 154.5307 7.669025
+5 154.9256 7.184458
+6 154.3578 7.925677</code></pre>
 </div>
 </div>
+</section>
+<section id="linear-prediction" class="level2">
+<h2 class="anchored" data-anchor-id="linear-prediction">4.4 Linear Prediction</h2>
+<ul>
+<li>How does height covary with weight</li>
+</ul>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> Howell1; d2 <span class="ot">&lt;-</span> d[d<span class="sc">$</span>age <span class="sc">&gt;=</span> <span class="dv">18</span>,]</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">with</span>(d2, <span class="fu">plot</span>(weight, height))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Introduce a new model for height:</p>
+<p><span class="math display">\[\begin{align}
+h_i &amp;\sim \text{Normal}(\mu_i, \sigma)\\
+\mu_i &amp;= \alpha + \beta (x_i - \bar{x})\\
+\mu &amp;\sim \text{Normal}(178, 20) \\
+\sigma &amp;\sim \text{Uniform}(0,50)
+\end{align}\]</span></p>
+<ul>
+<li>We want to parameters to not just be names that persist across contexts (i.e.&nbsp;<strong>intercept</strong> and <strong>slope</strong>), but to actually mean something
+<ul>
+<li>Here <span class="math inline">\(\alpha\)</span> is the expected height when weight is at its average value</li>
+<li>Here <span class="math inline">\(\beta\)</span> is the expected change in height for one unit change in weight</li>
+</ul></li>
+<li>There is nothing special about the linear relationship, we are free to do whatever you want!</li>
+</ul>
+<p>Let’s simulate some prior predictive checks for the model. We’ll also see what happens if we let <span class="math inline">\(\beta \sim \text{Log-Normal}(0,1)\)</span> since we know that <span class="math inline">\(\beta\)</span> should be constrained to be positive.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">100</span> <span class="co"># Number of lines</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="dv">178</span>, <span class="dv">20</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="dv">10</span>)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim=</span><span class="fu">range</span>(d2<span class="sc">$</span>weight), <span class="at">ylim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">100</span>, <span class="dv">400</span>), <span class="at">xlab=</span><span class="st">'weight'</span>, <span class="at">ylab=</span><span class="st">'height'</span>, <span class="at">main=</span><span class="st">'b ~ Normal(0,10)'</span>)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="dv">0</span>, <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="dv">272</span>, <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="fl">0.5</span>)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>xbar <span class="ot">&lt;-</span> <span class="fu">mean</span>(d2<span class="sc">$</span>weight)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) <span class="fu">curve</span>(</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  a[i] <span class="sc">+</span> b[i]<span class="sc">*</span>(x <span class="sc">-</span> xbar),</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">from=</span><span class="fu">min</span>(d2<span class="sc">$</span>weight), <span class="at">to=</span><span class="fu">max</span>(d2<span class="sc">$</span>weight), <span class="at">add=</span>T, <span class="at">col=</span><span class="fu">col.alpha</span>(<span class="st">'black'</span>, <span class="fl">0.2</span>)</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">rlnorm</span>(N, <span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim=</span><span class="fu">range</span>(d2<span class="sc">$</span>weight), <span class="at">ylim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">100</span>, <span class="dv">400</span>), <span class="at">xlab=</span><span class="st">'weight'</span>, <span class="at">ylab=</span><span class="st">'height'</span>, <span class="at">main=</span><span class="st">'b ~ Normal(0,10)'</span>)</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="dv">0</span>, <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="dv">272</span>, <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="fl">0.5</span>) <span class="co"># World's tallest person is 272</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) <span class="fu">curve</span>(</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>  a[i] <span class="sc">+</span> b[i]<span class="sc">*</span>(x <span class="sc">-</span> xbar),</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">from=</span><span class="fu">min</span>(d2<span class="sc">$</span>weight), <span class="at">to=</span><span class="fu">max</span>(d2<span class="sc">$</span>weight), <span class="at">add=</span>T, <span class="at">col=</span><span class="fu">col.alpha</span>(<span class="st">'black'</span>, <span class="fl">0.2</span>)</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Let’s now fit this model using <code>quap</code>:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>m4<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  height <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> b<span class="sc">*</span>(weight <span class="sc">-</span> xbar),</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">178</span>, <span class="dv">20</span>),</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  b <span class="sc">~</span> <span class="fu">dlnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">50</span>)</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d2)</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m4<span class="fl">.3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>             mean         sd        5.5%       94.5%
+a     154.6013672 0.27030762 154.1693634 155.0333710
+b       0.9032809 0.04192363   0.8362788   0.9702829
+sigma   5.0718802 0.19115472   4.7663781   5.3773824</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">vcov</span>(m4<span class="fl">.3</span>) <span class="sc">|&gt;</span> <span class="fu">round</span>(<span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>          a     b sigma
+a     0.073 0.000 0.000
+b     0.000 0.002 0.000
+sigma 0.000 0.000 0.037</code></pre>
+</div>
+</div>
+<p>The lack of covariance here is actually do the centering. Refer to exercise at the end of the chapter.</p>
+<p>Let’s now build the posterior predictive.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">with</span>(d2, <span class="fu">plot</span>(weight, height, <span class="at">col=</span>rangi2, <span class="at">pch=</span><span class="dv">16</span>))</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m4<span class="fl">.3</span>)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>a_map <span class="ot">&lt;-</span> <span class="fu">mean</span>(post<span class="sc">$</span>a)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>b_map <span class="ot">&lt;-</span> <span class="fu">mean</span>(post<span class="sc">$</span>b)</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(a_map <span class="sc">+</span> b_map<span class="sc">*</span>(x<span class="sc">-</span>xbar), <span class="at">add=</span>T, <span class="at">lwd=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>That is just the mean. How is the cloud of equally likely regression lines distributed around that mean? Let’s vary the data fed into the model to find out:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>plot_post <span class="ot">&lt;-</span> <span class="cf">function</span>(n){</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  new_d <span class="ot">&lt;-</span> d2[<span class="fu">sample</span>(<span class="fu">nrow</span>(d2), n), ]</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">with</span>(new_d, <span class="fu">plot</span>(weight, height, <span class="at">col=</span>rangi2, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">xlim=</span><span class="fu">range</span>(d2<span class="sc">$</span>weight), <span class="at">ylim=</span><span class="fu">range</span>(d2<span class="sc">$</span>height), <span class="at">main=</span><span class="fu">paste0</span>(<span class="st">'N='</span>,n)))</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    height <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    mu <span class="ot">&lt;-</span> a <span class="sc">+</span> b<span class="sc">*</span>(weight <span class="sc">-</span> xbar),</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">178</span>, <span class="dv">20</span>),</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    b <span class="sc">~</span> <span class="fu">dlnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">50</span>)</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>  ), <span class="at">data=</span>new_d)</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>  post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m, <span class="dv">20</span>)</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>) <span class="fu">curve</span>(post<span class="sc">$</span>a[i] <span class="sc">+</span> post<span class="sc">$</span>b[i]<span class="sc">*</span>(x<span class="sc">-</span>xbar), <span class="at">add=</span>T, <span class="at">col=</span><span class="fu">col.alpha</span>(<span class="st">'black'</span>, <span class="fl">0.3</span>))</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(j <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">50</span>, <span class="dv">150</span>, <span class="dv">352</span>)) <span class="fu">plot_post</span>(j)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>We can use the <code>link</code> function, which is basically <code>rstanarm</code>’s <code>posterior_linpred</code>. We can also feed new data into it to get:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>weight_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">25</span>,<span class="dv">70</span>)</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m4<span class="fl">.3</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">weight=</span>weight_seq))</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="fu">with</span>(d2, <span class="fu">plot</span>(weight, height, <span class="at">type=</span><span class="st">'n'</span>))</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">100</span>) <span class="fu">points</span>(weight_seq, mu[i,], <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">col.alpha</span>(rangi2,<span class="fl">0.1</span>))</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="fu">with</span>(d2, <span class="fu">plot</span>(weight, height, <span class="at">col=</span>rangi2))</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(weight_seq, <span class="fu">colMeans</span>(mu))</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="fu">shade</span>(<span class="fu">apply</span>(mu, <span class="dv">2</span>, PI, <span class="at">prob=</span><span class="fl">0.89</span>), weight_seq)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Great, we have the posterior predictive distribution for the mean. But we need the <em>prediction interval</em>. This is what is actually “reproducing” the data. Everyone is always so concerned with the mean, but if we only look at the mean, we will fail. We can use the <code>sim</code> function to simulate from the Gaussian distribution of height:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>sim_height <span class="ot">&lt;-</span> <span class="fu">sim</span>(m4<span class="fl">.3</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">weight=</span>weight_seq))</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(height <span class="sc">~</span> weight, <span class="at">data=</span>d2, <span class="at">col=</span><span class="fu">col.alpha</span>(rangi2,<span class="fl">0.5</span>))</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(weight_seq, <span class="fu">colMeans</span>(mu))</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="fu">shade</span>(<span class="fu">apply</span>(mu, <span class="dv">2</span>, PI, <span class="fl">0.89</span>), weight_seq)</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="fu">shade</span>(<span class="fu">apply</span>(sim_height, <span class="dv">2</span>, PI, <span class="fl">0.89</span>), weight_seq)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>There are two types of uncertainty we have encountered so far: parameter and sampling. The parameter uncertainty is from the model and how inference is done. The sampling (Gaussian noise here) is how the data is “replicated”. If we add more parameters to the model and better model the actual process that generates the models, our sampling uncertainty will decrease.</p>
+</section>
+<section id="curves-from-lines" class="level2">
+<h2 class="anchored" data-anchor-id="curves-from-lines">4.5 Curves from Lines</h2>
+<section id="polynomial-regression" class="level3">
+<h3 class="anchored" data-anchor-id="polynomial-regression">Polynomial Regression</h3>
+<p>We will start will <em>polynomial regression</em>. Two key differences here is that the <span class="math inline">\(x\)</span>’s are now standardized, and we are going to consider the full dataset. Not just the adults.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> Howell1</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>weight_s <span class="ot">&lt;-</span> (d<span class="sc">$</span>weight <span class="sc">-</span> <span class="fu">mean</span>(d<span class="sc">$</span>weight))<span class="sc">/</span><span class="fu">sd</span>(d<span class="sc">$</span>weight)</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>weight_s2 <span class="ot">&lt;-</span> d<span class="sc">$</span>weight_s<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(height <span class="sc">~</span> weight, <span class="at">data=</span>d, <span class="at">col=</span>rangi2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The model is defined below:</p>
+<p><span class="math display">\[\begin{align}
+h_i &amp;\sim \text{Normal}(\mu_i, \sigma)\\
+\mu_i &amp;= \alpha + \beta_1 (x_i) + \beta_2 (x_i)\\
+\beta_1 &amp;\sim \text{Log-Normal}(0,1) \\
+\beta_2 &amp;\sim \text{Normal}(0, 1) \\
+\alpha &amp;\sim \text{Normal}(178, 20) \\
+\sigma &amp;\sim \text{Uniform}(0,50)
+\end{align}\]</span></p>
+<p>We fit as usual:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>m4<span class="fl">.5</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  height <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> b1<span class="sc">*</span>weight_s <span class="sc">+</span> b2<span class="sc">*</span>weight_s2,</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">178</span>, <span class="dv">20</span>),</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  b1 <span class="sc">~</span> <span class="fu">dlnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>  b2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">50</span>)</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m4<span class="fl">.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            mean        sd       5.5%      94.5%
+a     146.057429 0.3689757 145.467735 146.647124
+b1     21.733060 0.2888892  21.271360  22.194761
+b2     -7.803282 0.2741839  -8.241481  -7.365083
+sigma   5.774477 0.1764654   5.492452   6.056503</code></pre>
+</div>
+</div>
+<p>The parameters are no longer interpretable in the same way. We still might want to interpret <span class="math inline">\(\alpha\)</span> as the average value of height when the data takes the average, but this is no longer true. Look at footnote 76 for more context.</p>
+<p>For completeness, let’s graph the posterior predictive of the mean and response.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>ws_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">3</span>,<span class="dv">2</span>,<span class="at">length.out=</span><span class="dv">500</span>)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>new_d <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">weight_s=</span>ws_seq, <span class="at">weight_s2=</span>ws_seq<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m4<span class="fl">.5</span>, <span class="at">data=</span>new_d)</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>height_sim <span class="ot">&lt;-</span> <span class="fu">sim</span>(m4<span class="fl">.5</span>, <span class="at">data=</span>new_d)</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(height <span class="sc">~</span> weight, <span class="at">data=</span>d, <span class="at">col=</span><span class="fu">col.alpha</span>(rangi2, <span class="fl">0.3</span>), <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>mu <span class="sc">|&gt;</span> <span class="fu">apply</span>(<span class="dv">2</span>, PI, .<span class="dv">89</span>) <span class="sc">|&gt;</span> <span class="fu">shade</span>(ws_seq<span class="sc">*</span><span class="fu">sd</span>(d<span class="sc">$</span>weight) <span class="sc">+</span> <span class="fu">mean</span>(d<span class="sc">$</span>weight))</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>height_sim <span class="sc">|&gt;</span> <span class="fu">apply</span>(<span class="dv">2</span>, PI, .<span class="dv">89</span>) <span class="sc">|&gt;</span> <span class="fu">shade</span>(ws_seq<span class="sc">*</span><span class="fu">sd</span>(d<span class="sc">$</span>weight) <span class="sc">+</span> <span class="fu">mean</span>(d<span class="sc">$</span>weight))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We also are not equipped with any way to say whether one model is better than another. Is the linear better than the quadratic? What about a cubic? Answers will come in chapter 7.</p>
+</section>
+<section id="splines" class="level3">
+<h3 class="anchored" data-anchor-id="splines">Splines</h3>
+<p>For our splines we are going to be using cherry blossom data</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(cherry_blossoms)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> cherry_blossoms</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(doy <span class="sc">~</span> year, <span class="at">data=</span>d, <span class="at">col=</span>rangi2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s choose 15 knots for our spline. We are also going to let R create a basis for a cubic spline (degree 3) with the 15 knots.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>d2 <span class="ot">&lt;-</span> d[<span class="sc">!</span><span class="fu">is.na</span>(d<span class="sc">$</span>doy), ]</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>num_knots <span class="ot">&lt;-</span> <span class="dv">15</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>knot_list <span class="ot">&lt;-</span> <span class="fu">quantile</span>(d2<span class="sc">$</span>year, <span class="at">probs=</span><span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">length.out=</span>num_knots))</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(splines)</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>B <span class="ot">&lt;-</span> <span class="fu">bs</span>(</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  d2<span class="sc">$</span>year, <span class="at">knots=</span>knot_list[<span class="sc">-</span><span class="fu">c</span>(<span class="dv">1</span>,num_knots)], <span class="at">degree=</span><span class="dv">3</span>,<span class="at">intercept=</span>T</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim=</span><span class="fu">range</span>(d2<span class="sc">$</span>year), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>), <span class="at">xlab=</span><span class="st">'year'</span>, <span class="at">ylab=</span><span class="st">'basis'</span>)</span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(B)) <span class="fu">lines</span>(d2<span class="sc">$</span>year, B[,i])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-24-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The model now takes the following form:</p>
+<p><span class="math display">\[\begin{align}
+D_i &amp;\sim \text{Normal}(\mu_i, \sigma)\\
+\mu_i &amp;= \alpha + \sum_{k=1}^K w_k B_{k,i}\\
+\alpha &amp;\sim \text{Normal}(100, 10) \\
+w_j &amp;\sim \text{Normal}(0,10)\\
+\sigma &amp;\sim \text{Exponential}(1)
+\end{align}\]</span></p>
+<p>We will use matrix multiplication to fit this in <code>quap</code></p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>m4<span class="fl">.7</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  D <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> B <span class="sc">%*%</span> w,</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">100</span>, <span class="dv">10</span>),</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>  w <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">10</span>),</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>), </span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a><span class="at">data =</span> <span class="fu">list</span>(<span class="at">D=</span>d2<span class="sc">$</span>doy, <span class="at">B=</span>B),</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="at">start =</span> <span class="fu">list</span>(<span class="at">w=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="fu">ncol</span>(B)))</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Let’s finally plot the posterior:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m4<span class="fl">.7</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>w <span class="ot">&lt;-</span> <span class="fu">apply</span>(post<span class="sc">$</span>w, <span class="dv">2</span>, mean)</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">1</span>))</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim=</span><span class="fu">range</span>(d2<span class="sc">$</span>year), <span class="at">ylim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">6</span>,<span class="dv">6</span>), <span class="at">xlab=</span><span class="st">'year'</span>, <span class="at">ylab=</span><span class="st">'basis * weight'</span>)</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(B)) <span class="fu">lines</span>(d2<span class="sc">$</span>year, w[i]<span class="sc">*</span>B[,i])</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m4<span class="fl">.7</span>)</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(d2<span class="sc">$</span>year, d2<span class="sc">$</span>doy, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">col.alpha</span>(rangi2,<span class="fl">0.3</span>))</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>mu <span class="sc">|&gt;</span> <span class="fu">apply</span>(<span class="dv">2</span>,PI,.<span class="dv">89</span>) <span class="sc">|&gt;</span> <span class="fu">shade</span>(d2<span class="sc">$</span>year, <span class="at">col=</span><span class="fu">col.alpha</span>(<span class="st">'black'</span>, <span class="fl">0.5</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch4_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
 </section>
 
 </main>
