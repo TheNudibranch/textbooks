@@ -1,0 +1,139 @@
+---
+title: "GAMs - Chapter 4"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+```{r}
+#| output: false
+#| code-fold: true
+library(gamair)
+library(rethinking)
+```
+
+## 4.1
+We can descirbe a GAM as:
+$$g(\mu_i) = {\bf A_i}\theta + f_1(x_{1i}) + f_2(x_{2i}) + f_3(x_{3i}, x_{4i}) + \dots$$
+
+where $\mu_i \equiv E[Y_i]$ and $Y_i \sim \text{EF}(\mu_i, \phi)$. $Y_i$ is the response variable, $\text{EF}(\mu_i, \phi)$ denotes an exponential family distribution with mean $\mu_i$ and scale parameter $\phi$. $\bf{A_i}\theta$ is just your simple linear model where $\theta$ is a parameter. $f_j$ are smooth functions of the covariates.
+
+- Most complicated model for this chapter will be a model with two univariate smooth components.
+
+## 4.2 Univariate Smoothing
+Start with $y_i = f(x_i) + \epsilon_i$ and $f(x_i) = \sum\limits_{j=1}^{k}b_j(x)\beta_j$ where $b_j(x)$ is the basis expansion
+
+- Could use polynomials where each $b_j$ is just $x$ raised to the $j$ power. 
+  -But Taylor theorem implies that this will only be useful for when interest focuses on properties of $f$ in a certain vicinity.
+
+
+- This chapter will focus on piece wise linear bases to aid in understanding, but adding just a few continuity conditions via derivatives will be a huge help.
+
+The linear piecewise basis is defined as basis functions that are non-zero between adjacent knots. That is, for knot $x_j$, basis function $b_j$ will linearly grow, starting from zero, at $x_{j-1}$ until it reaches its peak at $x_j$, and then will linearly decline until it comes to $x_{j+1}$.
+
+- These are known as tent functions and have compact support (finite over certain intervals)
+
+For tent functions, we can equivalently represent the basis as the linear interpolant of the data: $\{x^*_i,\delta_i^j: i=1,\dots,k\}$ where $\delta_i^j$ is 1 one $i=j$. This makes it easy to code up in R.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+data(engine)
+attach(engine) # Make a separate env just for the data, right below the global
+plot(size, wear, xlab='Engine Capacity', ylab='Wear Index', pch=16, col=rangi2)
+```
+
+
+Define function that create piecewise linear basis
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+tf <- function(x, xj, j){
+  # generate jth tent function from set defined by knots in xj
+  dj <- xj*0
+  dj[j] <- 1
+  approx(xj, dj, x)$y #Create a linear interpolation given the data
+  # Basically, given the set of knots xj, find the piecewise linear fit between the points
+  # This results in linearly increasing function between adjacent knots
+  # The final x just tells us where to evaluate our new function
+}
+
+tf.X <- function(x,xj){
+  # Returns tent function basis given matrix X and knots xj
+  nk <- length(xj)
+  n <- length(x)
+  X <- matrix(NA, n, nk)
+  for (j in 1:nk) X[,j] <- tf(x,xj,j)
+  X
+}
+# Use 6 knots
+sj <- seq(min(size), max(size), length.out=6)
+
+# The plot below should be a linear function is non-zero between adjacent knots
+plot(size, tf(size, sj, 3), ylab='Basis for j=3', pch=16, col=rangi2)
+abline(v=sj); abline(h=0, lwd=2)
+```
+
+Now create the basis for the `size` vector:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+#
+# Use 6 knots
+sj <- seq(min(size), max(size), length.out=6)
+X <- tf.X(size, sj)
+
+b <- lm(wear ~ X - 1)
+s <- seq(min(size), max(size), length.out=200)
+Xp <- tf.X(s, sj)
+par(mfrow=c(1,2))
+plot(size, wear, ylim=range(Xp * coef(b), wear))
+for(i in 1:6) lines(s, Xp[,i] * coef(b)[i], col=i+1, lwd=2)
+
+plot(size, wear, pch=16, col=rangi2)
+lines(s, Xp %*% coef(b), lwd=2)
+par(mfrow=c(1,1))
+```
+
+### 4.2.2 Controlling Wiggliness
+We could us backward selection, but that is problematic for numerous reasons. Instead, we'll add a penalty term into the likelihood. Our goal is to now minimize:
+
+$$||{\bf y} - {\bf X}\beta||^2 + \lambda\sum\limits_{j=2}^{k-1}\{f(x^*_{j-1}) - 2f(x^*_{j}) + f(x^*_{j+1})\}^2$$
+
+The summation term crudely approximates the integrated second derivative penalty used in cubic spline smoothing. If $f$ is a straight line the penalty term will be zero. This penalty actually has a null space, which is of dimension 2, since the basis for straight lines is 2-dimensional.
+
+Since the function values *at the knots* are simply the coefficients, $f(x^*_j)=\beta_j$, we can nicely represent this with a penalty matrix $\bf{S}$ in quadratic from with $\beta$: $\beta^T\bf{S}\beta$. Page 168 has a really nice matrix explanation for this.
+
+The minimization problem now becomes
+
+$$||{\bf y} - {\bf X}\beta||^2 + \lambda\beta^T{\bf S}\beta$$
+There is actually a closed for solution on pg. 168 for $\hat{\beta}$ as well as $\bf{A}$.
+
+Recall the influence matrix $\bf{A}$ as it will be important in our discussion. It is simply defined as the matrix that produces $\mu$ when post multiplied by $y$. That is, $\hat{\mu} = \bf{A}y$.
+
+The penalty matrix $\bf{S}$ can be decomposed into $\bf{S} = \bf{D}^T\bf{D}$, more detail on 168, but it basically just helps us add together the necessary penalties for $\beta$. Think of it as a big matrix with repeating $\{1,-2,1\}$ across the rows. We can easily calculate it in R with the `diff` function.
+
+```{r}
+diff(diag(length(sj)), differences = 2)
+```
+
+$$||\begin{bmatrix}{\bf y}\\ {\bf 0}\end{bmatrix}||$$
+
+Now we can write a function to get the penalized fit:
+```{r}
+prs.fit <- function(y,x,xj,sp){
+  # sp is the lambda
+  X <- tf.X(x,xj) # linear basis
+  D <- diff(diag(length(xj)), differences=2)
+  X <- rbind(X, sqrt(sp)*D) # augmented model matrix
+  y <- c(y, rep(0, nrow(D)))
+  
+  lm(y ~ X-1)
+  
+}
+```
+
