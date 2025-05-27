@@ -475,3 +475,247 @@ mu |> apply(2,PI,.89) |> shade(d2$year, col=col.alpha('black', 0.5))
 par(mfrow=c(1,1))
 ```
 
+## Problems
+### M1
+For the model:
+
+\begin{align}
+y_i &\sim \text{Normal}(\mu, \sigma)\\
+\mu &\sim \text{Normal}(0,10)\\
+\sigma &\sim \text{Exponential}(1)
+\end{align}
+
+Generate values for the prior predictive
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+n <- 1e4
+mu <- rnorm(n,0,10)
+sig <- rexp(n,1)
+y_prior_pred <- rnorm(n,mu,sig)
+hist(y_prior_pred)
+```
+
+### M.2
+Translate the above model to `quap` notation:
+
+```R
+y ~ dnorm(mu, sigma),
+mu ~ dnorm(0,10),
+sigma ~ dexp(1)
+```
+
+### M.3
+Translate the following `quap` model:
+
+```R
+y ~ dnorm(mu, sigma),
+mu <- a + b*x,
+a ~ dnorm(0, 10),
+b ~ dunif(0, 1),
+sigma ~ dexp(1)
+```
+
+into math notation:
+
+\begin{align}
+y_i &\sim \text{Normal}(\mu, \sigma)\\
+\mu &= \alpha + \beta x_i\\
+\alpha &\sim \text{Normal}(0,10)\\
+\beta &\sim \text{U}(0,1)\\
+\sigma &\sim \text{Exponential}(1)
+\end{align}
+
+### M.4
+Let $y$ be height and $x$ be the year. I'm going to set the average at 173cm, and say that on average kids grow 4 inches a year (10 cm). I plead ignorance on $\sigma$, but exponential is a good choice.:
+
+\begin{align}
+y_i &\sim \text{Normal}(\mu, \sigma)\\
+\mu &= \alpha + \beta x_i\\
+\alpha &\sim \text{Normal}(173,20)\\
+\beta &\sim \text{Normal}(10,4)\\
+\sigma &\sim \text{Exponential}(1)
+\end{align}
+
+
+### M.5
+Oh but heck, you're right! Kids can't shrink unless you're Rick Moranis! I'll change it so the mean of the Log-Normal is still 10cm though. 
+
+\begin{align}
+y_i &\sim \text{Normal}(\mu, \sigma)\\
+\mu &= \alpha + \beta x_i\\
+\alpha &\sim \text{Normal}(173,20)\\
+\beta &\sim \text{Log-Normal}(1.8,1)\\
+\sigma &\sim \text{Exponential}(1)
+\end{align}
+
+### M.6
+Oh good call, the variance is never more than 64, which means the standard deviation is never more than 8. Let's find the mean value of the exponential that will place no more than 0.01 mass of the probability above 8. We can do this by inverting the CDF:
+
+```{r}
+lam <- -log(1-0.99)/8
+qexp(0.99, rate=lam)
+lam |> round(2)
+```
+Let's sub it in to get:
+\begin{align}
+y_i &\sim \text{Normal}(\mu, \sigma)\\
+\mu &= \alpha + \beta x_i\\
+\alpha &\sim \text{Normal}(173,20)\\
+\beta &\sim \text{Log-Normal}(1.8,1)\\
+\sigma &\sim \text{Exponential}(0.58)
+\end{align}
+
+### M.7
+Refit `m4.3`, but omit the mean weight. 
+
+```{r}
+data(Howell1)
+d <- Howell1; d2 <- d[d$age >= 18,]
+xbar <- mean(d2$weight)
+
+m4.3 <- quap(alist(
+  height ~ dnorm(mu, sigma),
+  mu <- a + b*(weight - xbar),
+  a ~ dnorm(178, 20),
+  b ~ dlnorm(0,1),
+  sigma ~ dunif(0,50)
+), data=d2)
+
+m4.3_1 <- quap(alist(
+  height ~ dnorm(mu, sigma),
+  mu <- a + b*(weight),
+  a ~ dnorm(178, 20),
+  b ~ dlnorm(0,1),
+  sigma ~ dunif(0,50)
+), data=d2)
+
+vcov(m4.3)
+vcov(m4.3_1)
+```
+Woah, what the heck! Looks like the variance for $\beta$ and $\sigma$ are the same but $\alpha$ isn't. Also, we have some covariances now! Let's look at the posterior predictive:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+weight_seq <- seq(25,70)
+mu <- link(m4.3, data=data.frame(weight=weight_seq))
+
+par(mfrow=c(2,2))
+with(d2, plot(weight, height, type='n'))
+for(i in 1:100) points(weight_seq, mu[i,], pch=16, col=col.alpha(rangi2,0.1))
+
+with(d2, plot(weight, height, col=rangi2))
+lines(weight_seq, colMeans(mu))
+shade(apply(mu, 2, PI, prob=0.89), weight_seq)
+
+mu <- link(m4.3_1, data=data.frame(weight=weight_seq))
+
+with(d2, plot(weight, height, type='n'))
+for(i in 1:100) points(weight_seq, mu[i,], pch=16, col=col.alpha(rangi2,0.1))
+
+with(d2, plot(weight, height, col=rangi2))
+lines(weight_seq, colMeans(mu))
+shade(apply(mu, 2, PI, prob=0.89), weight_seq)
+```
+
+Looks the same to me! Must be that the new terms in our covariance matrix are able to capture something extra...
+
+### H.1
+Use `m4.3` from above to make predictions.
+
+```{r}
+new_weights <- c(46.95, 43.72, 64.78, 32.59, 54.63)
+mu <- link(m4.3, data=data.frame(weight=new_weights))
+# Expected heights:
+colMeans(mu)
+
+# Intervals
+apply(mu, 2, PI, 0.89)
+```
+### H.2
+Use ages below 18. 
+#### a
+```{r}
+d3 <- Howell1[Howell1$age < 18, ]
+xbar <- d3$weight |> mean()
+m_h2 <- quap(alist(
+  height ~ dnorm(mu, sigma),
+  mu <- a + b*(weight - xbar),
+  a ~ dnorm(178, 20),
+  b ~ dnorm(0,1),
+  sigma ~ dunif(0,50)
+), data=d3)
+
+precis(m_h2)
+```
+
+For a child at the average weight, we would expect the average height to be 108.38 cm ($\alpha$). A 10 unit increase in weight would result in a 27.1 cm increase in height ($\beta$).
+
+#### b
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+weight_seq <- seq(3, 45, length.out=1e3)
+mu <- link(m_h2, data=data.frame(weight=weight_seq))
+
+
+sim_height <- sim(m_h2, data=data.frame(weight=weight_seq))
+
+plot(height ~ weight, data=d3, col=col.alpha(rangi2,0.5))
+lines(weight_seq, colMeans(mu))
+shade(apply(mu, 2, PI, 0.89), weight_seq)
+shade(apply(sim_height, 2, PI, 0.89), weight_seq)
+```
+
+#### c
+The model is doing poor at the extremes. A spline or quadratic term could fix this.
+
+### H.3
+#### a
+Same model as above, except use log weight for covariate. Use entire data
+
+```{r}
+d <- Howell1
+d$l_weight <- log(d$weight)
+xbar <- d$l_weight |> mean()
+m_h3 <- quap(alist(
+  height ~ dnorm(mu, sigma),
+  mu <- a + b*(l_weight - xbar),
+  a ~ dnorm(178, 20),
+  b ~ dlnorm(0,1),
+  sigma ~ dunif(0,50)
+), data=d)
+
+precis(m_h3)
+```
+
+$\alpha$ can be interpreted as the value for when log weight is the average. A little harder, but doable. The coefficient for $\beta$ is no longer for a linear increase in weight, it is a linear increase log weight. So for each order of magnitude-ish (natural not base 10) increase we get a 47.07 increase in height.
+
+#### b
+Same plot as H.2 b. 
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+weight_seq <- seq(1.4, 4.2, length.out=1e3)
+mu <- link(m_h3, data=data.frame(l_weight=weight_seq))
+
+
+sim_height <- sim(m_h3, data=data.frame(l_weight=weight_seq))
+
+plot(height ~ weight, data=d, col=col.alpha(rangi2,0.5))
+lines(weight_seq |> exp(), colMeans(mu))
+shade(apply(mu, 2, PI, 0.97), weight_seq |> exp())
+shade(apply(sim_height, 2, PI, 0.97), weight_seq |> exp())
+```
+
+
