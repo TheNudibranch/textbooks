@@ -1,0 +1,92 @@
+---
+title: "Rethinking - Chapter 5"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+```{r}
+#| output: false
+#| code-fold: true
+library(rethinking)
+library(dagitty)
+```
+
+## 5.0
+- Why Multiple Regression:
+  1. Control for confounds
+  2. Multiple and complex causations - we need the ability to measure mutiple causal effects simultaneously
+  3. Interactions
+
+## 5.1 Spurious Association
+
+Data for marriages and divorce rate. Let's plot the priors for mu
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+data(WaffleDivorce)
+d <- WaffleDivorce 
+
+d$D <- standardize(d$Divorce)
+d$M <- standardize(d$Marriage)
+d$A <- standardize(d$MedianAgeMarriage)
+
+m5.1 <- quap(alist(
+  D ~ dnorm(mu, sigma),
+  mu <- a + bA * A,
+  a ~ dnorm(0,0.2),
+  bA ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+set.seed(10)
+prior <- extract.prior(m5.1)
+
+# Only need two points since we only need two points to draw a line
+mu <- link(m5.1, post=prior, data=list(A=c(-2,2)))
+plot(NULL, xlim=c(-2,2), ylim=c(-2,2))
+for (i in 1:50) lines(c(-2,2), mu[i,], col=col.alpha('black', 0.4))
+```
+
+Now the posterior:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+A_seq <- seq(-3,3.2, length.out=30)
+mu <- link(m5.1, data=list(A=A_seq))
+mu.mean <- apply(mu, 2, mean)
+mu.PI <- apply(mu, 2, PI)
+
+plot(D ~ A, data=d, col=rangi2, pch=16)
+lines(A_seq, mu.mean, lwd=2)
+shade(mu.PI, A_seq)
+```
+
+Let's fit the model with marriage as the covariate and look at the coefficients:
+
+```{r}
+m5.2 <- quap(alist(
+  D ~ dnorm(mu, sigma),
+  mu <- a + bM * M,
+  a ~ dnorm(0,0.2),
+  bM ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+precis(m5.1)
+precis(m5.2)
+```
+
+We see that the magnitude for the coefficient for marriage is lower than that for age, but is an incorrect way to compare models. Or variable importance.
+
+```{r}
+#| fig-align: center
+dag5.1 <- dagitty('dag{A -> D; A -> M; M -> D}')
+coordinates(dag5.1) <- list(x=c(A=0, D=1, M=2), y=c(A=0, D=1, M=0))
+drawdag(dag5.1)
+```
+Model `m5.1` will capture the total effects of "A->D" and "A->M->D", where the second is a mediated effect. Model `m5.2` captures the total effect of "M->D" and "M->A->D", where the second is the back door path.
