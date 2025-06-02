@@ -90,3 +90,52 @@ coordinates(dag5.1) <- list(x=c(A=0, D=1, M=2), y=c(A=0, D=1, M=0))
 drawdag(dag5.1)
 ```
 Model `m5.1` will capture the total effects of "A->D" and "A->M->D", where the second is a mediated effect. Model `m5.2` captures the total effect of "M->D" and "M->A->D", where the second is the back door path.
+
+But, we could also have the DAG there is no direct effect from "M" to "D". In that case, the entire effect observed from the backdoor path: "A->M->D". 
+```{r}
+#| fig-align: center
+dag5.1 <- dagitty('dag{A -> D; A -> M}')
+coordinates(dag5.1) <- list(x=c(A=0, D=1, M=2), y=c(A=0, D=1, M=0))
+drawdag(dag5.1)
+```
+
+So which is the correct DAG? We can use conditional independence. 
+
+- In our first DAG, ever variable is associated with the other, there is no independence without conditioning.
+- There are no testable implications in the first DAG
+
+In the second DAG everything is still associated, but if we condition on A, then there is no backdoor pathway from M to D. That is, $M \mathrel{\unicode{x2AEB}} D | A$. 
+
+The `dagitty` package can help deduce these associations:
+
+```{r}
+DMA_dag2 <- dagitty('dag{D <- A -> M}')
+impliedConditionalIndependencies(DMA_dag2)
+```
+If we use multiple regression, the coefficients are effect estimates of the given variable on the response, given the other variables in the equation.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+m5.3 <- quap(alist(
+  D ~ dnorm(mu, sigma),
+  mu <- a + bM * M + bA * A,
+  a ~ dnorm(0,0.2),
+  bM ~ dnorm(0,0.5),
+  bA ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+precis(m5.3)
+
+plot(coeftab(m5.1, m5.2, m5.3), par=c('bA', 'bM'))
+```
+Notice, $\beta_A$ does not move, it just becomes more uncertain. On the other hand, $\beta_M$ is now overlapping zero. This tests and shows that $M \mathrel{\unicode{x2AEB}} D | A$ is indeed true for the given data generating process. Perhaps DAG 2 is more inline with out DGP. This implies that DAG 1 is out, and marriage has no direct effect on divorce rate.
+
+To help understand the model better, we are going to build 3 types of plots:
+1. Residual
+2. Posterior Prediction
+3. Counterfactual 
+
+
