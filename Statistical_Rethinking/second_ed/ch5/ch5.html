@@ -226,9 +226,9 @@ window.Quarto = {
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>               mean         sd       5.5%      94.5%
-a      4.115265e-05 0.09737511 -0.1555831  0.1556654
-bA    -5.684043e-01 0.10999464 -0.7441970 -0.3926117
-sigma  7.882869e-01 0.07800179  0.6636250  0.9129488</code></pre>
+a     -3.147035e-05 0.09737331 -0.1556528  0.1555899
+bA    -5.684529e-01 0.10999165 -0.7442408 -0.3926650
+sigma  7.882678e-01 0.07799701  0.6636135  0.9129221</code></pre>
 </div>
 <details open="" class="code-fold">
 <summary>Code</summary>
@@ -326,6 +326,173 @@ sigma  7.850672e-01 0.07783076  0.6606786  0.9094558</code></pre>
 </div>
 <p>Notice, <span class="math inline">\(\beta_A\)</span> does not move, it just becomes more uncertain. On the other hand, <span class="math inline">\(\beta_M\)</span> is now overlapping zero. This tests and shows that <span class="math inline">\(M \mathrel{\unicode{x2AEB}} D | A\)</span> is indeed true for the given data generating process. Perhaps DAG 2 is more inline with out DGP. This implies that DAG 1 is out, and marriage has no direct effect on divorce rate.</p>
 <p>To help understand the model better, we are going to build 3 types of plots: 1. Residual 2. Posterior Prediction 3. Counterfactual</p>
+<p>For a simple residual plot example, let’s look at Age regressed onto Marriage. If we plot this against the Divorce rate, what we see is the relationship between Divorce rate and marriage, when have already accounted for Age.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.4</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  M <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span>  bAM <span class="sc">*</span> A,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.2</span>),</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  bAM <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m5<span class="fl">.4</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>mu_mean <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(mu)</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>mu_resid <span class="ot">&lt;-</span> d<span class="sc">$</span>M <span class="sc">-</span> mu_mean</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(mu_resid, d<span class="sc">$</span>D, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>rangi2, <span class="at">main=</span><span class="st">'Residual Plot with Divorce Rate'</span>, </span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab=</span><span class="st">'Marriage Rate Resid.'</span>, <span class="at">ylab=</span><span class="st">'Divorce Rate'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch5_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s do some posterior predictive checks for model <code>m5.3</code>:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m5<span class="fl">.3</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>mu_mean <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(mu)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>mu_PI <span class="ot">&lt;-</span> <span class="fu">apply</span>(mu, <span class="dv">2</span>, PI)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>D_sim <span class="ot">&lt;-</span> <span class="fu">sim</span>(m5<span class="fl">.3</span>, <span class="at">n=</span><span class="fl">1e4</span>)</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>D_PI <span class="ot">&lt;-</span> <span class="fu">apply</span>(D_sim, <span class="dv">2</span>, PI)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(mu_mean <span class="sc">~</span> d<span class="sc">$</span>D, <span class="at">col=</span>rangi2, <span class="at">ylim=</span><span class="fu">range</span>(mu_PI), <span class="at">xlab=</span><span class="st">'Observed Divorce'</span>, <span class="at">ylab=</span><span class="st">'Predicted Divorce'</span>)</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">a=</span><span class="dv">0</span>, <span class="at">b=</span><span class="dv">1</span>, <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(d)) <span class="fu">lines</span>(<span class="fu">rep</span>(d<span class="sc">$</span>D[i], <span class="dv">2</span>), mu_PI[,i], <span class="at">col=</span>rangi2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch5_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Alright, counterfactual time. Basically, if wiggle one part of the DAG, how does it change everything else. For this, we need to build a complete model of our first DAG (where M-&gt;D is present). This will allow use to manipulate A and in turn influence M.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>D <span class="ot">&lt;-</span> <span class="fu">standardize</span>(WaffleDivorce<span class="sc">$</span>Divorce)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>M <span class="ot">&lt;-</span> <span class="fu">standardize</span>(WaffleDivorce<span class="sc">$</span>Marriage)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>A <span class="ot">&lt;-</span> <span class="fu">standardize</span>(WaffleDivorce<span class="sc">$</span>MedianAgeMarriage)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.3</span>_A <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="do">## A -&gt; D &lt;- M</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  D <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bM <span class="sc">*</span> M <span class="sc">+</span> bA <span class="sc">*</span> A,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.2</span>),</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  bM <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>  bA <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>),</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  <span class="do">## A -&gt; M</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>  M <span class="sc">~</span> <span class="fu">dnorm</span>(mu_M, sigma_M),</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>  mu_M <span class="ot">&lt;-</span> aM <span class="sc">+</span> bAM<span class="sc">*</span>A,</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>  aM <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.2</span>),</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>  bAM <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>  sigma_M <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m5<span class="fl">.3</span>_A)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 mean         sd       5.5%      94.5%
+a       -2.192238e-06 0.09707342 -0.1551443  0.1551399
+bM      -6.524040e-02 0.15076987 -0.3061998  0.1757190
+bA      -6.134339e-01 0.15097997 -0.8547290 -0.3721387
+sigma    7.850904e-01 0.07783661  0.6606924  0.9094883
+aM      -3.647809e-05 0.08685053 -0.1388404  0.1387674
+bAM     -6.947411e-01 0.09573042 -0.8477368 -0.5417454
+sigma_M  6.817629e-01 0.06758648  0.5737467  0.7897792</code></pre>
+</div>
+</div>
+<p>Let’s manipulate A and see how it propagates through the model. What we see below is the effect of A-&gt;D and A-&gt;M-&gt;D:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>A_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">2</span>,<span class="dv">2</span>,<span class="at">length.out=</span><span class="dv">30</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># `vars` let's us simulate different variables in the model. M is simulated first</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Then D is simulated</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>s <span class="ot">&lt;-</span> <span class="fu">sim</span>(m5<span class="fl">.3</span>_A, <span class="at">data=</span><span class="fu">list</span>(<span class="at">A=</span>A_seq), <span class="at">vars=</span><span class="fu">c</span>(<span class="st">'M'</span>, <span class="st">'D'</span>))</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(A_seq, <span class="fu">colMeans</span>(s<span class="sc">$</span>D), <span class="at">ylim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">2</span>,<span class="dv">2</span>), <span class="at">type=</span><span class="st">'l'</span>, <span class="at">xlab=</span><span class="st">'Manipulated A'</span>,</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab=</span><span class="st">'Counterfactual D'</span>)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="fu">shade</span>(<span class="fu">apply</span>(s<span class="sc">$</span>D, <span class="dv">2</span>, PI), A_seq)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">'Total Counterfactual effect of A on D'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch5_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can also see what we would expect D to be for specific values of A:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use the mean and sd of WaffleDivorce$MedianAgeMarriage</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>sim2_dat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">A=</span>(<span class="fu">c</span>(<span class="dv">20</span>,<span class="dv">30</span>) <span class="sc">-</span> <span class="fl">26.1</span>)<span class="sc">/</span><span class="fl">1.24</span>)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>s2 <span class="ot">&lt;-</span> <span class="fu">sim</span>(m5<span class="fl">.3</span>_A, <span class="at">data=</span>sim2_dat, <span class="at">vars=</span><span class="fu">c</span>(<span class="st">'M'</span>, <span class="st">'D'</span>))</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="st">'Mean'</span><span class="ot">=</span> <span class="fu">mean</span>(s2<span class="sc">$</span>D[,<span class="dv">2</span>] <span class="sc">-</span> s2<span class="sc">$</span>D[,<span class="dv">1</span>]), <span class="st">'sd'</span><span class="ot">=</span><span class="fu">sd</span>(s2<span class="sc">$</span>D[,<span class="dv">2</span>] <span class="sc">-</span> s2<span class="sc">$</span>D[,<span class="dv">1</span>]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>     Mean        sd 
+-4.543342  1.418763 </code></pre>
+</div>
+</div>
+<p>Now, if we simulate from M, we break the causal link from A-&gt;M. So, let’s set A=0 (average state) and simulate different values of M:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>sim_dat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">M=</span><span class="fu">seq</span>(<span class="sc">-</span><span class="dv">2</span>,<span class="dv">2</span>,<span class="at">length.out=</span><span class="dv">30</span>), <span class="at">A=</span><span class="dv">0</span>)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>s <span class="ot">&lt;-</span> <span class="fu">sim</span>(m5<span class="fl">.3</span>_A, <span class="at">data=</span>sim_dat, <span class="at">vars=</span><span class="st">'D'</span>)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sim_dat<span class="sc">$</span>M, <span class="fu">colMeans</span>(s), <span class="at">ylim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">2</span>,<span class="dv">2</span>), <span class="at">type=</span><span class="st">'l'</span>, <span class="at">xlab=</span><span class="st">'Manipulated M'</span>,</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab=</span><span class="st">'Counterfactual D'</span>)</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="fu">shade</span>(<span class="fu">apply</span>(s, <span class="dv">2</span>, PI), A_seq)</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">'Total Counterfactual effect of M on D'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch5_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Note that in <code>vars</code> we don’t write A. This because M doesn’t influence A.</p>
+<p>Just for fun, let’s simulate the counterfactuals without the help of <code>sim</code>:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>A_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">2</span>,<span class="dv">2</span>,<span class="at">length.out=</span><span class="dv">30</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m5<span class="fl">.3</span>_A)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co">#simulate M values</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>M_sim <span class="ot">&lt;-</span> <span class="fu">with</span>(post, {</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>, \(x) <span class="fu">rnorm</span>(<span class="fl">1e3</span>, aM <span class="sc">+</span> bAM<span class="sc">*</span>A_seq[x], sigma_M), <span class="fu">numeric</span>(<span class="fl">1e3</span>))</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="co"># simluate D values, using M above</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>D_sim <span class="ot">&lt;-</span> <span class="fu">with</span>(post, {</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>, \(x) <span class="fu">rnorm</span>(<span class="fl">1e3</span>, a <span class="sc">+</span> bA<span class="sc">*</span>A_seq[x] <span class="sc">+</span> bM<span class="sc">*</span>M_sim[,x], sigma), <span class="fu">numeric</span>(<span class="fl">1e3</span>))</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
 </section>
 
 </main>
