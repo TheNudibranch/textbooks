@@ -356,3 +356,101 @@ Notice that in the full model, both $\beta_N$ and $\beta_M$ move away from zero.
 cor(dcc[,c('K', 'N', 'M')])
 ```
 This is a good thing, including both in the regression. Because we are able to control for effects due to body size, we can see how much stronger neocortex percentage is associated with milk energy content.
+
+This relationship is known as masking. It occurs when one covariate is positvely correlated with the outcome and another is negatively correlated, but both covariates are positively correlated with each other. Hence, they tend to cancel each other out. But we can tease out their individual effects by including both in the model.
+
+We are going to assume that there is a confounding variable that effects both M and N. Thus "wiggling" M or N does not need to take the other into account. Let's plot the counterfactual for wiggling M and keeping N at the mean
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+xseq <- seq(min(dcc$M)-0.15, max(dcc$M)+0.15, length.out=30)
+mu <- link(m5.7, data=list(M=xseq, N=0))
+
+plot(K ~ M, data=dcc, col=rangi2, pch=16)
+lines(xseq, colMeans(mu), lwd=2)
+shade(mu |> apply(2,PI,), xseq)
+
+```
+
+A simple DAG for this process might be the following:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+dag5.7 <- dagitty('dag{M -> K <- N; M -> N}')
+coordinates(dag5.7) <- list(x=c(M=0,K=1,N=2), y=c(M=0.5, K=1, N=0.5))
+drawdag(dag5.7)
+```
+
+Some code to simulate this relationship might be:
+```{r}
+n <- 100
+M <- rnorm(n)
+N <- rnorm(n, M)
+K <- rnorm(n, M - N)
+```
+If we look at the relationship between K & M, and K & N, we might see no observable trend. *But* if we look at them together, we see that they both have a large influence on K.
+
+We can also use the `dagitty` package to find all markov equivalent (DAGs with the same set of conditional independences) DAGs. This is another reason why we can't test this DAG easily.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+MElist <- equivalentDAGs(dag5.7)
+drawdag(MElist)
+```
+
+## 5.3 Categorical Variables
+ Let's go back to the height data from chapter 4. We are going to build a model, but only for predicting height from sex. To do this, we could use a simple indicator variable, but let's try by coding female as 1 and male as 2. In `quap`, we can actually assign priors using these index variables:
+ 
+```{r}
+data(Howell1)
+d <- Howell1
+
+d$sex <- d$male + 1
+m5.8 <- quap(alist(
+  height ~ dnorm(mu, sigma),
+  mu <- a[sex],
+  a[sex] ~ dnorm(178, 20),
+  sigma ~ dunif(0,50)
+), data=d)
+
+precis(m5.8, depth=2)
+```
+ 
+ We can look at the difference between male and female, also called a contrast, from the following:
+```{r}
+post <- extract.samples(m5.8)
+post$diff <- post$a[,1] - post$a[,2]
+precis(post, depth=2)
+```
+ 
+ Let's go back to our milk example, but this time build a model around species:
+ 
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+data(milk)
+d <- milk
+d$K <- standardize(d$kcal.per.g)
+d$clade_id <- d$clade |> as.integer()
+
+m5.9 <- quap(alist(
+  K ~ dnorm(mu, sigma),
+  mu <- a[clade_id],
+  a[clade_id] ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+labels <- paste0('a[', 1:4, 'l:', levels(d$clade))
+plot(precis(m5.9, depth=2, pars='a'), labels=labels, xlab='expected kcal(std)')
+```
+ 
+ 
