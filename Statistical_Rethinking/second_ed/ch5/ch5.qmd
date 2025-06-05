@@ -270,3 +270,89 @@ D_sim <- with(post, {
 })
 ```
 
+## 5.2 Masked Relationships
+
+Here we will consider how different variables effect primate milk energy content.
+```{r}
+data(milk)
+d <- milk
+d$K <- standardize(d$kcal.per.g)
+d$N <- standardize(d$neocortex.perc)
+d$M <- standardize(log(d$mass))
+
+# Remove missing values
+dcc <- d[complete.cases(d$K, d$N, d$M), ]
+```
+
+The model we will start with is:
+
+\begin{align}
+K_i &\sim \text{Normal}(\mu_i, \sigma)\\
+\mu &= \alpha + \beta_N N_i \\
+\end{align}
+
+where $K$ is the kilocaolories and $N$ is the neocortext percent.
+
+```{r}
+m5.5 <- quap(alist(
+  K ~ dnorm(mu, sigma),
+  mu <- a + bN*N,
+  a ~ dnorm(0, 0.2),
+  bN ~ dnorm(0, 0.5),
+  sigma ~ dexp(1)
+), data=dcc)
+
+precis(m5.5)
+```
+
+Let's show a quick plot:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+xseq <- seq(min(dcc$N)-0.15, max(dcc$N)+0.15, length.out=30)
+mu <- link(m5.5, data=list(N=xseq))
+
+plot(K ~ N, data=dcc, col=rangi2, pch=16)
+lines(xseq, colMeans(mu), lwd=2)
+shade(mu |> apply(2,PI,), xseq)
+
+```
+
+
+Let's build a model just using log body mass, and a complete model:
+```{r}
+m5.6 <- quap(alist(
+  K ~ dnorm(mu, sigma),
+  mu <- a + bM*M,
+  a ~ dnorm(0, 0.2),
+  bM ~ dnorm(0, 0.5),
+  sigma ~ dexp(1)
+), data=dcc)
+
+m5.7 <- quap(alist(
+  K ~ dnorm(mu, sigma),
+  mu <- a + bM*M + bN*N,
+  a ~ dnorm(0, 0.2),
+  bM ~ dnorm(0, 0.5),
+  bN ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=dcc)
+
+precis(m5.7)
+```
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+plot(coeftab(m5.5, m5.6, m5.7), pars=c('bM', 'bN'))
+```
+
+Notice that in the full model, both $\beta_N$ and $\beta_M$ move away from zero. Betting there is some colinearity between the covariates.
+```{r}
+cor(dcc[,c('K', 'N', 'M')])
+```
+This is a good thing, including both in the regression. Because we are able to control for effects due to body size, we can see how much stronger neocortex percentage is associated with milk energy content.

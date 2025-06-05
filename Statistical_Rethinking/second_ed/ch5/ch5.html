@@ -110,6 +110,7 @@ window.Quarto = {
   <ul>
   <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">5.0</a></li>
   <li><a href="#spurious-association" id="toc-spurious-association" class="nav-link" data-scroll-target="#spurious-association">5.1 Spurious Association</a></li>
+  <li><a href="#masked-relationships" id="toc-masked-relationships" class="nav-link" data-scroll-target="#masked-relationships">5.2 Masked Relationships</a></li>
   </ul>
 </nav>
 </div>
@@ -226,9 +227,9 @@ window.Quarto = {
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>               mean         sd       5.5%      94.5%
-a     -3.147035e-05 0.09737331 -0.1556528  0.1555899
-bA    -5.684529e-01 0.10999165 -0.7442408 -0.3926650
-sigma  7.882678e-01 0.07799701  0.6636135  0.9129221</code></pre>
+a     -4.584066e-06 0.09738004 -0.1556367  0.1556275
+bA    -5.684061e-01 0.11000157 -0.7442099 -0.3926024
+sigma  7.883392e-01 0.07801466  0.6636567  0.9130217</code></pre>
 </div>
 <details open="" class="code-fold">
 <summary>Code</summary>
@@ -493,6 +494,126 @@ sigma_M  6.817629e-01 0.06758648  0.5737467  0.7897792</code></pre>
 <span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
+</section>
+<section id="masked-relationships" class="level2">
+<h2 class="anchored" data-anchor-id="masked-relationships">5.2 Masked Relationships</h2>
+<p>Here we will consider how different variables effect primate milk energy content.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(milk)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> milk</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>K <span class="ot">&lt;-</span> <span class="fu">standardize</span>(d<span class="sc">$</span>kcal.per.g)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>N <span class="ot">&lt;-</span> <span class="fu">standardize</span>(d<span class="sc">$</span>neocortex.perc)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>M <span class="ot">&lt;-</span> <span class="fu">standardize</span>(<span class="fu">log</span>(d<span class="sc">$</span>mass))</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove missing values</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>dcc <span class="ot">&lt;-</span> d[<span class="fu">complete.cases</span>(d<span class="sc">$</span>K, d<span class="sc">$</span>N, d<span class="sc">$</span>M), ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>The model we will start with is:</p>
+<p><span class="math display">\[\begin{align}
+K_i &amp;\sim \text{Normal}(\mu_i, \sigma)\\
+\mu &amp;= \alpha + \beta_N N_i \\
+\end{align}\]</span></p>
+<p>where <span class="math inline">\(K\)</span> is the kilocaolories and <span class="math inline">\(N\)</span> is the neocortext percent.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.5</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  K <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bN<span class="sc">*</span>N,</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.2</span>),</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  bN <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dcc)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m5<span class="fl">.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            mean        sd       5.5%     94.5%
+a     0.03995181 0.1544909 -0.2069545 0.2868581
+bN    0.13323344 0.2237475 -0.2243583 0.4908252
+sigma 0.99982378 0.1647095  0.7365861 1.2630614</code></pre>
+</div>
+</div>
+<p>Let’s show a quick plot:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>xseq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">min</span>(dcc<span class="sc">$</span>N)<span class="sc">-</span><span class="fl">0.15</span>, <span class="fu">max</span>(dcc<span class="sc">$</span>N)<span class="sc">+</span><span class="fl">0.15</span>, <span class="at">length.out=</span><span class="dv">30</span>)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m5<span class="fl">.5</span>, <span class="at">data=</span><span class="fu">list</span>(<span class="at">N=</span>xseq))</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K <span class="sc">~</span> N, <span class="at">data=</span>dcc, <span class="at">col=</span>rangi2, <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(xseq, <span class="fu">colMeans</span>(mu), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="fu">shade</span>(mu <span class="sc">|&gt;</span> <span class="fu">apply</span>(<span class="dv">2</span>,PI,), xseq)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch5_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s build a model just using log body mass, and a complete model:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.6</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  K <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bM<span class="sc">*</span>M,</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.2</span>),</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  bM <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dcc)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.7</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>  K <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bM<span class="sc">*</span>M <span class="sc">+</span> bN<span class="sc">*</span>N,</span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.2</span>),</span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>  bM <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>  bN <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dcc)</span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m5<span class="fl">.7</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>             mean        sd       5.5%      94.5%
+a      0.06799181 0.1339987 -0.1461639  0.2821475
+bM    -0.70299118 0.2207869 -1.0558513 -0.3501310
+bN     0.67511787 0.2482985  0.2782889  1.0719469
+sigma  0.73801399 0.1324617  0.5263146  0.9497134</code></pre>
+</div>
+</div>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">coeftab</span>(m5<span class="fl">.5</span>, m5<span class="fl">.6</span>, m5<span class="fl">.7</span>), <span class="at">pars=</span><span class="fu">c</span>(<span class="st">'bM'</span>, <span class="st">'bN'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch5_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Notice that in the full model, both <span class="math inline">\(\beta_N\)</span> and <span class="math inline">\(\beta_M\)</span> move away from zero. Betting there is some colinearity between the covariates.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(dcc[,<span class="fu">c</span>(<span class="st">'K'</span>, <span class="st">'N'</span>, <span class="st">'M'</span>)])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>           K         N          M
+K  1.0000000 0.1554576 -0.3542636
+N  0.1554576 1.0000000  0.7503758
+M -0.3542636 0.7503758  1.0000000</code></pre>
+</div>
+</div>
+<p>This is a good thing, including both in the regression. Because we are able to control for effects due to body size, we can see how much stronger neocortex percentage is associated with milk energy content.</p>
 </section>
 
 </main>
