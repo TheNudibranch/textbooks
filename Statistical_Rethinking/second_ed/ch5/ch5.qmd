@@ -453,4 +453,285 @@ labels <- paste0('a[', 1:4, 'l:', levels(d$clade))
 plot(precis(m5.9, depth=2, pars='a'), labels=labels, xlab='expected kcal(std)')
 ```
  
- 
+## Exercises
+
+### E2
+"Animal diversity ($A$) is linearly related to latitude ($L$), but only after controlling for plant diversity ($P$)":
+
+`A ~ P + L`
+
+### E3
+"Neither funding ($F$) or size of laboratory ($S$) is by itself a good predictor of time to PhD ($T$), but together these variables are positively associated with time to degree."
+
+Model: `T ~ F + L`
+
+This is a different scenario than what we found ourselves with earlier in the chatper. Earlier the covar with positively associated with each other, but one was positively associated with the outcome and the other was negatively. In this case, for us to have a zero effect on their own, we need to have the covar be negatively associated with *each other*.
+
+### E4
+Models (1), (3), (4), and (5) are equivalent. (2) is going to have some issues when fitting and `lm` will yell at you.
+
+### H1
+Assume that the DAG in the divorce example is:
+
+```{r}
+dag_h1 <- dagitty('dag{M -> A -> D}')
+coordinates(dag_h1) <- list(x=c(M=0,A=1,D=2), y=c(M=0, A=0, D=0))
+drawdag(dag_h1)
+```
+I'm also going to cheat a bit a use `daggity` to get the conditional independencies:
+```{r}
+impliedConditionalIndependencies(dag_h1)
+```
+This is not consistent with the data because we saw that both $\beta_A$ and $\beta_M$ in the multiple regression model increased in magnitude when compared to their univariate counterpart. If the DAG above was true, we would see that the coefficient for $\beta_M$ drops to nearly zero.
+
+### H2
+Let's indeed assume that the DAG above is the true data generating process. The model to fit and produce counterfactuals is below. Notice that we don't include $M$ in the model for $D$. This is because we don't want to double dip. That would imply that $M$ could talk to $D$ through some backdoor path in the presence of $A$, but this is not that case with the DAG we have assumed to be true. If this DAG really is the true DGP, then including $M$ in the regression for $D$ will just be adding unnecessary noise to the model. 
+
+Another note - this is the final model. We only create this model with the necessary structure when we have finished sorting out different hypotheses.
+
+```{r}
+d <- list()
+d$D <- standardize(WaffleDivorce$Divorce)
+d$M <- standardize(WaffleDivorce$Marriage)
+d$A <- standardize(WaffleDivorce$MedianAgeMarriage)
+
+m_h2 <- quap(alist(
+  ## A -> D
+  D ~ dnorm(mu, sigma),
+  mu <- a + bA * A,
+  a ~ dnorm(0,0.2),
+  bA ~ dnorm(0,0.5),
+  sigma ~ dexp(1),
+  
+  ## M -> A
+  A ~ dnorm(mu_A, sigma_A),
+  mu_A <- aA + bAM*M,
+  aA ~ dnorm(0,0.2),
+  bAM ~ dnorm(0,0.5),
+  sigma_A ~ dexp(1)
+), data=d)
+
+precis(m_h2)
+```
+
+Let's go ahead and compute the couterfactual for $M$'s effect of $D$:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+M_seq <- seq(-4,2,length.out=100)
+sim_dat <- data.frame(M=M_seq)
+s <- sim(m_h2, data=sim_dat, vars=c('A', 'D'))
+
+par(mfrow=c(1,2))
+plot(D ~ M, data=d, col=rangi2, pch=16, ylim=range(s$D), xlim=range(M_seq),
+      main='Counterfactual of M on D')
+lines(M_seq, colMeans(s$D), lwd=2)
+shade(s$D |> apply(2,PI,0.89), M_seq)
+
+plot(M ~ A, data=d, col=rangi2, pch=16, ylim=range(s$A), xlim=range(M_seq),
+     main='Counterfactual of M on A')
+lines(M_seq, colMeans(s$A), lwd=2)
+shade(s$A |> apply(2,PI,0.89), M_seq)
+```
+
+Because I didn't read the problem, I am just going to keep the above. The actual problem is to get the counterfactual estimate for halving the divorce. We need to do this on the original data and then apply the same transformation with the original mean and sd so it is transformed back to the same space.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+M_new <- WaffleDivorce$Marriage * 0.5
+M_new <- (M_new - mean(WaffleDivorce$Marriage))/sd(WaffleDivorce$Marriage)
+
+sim_dat <- data.frame(M=M_new)
+s <- sim(m_h2, data=sim_dat, vars=c('A', 'D'))
+
+par(mfrow=c(2,2))
+plot(d$M, M_new, pch=16, xlab='Old M', ylab='New M')
+abline(a=0, b=1, lwd=2, lty=2)
+
+bars <- s$D |> apply(2,PI,0.89)
+plot(d$D,colMeans(s$D), col=rangi2, pch=16, xlab='Old D', ylab='New D',
+     main='Effect of Halving Marriage Rate', ylim=range(bars))
+abline(a=0, b=1, lwd=2, lty=2)
+for (i in 1:ncol(bars)) lines(rep(d$D[i],2), bars[,i], col=rangi2)
+
+bars <- s$A |> apply(2,PI,0.89)
+plot(d$A, colMeans(s$A), col=rangi2, pch=16, xlab='Old A', ylab='New A', ylim=range(bars))
+abline(a=0, b=1, lwd=2, lty=2)
+for (i in 1:ncol(bars)) lines(rep(d$A[i],2), bars[,i], col=rangi2)
+
+bars <- s$D |> apply(2,PI,0.89)
+plot(M_new, colMeans(s$D), pch=16, col=rangi2, xlab='New M', ylab='New D', ylim=range(bars))
+for (i in 1:ncol(bars)) lines(rep(M_new[i],2), bars[,i], col=rangi2)
+```
+
+```{r}
+range(M_new) |> diff()
+range(d$M) |> diff()
+```
+
+### H3
+Let's go back to the milk example and assume that the true DAG is as follows:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+dagh3 <- dagitty('dag{M -> K <- N; M -> N}')
+coordinates(dag5.7) <- list(x=c(M=0,K=1,N=2), y=c(M=0.5, K=1, N=0.5))
+drawdag(dag5.7)
+```
+
+Let's compute the counterfactual effect on $K$ of doubling $M$:
+
+```{r}
+data(milk)
+d <- milk
+d$K <- standardize(d$kcal.per.g)
+d$N <- standardize(d$neocortex.perc)
+d$M <- standardize(log(d$mass))
+
+# Remove missing values
+dcc <- d[complete.cases(d$K, d$N, d$M), ]
+
+m_h3 <- quap(alist(
+  # M -> K <- N
+  K ~ dnorm(mu, sigma),
+  mu <- a + bM*M + bN*N,
+  a ~ dnorm(0, 0.2),
+  bM ~ dnorm(0, 0.5),
+  bN ~ dnorm(0,0.5),
+  sigma ~ dexp(1),
+  
+  # M -> N
+  N ~ dnorm(mu_N, sigma_N),
+  mu_N <- a_N + bMN * M,
+  a_N ~ dnorm(0,0.2),
+  bMN ~ dnorm(0, 0.5),
+  sigma_N ~ dexp(1)
+), data=dcc)
+```
+
+Now, let's look at the effects of doubling $M$. This one is a bit tricky. Are we talking about doubling the mass? Or doubling the log of mass? I am going to assume we are talking about doubling mass as that is easier to reason about.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+M_new <- (dcc$mass * 2) |> log()
+M_new <- (M_new - mean(log(dcc$mass)))/ sd(log(dcc$mass))
+
+s <- sim(m_h3, data=list(M=M_new), vars=c('N', 'K'))
+
+par(mfrow=c(2,2))
+
+plot(dcc$M, M_new, pch=16, col=rangi2, xlab='M old', ylab='M new')
+abline(a=0,b=1,lwd=2,lty=2)
+
+bars <- s$K |> apply(2,PI,0.89)
+plot(dcc$K, colMeans(s$K), pch=16, col=rangi2, ylim=range(bars), xlab='Old K', ylab='New K',
+     main='Counterfactual Effect of Doubling M on K')
+for (i in 1:ncol(bars)) lines(rep(dcc$K[i], 2), bars[,i], col=rangi2)
+abline(a=0,b=1,lty=2,lwd=2)
+
+plot(M_new, colMeans(s$K), pch=16, col=rangi2, xlab='New M', ylab='New K', ylim=range(bars))
+for(i in 1:ncol(s$K)) lines(rep(M_new[i], 2), bars[,i], col=rangi2)
+```
+
+Let's show the full counterfactual spectrum just for fun:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+M_seq <- seq(-2,2,length.out=100)
+
+s <- sim(m_h3, data=list(M=M_seq), vars=c('N', 'K'))
+
+par(mfrow=c(1,2))
+plot(K ~ M, pch=16, col=rangi2, data=dcc, main='Counterfactual of M on K')
+lines(M_seq, colMeans(s$K), lwd=2)
+shade(s$K |> apply(2,PI,0.89), M_seq)
+
+plot(N ~ M, pch=16, col=rangi2, data=dcc, main='Counterfactual of M on N')
+lines(M_seq, colMeans(s$N), lwd=2)
+shade(s$N |> apply(2,PI,0.89), M_seq)
+```
+
+### H4
+Let's bring the `South` variable into the mix here. I am going to assume the following DAG:
+
+```{r}
+dag_h4 <- dagitty('dag{S -> A; A -> M; A -> D}')
+coordinates(dag_h4) <- list(x=c(S=0, A=1, M=1, D=2), y=c(S=1, A=1, M=0, D=1))
+drawdag(dag_h4)
+```
+This is inline with our previously discovered independence (section 5.1), where $M \mathrel{\unicode{x2AEB}} D | A$.
+
+Let's use `dagitty` to get our conditional independences.
+```{r}
+impliedConditionalIndependencies(dag_h4)
+```
+We are going to evaluate $M \mathrel{\unicode{x2AEB}} S | A$ first. We will have a model where $S$ predicts $M$ without $A$, and one where both covar are included.
+
+```{r}
+d <- list()
+d$D <- standardize(WaffleDivorce$Divorce)
+d$M <- standardize(WaffleDivorce$Marriage)
+d$A <- standardize(WaffleDivorce$MedianAgeMarriage)
+d$S <- WaffleDivorce$South
+
+m_h4_1 <- quap(alist(
+  ## S -> M
+  M ~ dnorm(mu, sigma),
+  mu <- a + bS * S,
+  a ~ dnorm(0,0.2),
+  bS ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+m_h4_2 <- quap(alist(
+  ## S -> A -> M
+  M ~ dnorm(mu, sigma),
+  mu <- a + bS * S + bA * A,
+  a ~ dnorm(0,0.2),
+  bS ~ dnorm(0,0.5),
+  bA ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+plot(coeftab(m_h4_1, m_h4_2), par=c('bS'))
+```
+Hard to tell here, looks like $S$ has little to no effect on $M$. Let's evaluate $D \mathrel{\unicode{x2AEB}} S | A$:
+
+```{r}
+m_h4_3 <- quap(alist(
+  ## S -> D
+  D ~ dnorm(mu, sigma),
+  mu <- a + bS * S,
+  a ~ dnorm(0,0.2),
+  bS ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+m_h4_4 <- quap(alist(
+  ## S -> A -> D
+  D ~ dnorm(mu, sigma),
+  mu <- a + bS * S + bA * A,
+  a ~ dnorm(0,0.2),
+  bS ~ dnorm(0,0.5),
+  bA ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+plot(coeftab(m_h4_3, m_h4_4), par=c('bS'))
+```
+It definitely looks like adding $A$ removes some of the effect of $S$ on $D$. I would go as far as to say that the conditional independence has been shown.
+
