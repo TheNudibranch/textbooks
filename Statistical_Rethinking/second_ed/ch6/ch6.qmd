@@ -1,0 +1,291 @@
+---
+title: "Rethinking - Chapter 6"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+```{r}
+#| output: false
+#| code-fold: true
+library(rethinking)
+library(dagitty)
+```
+
+## 6.0
+- collider bias
+  - aka: Berkson's Paradox
+  - aka: selection-distortion effect
+  - Can also happen when adding one predictor into the model induces selection within the model
+- In this chapter we will explore:
+  1. multicollinearity
+  2. post-treatment bias
+  3. collider bias
+
+
+Generate an example of collider bias. Here we use the newsworthiness and trustworthiness example:
+```{r}
+N <- 200
+p <- 0.1
+nw <- rnorm(N); tw <- rnorm(N)
+
+# select the top ten 10%
+s <- nw + tw
+q <- quantile(s, 1-p)
+selected <- s >= q
+cor(tw[selected], nw[selected])
+```
+## 6.1 - Multicollinearity
+
+- The raw correlation doesn't matter - the association, conditional on the other variables in the model matters.
+- The model will still work fine for prediction, but will fail in understanding
+
+Let's simulate a height dataset, we will then simulate leg length for the right and left leg.
+```{r}
+set.seed(909)
+N <- 100
+height <- rnorm(N, 10,2)
+leg_prop <- runif(N,0.4,0.5)
+leg_left <- leg_prop*height + rnorm(N,0,0.02)
+leg_right <- leg_prop*height + rnorm(N,0,0.02)
+
+d <- data.frame(height, leg_left, leg_right)
+```
+
+If we regress leg height onto height. We expect the coefficient for leg height to be around 2.2, since the average leg height is 4.5 at the avearge height of 10 (10/4.5).
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+m6.1 <- quap(alist(
+  height ~ dnorm(mu, sigma),
+  mu <- a + bl*leg_left + br*leg_right,
+  a ~ dnorm(10,100),
+  bl ~ dnorm(2,10),
+  br ~ dnorm(2,10),
+  sigma ~ dexp(1)
+), data=d)
+precis(m6.1)
+vcov(m6.1) |> cov2cor()
+
+plot(precis(m6.1))
+```
+
+The question we are asking of the model is: "What is the value of knowing each leg's length, after already knowing the other leg's length".
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+par(mfrow=c(1,2))
+post <- extract.samples(m6.1)
+plot(bl ~ br, post, col=col.alpha(rangi2, 0.1), pch=16)
+sum_blr <- post$bl + post$br
+dens(sum_blr, col=rangi2, lwd=2, xlab='sum of bl and br')
+```
+
+A model with only one of the predictors will produce a coefficient that is inline with the sum of the $\beta_l$ and $\beta_r$
+
+```{r}
+m6.2 <- quap(alist(
+  height ~ dnorm(mu, sigma),
+  mu <- a + bl*leg_left,
+  a ~ dnorm(10,100),
+  bl ~ dnorm(2,10),
+  sigma ~ dexp(1)
+), data=d)
+precis(m6.2)
+```
+
+**Take home message:** When two predictor variables are very strongly correlated (conditional on other variables in the model), including both in a model may lead to confusion.
+
+Let's return to the primate milk example:
+```{r}
+data(milk)
+d <- milk
+d$K <- standardize(d$kcal.per.g)
+d$fat <- standardize(d$perc.fat)
+d$L <- standardize(d$perc.lactose)
+```
+
+Let's start with two bivariate regressions
+```{r}
+m6.3 <- quap(alist(
+  K ~ dnorm(mu, sigma),
+  mu <- a + bF*fat,
+  a ~ dnorm(0,0.2),
+  bF ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+m6.4 <- quap(alist(
+  K ~ dnorm(mu, sigma),
+  mu <- a + bL*L,
+  a ~ dnorm(0,0.2),
+  bL ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+precis(m6.3); precis(m6.4)
+```
+We might think that both are good predictors, but watch what happens when we put both variables into the model:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+m6.5 <- quap(alist(
+  K ~ dnorm(mu, sigma),
+  mu <- a + bL*L + bF*fat,
+  a ~ dnorm(0,0.2),
+  bL ~ dnorm(0,0.5),
+  bF ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+precis(m6.5)
+plot(coeftab(m6.3, m6.4, m6.5), pars=c('bF', 'bL'))
+```
+
+It is the same problem as the previous leg length example: the two variables form essential a single axis of variation.
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+pairs(~ kcal.per.g + perc.fat + perc.lactose, data=d,col=rangi2,pch=16)
+```
+
+Both variables are good predictors on their own, but neither are good predictors if you already know the other. Richie argues that this is because there is a latent variable $D$ that influences both lactose and fat. We are no working with a class of fitting problems known as *non-identifiability*.
+
+Let's simulate some multicollinearity. We are going to create a new column $x$ that is created from $F$ with a correlation parameter.
+```{r}
+sim.coll <- function(r=0.9){
+  d$x <- rnorm(nrow(d), mean=r*d$perc.fat, sd=sqrt((1-r^2)*var(d$perc.fat)))
+  m <- lm(kcal.per.g ~ perc.fat + x, data=d)
+  sqrt(diag(vcov(m)))[2] #std dev of x
+}
+
+rep.sim.coll <- function(r=0.9, n=100){
+  stddev <- replicate(n, sim.coll(r))
+  mean(stddev)
+}
+
+r.seq <- seq(0,0.99,0.01)
+stddev <- vapply(r.seq, rep.sim.coll, n=100, numeric(1))
+
+plot(r.seq, stddev, type='l', col=rangi2, lwd=2, xlab='correlation')
+```
+
+## 6.2 - Post Treatment Bias
+
+Let's say that we have two soils that we are testing. The goal is for one soil to reduce the growth of fungus (which inhibits plant growth). There are four data points collected: pre plant height, post plant height, treated, and fungus growth. If we were to include fungus growth into the model it would ruin the experiment. Here is a simulation:
+
+```{r}
+set.seed(71)
+N <- 100
+
+h0 <- rnorm(N,10,2)
+treatment <- rep(0:1, each=N/2)
+fungus <- rbinom(N, size=1, prob=0.5 - treatment*0.4)
+h1 <- h0 + rnorm(N, 5 - 3*fungus)
+
+d <- data.frame(h0,h1,treatment, fungus)
+precis(d)
+```
+
+Let's define $p=h_{1,i}/h_{0,i}$, the height at time $t=1$ over the height at time $t=0$. We do this since we expect the plant to be taller, but we will let $p$ be less than one just in case things to horribly wrong. We'll use the log-normal to enforce this.
+
+```{r}
+m6.6 <- quap(alist(
+  h1 ~ dnorm(mu, sigma),
+  mu <- h0*p,
+  p ~ dlnorm(0,0.25),
+  sigma ~ dexp(1)
+), data=d)
+precis(m6.6)
+```
+An average about a 40% growth rate. Now, let's include both fungus and treatment into the model:
+
+```{r}
+m6.7 <- quap(alist(
+  h1 ~ dnorm(mu, sigma),
+  mu <- h0*p,
+  p <- a + bt*treatment + bf*fungus,
+  a ~ dlnorm(0,0.2),
+  bt ~ dnorm(0,0.5),
+  bf ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+precis(m6.7)
+```
+
+The heck? Treatment is zero? Yes, because we are effectively asking the question: "once we already know whether or not a plant developed fungus, does soil treatment matter?". The answer of course is no.
+
+Let's build it again, but without fungus:
+
+```{r}
+m6.8 <- quap(alist(
+  h1 ~ dnorm(mu, sigma),
+  mu <- h0*p,
+  p <- a + bt*treatment,
+  a ~ dlnorm(0,0.2),
+  bt ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+precis(m6.8)
+```
+
+Model `m6.7` is still important though. It tells us that including fungus in the model effectively zeros out the treatment, suggesting that the treatment worked for the anticipated reasons. Let's look at the DAG:
+
+```{r}
+plant_dag <- dagitty('dag{H_0 -> H_1; F -> H_1; T -> F}')
+coordinates(plant_dag) <- list(x=c(H_0 = 0, T=2, F=1.5, H_1=1), 
+                               y=c(H_0=0, T=0, F=0, H_1=0))
+drawdag(plant_dag)
+```
+
+The correct way of phrasing what happened is: "conditioning on F induces *D-Separation*". Let's look at all the conditional independences:
+```{r}
+impliedConditionalIndependencies(plant_dag)
+```
+Notice that the first two don't have any conditions because they are independent *without* any conditionals (colliders).
+
+Let's try a different experiment, where instead of fungus influencing plant growth, it is actually an unobserved variable $M$ moisture. The treatment is also independent of $H_1$. $M$ influences both $F$ and $H_1$. Notice, if we condition on fungus we open up the path and $T$ can now influence $H_1$, even though $T$ is indep. of $H_1$ without any conditionals.
+
+```{r}
+N <- 100
+h0 <- rnorm(N,10,2)
+treatment <- rep(0:1,each=N/2)
+M <- rbern(N)
+fungus <- rbinom(N, size=1, prob=0.5 - treatment*0.4 + 0.4*M)
+h1 <- h0 + rnorm(N, 5 + 3*M)
+d2 <- data.frame(h0, h1, treatment, fungus)
+
+m6.7.1 <- quap(alist(
+  h1 ~ dnorm(mu, sigma),
+  mu <- h0*p,
+  p <- a + bt*treatment + bf*fungus,
+  a ~ dlnorm(0,0.2),
+  bt ~ dnorm(0,0.5),
+  bf ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d2)
+precis(m6.7.1)
+
+m6.8.1 <- quap(alist(
+  h1 ~ dnorm(mu, sigma),
+  mu <- h0*p,
+  p <- a + bt*treatment,
+  a ~ dlnorm(0,0.2),
+  bt ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d2)
+precis(m6.8.1)
+
+```
+
