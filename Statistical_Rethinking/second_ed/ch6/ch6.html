@@ -111,6 +111,7 @@ window.Quarto = {
   <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">6.0</a></li>
   <li><a href="#multicollinearity" id="toc-multicollinearity" class="nav-link" data-scroll-target="#multicollinearity">6.1 - Multicollinearity</a></li>
   <li><a href="#post-treatment-bias" id="toc-post-treatment-bias" class="nav-link" data-scroll-target="#post-treatment-bias">6.2 - Post Treatment Bias</a></li>
+  <li><a href="#collider-bias" id="toc-collider-bias" class="nav-link" data-scroll-target="#collider-bias">6.3 - Collider Bias</a></li>
   </ul>
 </nav>
 </div>
@@ -173,7 +174,7 @@ window.Quarto = {
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(tw[selected], nw[selected])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] -0.620149</code></pre>
+<pre><code>[1] -0.8068368</code></pre>
 </div>
 </div>
 </section>
@@ -571,6 +572,117 @@ bt    -0.02998446 0.04523376 -0.1022767 0.04230782
 sigma  2.32259770 0.16155566  2.0644005 2.58079484</code></pre>
 </div>
 </div>
+</section>
+<section id="collider-bias" class="level2">
+<h2 class="anchored" data-anchor-id="collider-bias">6.3 - Collider Bias</h2>
+<p>A variable is a collider if there are arrows going into it.</p>
+<p>Let’s simulate happiness and age. These variables are not associated with each other, but they both influence marriage.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># I'm not sure why we need to simulate it for 1,000 years</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="co"># It looks like for N_years &gt;= 65 it will always return 65*20 =1,300 rows</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Which makes sense, but why run it for so long if the return is just a snapshot of the current population</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="co"># After 1,000 years (i.e. no history)</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">sim_happiness</span>(<span class="at">seed=</span><span class="dv">1977</span>, <span class="at">N_years =</span> <span class="fl">1e3</span>)</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(d)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                   mean        sd      5.5%     94.5%     histogram
+age        3.300000e+01 18.768883  4.000000 62.000000 ▇▇▇▇▇▇▇▇▇▇▇▇▇
+married    3.007692e-01  0.458769  0.000000  1.000000    ▇▁▁▁▁▁▁▁▁▃
+happiness -1.000070e-16  1.214421 -1.789474  1.789474      ▇▅▇▅▅▇▅▇</code></pre>
+</div>
+</div>
+<p>Let’s build a simple regression model to determine the effect of age on happiness while controlling for marriage status. We’ll also only focus on adults here. We’re going to build our prior model such that happiness is at its peak at age 18 and lowest at age 65. Variable <span class="math inline">\(A\)</span> will encode this by ranging from 1 to 0.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>d2 <span class="ot">&lt;-</span> d[d<span class="sc">$</span>age <span class="sc">&gt;</span> <span class="dv">17</span>,]</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>d2<span class="sc">$</span>A <span class="ot">&lt;-</span> (d2<span class="sc">$</span>age <span class="sc">-</span> <span class="dv">18</span>)<span class="sc">/</span>(<span class="dv">65-18</span>)</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>d2<span class="sc">$</span>mid <span class="ot">&lt;-</span> d2<span class="sc">$</span>married <span class="sc">+</span> <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Since happiness ranges from -2 to 2, the strongest association for age would be a coef. of 4 since that would take us from the min to max (if that was true the intercept would probably be -2 to make it all work out).</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>m6<span class="fl">.9</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  happiness <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a[mid] <span class="sc">+</span> bA<span class="sc">*</span>A,</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  a[mid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>  bA <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d2)</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m6<span class="fl">.9</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            mean         sd       5.5%      94.5%
+a[1]  -0.2350877 0.06348986 -0.3365568 -0.1336186
+a[2]   1.2585517 0.08495989  1.1227694  1.3943340
+bA    -0.7490274 0.11320112 -0.9299447 -0.5681102
+sigma  0.9897080 0.02255800  0.9536559  1.0257600</code></pre>
+</div>
+</div>
+<p>Strong relationship between age and happiness. Let’s see what happens when we remove marriage:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>m6<span class="fl">.10</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  happiness <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bA<span class="sc">*</span>A,</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>  bA <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d2)</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m6<span class="fl">.10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>               mean         sd       5.5%     94.5%
+a      1.649248e-07 0.07675015 -0.1226614 0.1226617
+bA    -2.728620e-07 0.13225976 -0.2113769 0.2113764
+sigma  1.213188e+00 0.02766080  1.1689803 1.2573949</code></pre>
+</div>
+</div>
+<p>Woah! No association found, marriage is a collider!</p>
+<p>Grandparent, Parent, Child example:</p>
+<p>If we add the unobserved U, it will bias inference from <span class="math inline">\(G \rightarrow C\)</span>. This is becuase if we condition on <span class="math inline">\(P\)</span> and regress <span class="math inline">\(G\)</span> on <span class="math inline">\(C\)</span>, then we don’t only get <span class="math inline">\(G\rightarrow C\)</span>, but we also now get <span class="math inline">\(G\rightarrow P \leftarrow U \rightarrow C\)</span>, because <span class="math inline">\(P\)</span> now becomes a collider.</p>
+<p>Let’s do some simulations to prove this:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">200</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>b_GP <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="co"># direct effect of G on P</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>b_GC <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># direct effect of G on C</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>b_PC <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="co"># direct effect of P on C</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>b_U <span class="ot">&lt;-</span> <span class="dv">2</span>  <span class="co"># direct effect of U on P and C</span></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>U <span class="ot">&lt;-</span> <span class="dv">2</span><span class="sc">*</span><span class="fu">rbern</span>(N,<span class="fl">0.5</span>) <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>G <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N)</span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, b_GP<span class="sc">*</span>G <span class="sc">+</span> b_U<span class="sc">*</span>U)</span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a>C <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, b_PC<span class="sc">*</span>P <span class="sc">+</span> b_GC<span class="sc">*</span>G <span class="sc">+</span> b_U<span class="sc">*</span>U)</span>
+<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(C,P,G,U)</span>
+<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a>m6<span class="fl">.11</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>  C <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> b_PC<span class="sc">*</span>P <span class="sc">+</span> b_GC<span class="sc">*</span>G,</span>
+<span id="cb44-17"><a href="#cb44-17" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb44-18"><a href="#cb44-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(b_PC, b_GC) <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb44-19"><a href="#cb44-19" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb44-20"><a href="#cb44-20" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb44-21"><a href="#cb44-21" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m6<span class="fl">.11</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            mean         sd       5.5%       94.5%
+a     -0.1174752 0.09919574 -0.2760091  0.04105877
+b_PC   1.7868915 0.04455355  1.7156863  1.85809664
+b_GC  -0.8389537 0.10614045 -1.0085867 -0.66932077
+sigma  1.4094891 0.07011139  1.2974375  1.52154063</code></pre>
+</div>
+</div>
+<p>Two things going on here. We have simple confounding for <span class="math inline">\(\beta_{PC}\)</span> because it is not measuring the direct effect. We also have the confounding effect of <span class="math inline">\(U\)</span>, causing <span class="math inline">\(\beta_{PC}\)</span> to be higher than expected. Second, we have the collider effect causing <span class="math inline">\(\beta_{GC}\)</span> to have a significant magnitude, when it should be zero.</p>
+<p>This is pretty cool when you think about it, that is, why are we seeing <span class="math inline">\(\beta_{PC}\)</span> as negative. Well, we know that a bad neighborhood (<span class="math inline">\(U=-1\)</span>) hurts child and parent education. But, lets say that we condition on parent education. That is, we have some sub-population of kids <span class="math inline">\(s\)</span> that have parents with the same education level. Now, what happens when we look at grandparent education. There will be some that are high and some that are low. But, we have conditioned on parent education, therefore the changes in grandparent education can’t effect parent education. What can? Neighborhood status. This is how we get differing grandparent education, with the same parent education - neighborhood status controls this. Thus, if we have grandparent <span class="math inline">\(G_1\)</span> with a high education and grandparent <span class="math inline">\(G_2\)</span> with a low education, chances are <span class="math inline">\(P_1\)</span> is in a bad neighborhood and <span class="math inline">\(P_2\)</span> is in a good neighborhood to keep <span class="math inline">\(P_1 = P_2\)</span>. Thus, <span class="math inline">\(C_1\)</span> will be lower and <span class="math inline">\(C_2\)</span> will be higher. A negative correlation.</p>
 </section>
 
 </main>

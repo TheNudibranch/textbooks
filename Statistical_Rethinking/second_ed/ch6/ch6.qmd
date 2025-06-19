@@ -289,3 +289,96 @@ precis(m6.8.1)
 
 ```
 
+## 6.3 - Collider Bias
+
+A variable is a collider if there are arrows going into it.
+
+Let's simulate happiness and age. These variables are not associated with each other, but they both influence marriage.
+```{r}
+# I'm not sure why we need to simulate it for 1,000 years
+# It looks like for N_years >= 65 it will always return 65*20 =1,300 rows
+# Which makes sense, but why run it for so long if the return is just a snapshot of the current population
+# After 1,000 years (i.e. no history)
+d <- sim_happiness(seed=1977, N_years = 1e3)
+precis(d)
+```
+Let's build a simple regression model to determine the effect of age on happiness while controlling for marriage status. We'll also only focus on adults here. We're going to build our prior model such that happiness is at its peak at age 18 and lowest at age 65. Variable $A$ will encode this by ranging from 1 to 0.
+
+```{r}
+d2 <- d[d$age > 17,]
+d2$A <- (d2$age - 18)/(65-18)
+d2$mid <- d2$married + 1
+```
+
+Since happiness ranges from -2 to 2, the strongest association for age would be a coef. of 4 since that would take us from the min to max (if that was true the intercept would probably be -2 to make it all work out).
+
+```{r}
+m6.9 <- quap(alist(
+  happiness ~ dnorm(mu, sigma),
+  mu <- a[mid] + bA*A,
+  a[mid] ~ dnorm(0,1),
+  bA ~ dnorm(0,2),
+  sigma ~ dexp(1)
+), data=d2)
+precis(m6.9, depth=2)
+```
+
+Strong relationship between age and happiness. Let's see what happens when we remove marriage:
+```{r}
+m6.10 <- quap(alist(
+  happiness ~ dnorm(mu, sigma),
+  mu <- a + bA*A,
+  a ~ dnorm(0,1),
+  bA ~ dnorm(0,2),
+  sigma ~ dexp(1)
+), data=d2)
+precis(m6.10)
+```
+Woah! No association found, marriage is a collider!
+
+
+Grandparent, Parent, Child example:
+
+If we add the unobserved U, it will bias inference from $G \rightarrow C$. This is becuase if we condition on $P$ and regress $G$ on $C$, then we don't only get $G\rightarrow C$, but we also now get $G\rightarrow P \leftarrow U \rightarrow C$, because $P$ now becomes a collider. 
+
+Let's do some simulations to prove this:
+```{r}
+N <- 200
+b_GP <- 1 # direct effect of G on P
+b_GC <- 0 # direct effect of G on C
+b_PC <- 1 # direct effect of P on C
+b_U <- 2  # direct effect of U on P and C
+
+set.seed(1)
+U <- 2*rbern(N,0.5) - 1
+G <- rnorm(N)
+P <- rnorm(N, b_GP*G + b_U*U)
+C <- rnorm(N, b_PC*P + b_GC*G + b_U*U)
+d <- data.frame(C,P,G,U)
+
+m6.11 <- quap(alist(
+  C ~ dnorm(mu, sigma),
+  mu <- a + b_PC*P + b_GC*G,
+  a ~ dnorm(0,1),
+  c(b_PC, b_GC) ~ dnorm(0,1),
+  sigma ~ dexp(1)
+), data=d)
+precis(m6.11)
+```
+
+Two things going on here. We have simple confounding for $\beta_{PC}$ because it is not measuring the direct effect. We also have the confounding effect of $U$, causing $\beta_{PC}$ to be higher than expected. Second, we have the collider effect causing $\beta_{GC}$ to have a significant magnitude, when it should be zero.
+
+This is pretty cool when you think about it, that is, why are we seeing $\beta_{PC}$ as negative. Well, we know that a bad neighborhood ($U=-1$) hurts child and parent education. But, lets say that we condition on parent education. That is, we have some sub-population of kids $s$ that have parents with the same education level. Now, what happens when we look at grandparent education. There will be some that are high and some that are low. But, we have conditioned on parent education, therefore the changes in grandparent education can't effect parent education. What can? Neighborhood status. This is how we get differing grandparent education, with the same parent education - neighborhood status controls this. Thus, if we have grandparent $G_1$ with a high education and grandparent $G_2$ with a low education, chances are $P_1$ is in a bad neighborhood and $P_2$ is in a good neighborhood to keep $P_1 = P_2$. Thus, $C_1$ will be lower and $C_2$ will be higher. A negative correlation.
+
+Let's now add U into the model for completeness.
+```{r}
+m6.12 <- quap(alist(
+  C ~ dnorm(mu, sigma),
+  mu <- a + b_PC*P + b_GC*G + b_U*U,
+  a ~ dnorm(0,1),
+  c(b_PC, b_GC, b_U) ~ dnorm(0,1),
+  sigma ~ dexp(1)
+), data=d)
+precis(m6.12)
+```
+
