@@ -112,6 +112,7 @@ window.Quarto = {
   <li><a href="#multicollinearity" id="toc-multicollinearity" class="nav-link" data-scroll-target="#multicollinearity">6.1 - Multicollinearity</a></li>
   <li><a href="#post-treatment-bias" id="toc-post-treatment-bias" class="nav-link" data-scroll-target="#post-treatment-bias">6.2 - Post Treatment Bias</a></li>
   <li><a href="#collider-bias" id="toc-collider-bias" class="nav-link" data-scroll-target="#collider-bias">6.3 - Collider Bias</a></li>
+  <li><a href="#confronting-confounding" id="toc-confronting-confounding" class="nav-link" data-scroll-target="#confronting-confounding">6.4 - Confronting confounding</a></li>
   </ul>
 </nav>
 </div>
@@ -174,7 +175,7 @@ window.Quarto = {
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(tw[selected], nw[selected])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] -0.8068368</code></pre>
+<pre><code>[1] -0.8242093</code></pre>
 </div>
 </div>
 </section>
@@ -683,6 +684,97 @@ sigma  1.4094891 0.07011139  1.2974375  1.52154063</code></pre>
 </div>
 <p>Two things going on here. We have simple confounding for <span class="math inline">\(\beta_{PC}\)</span> because it is not measuring the direct effect. We also have the confounding effect of <span class="math inline">\(U\)</span>, causing <span class="math inline">\(\beta_{PC}\)</span> to be higher than expected. Second, we have the collider effect causing <span class="math inline">\(\beta_{GC}\)</span> to have a significant magnitude, when it should be zero.</p>
 <p>This is pretty cool when you think about it, that is, why are we seeing <span class="math inline">\(\beta_{PC}\)</span> as negative. Well, we know that a bad neighborhood (<span class="math inline">\(U=-1\)</span>) hurts child and parent education. But, lets say that we condition on parent education. That is, we have some sub-population of kids <span class="math inline">\(s\)</span> that have parents with the same education level. Now, what happens when we look at grandparent education. There will be some that are high and some that are low. But, we have conditioned on parent education, therefore the changes in grandparent education can’t effect parent education. What can? Neighborhood status. This is how we get differing grandparent education, with the same parent education - neighborhood status controls this. Thus, if we have grandparent <span class="math inline">\(G_1\)</span> with a high education and grandparent <span class="math inline">\(G_2\)</span> with a low education, chances are <span class="math inline">\(P_1\)</span> is in a bad neighborhood and <span class="math inline">\(P_2\)</span> is in a good neighborhood to keep <span class="math inline">\(P_1 = P_2\)</span>. Thus, <span class="math inline">\(C_1\)</span> will be lower and <span class="math inline">\(C_2\)</span> will be higher. A negative correlation.</p>
+<p>Let’s now add U into the model for completeness.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>m6<span class="fl">.12</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>  C <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> b_PC<span class="sc">*</span>P <span class="sc">+</span> b_GC<span class="sc">*</span>G <span class="sc">+</span> b_U<span class="sc">*</span>U,</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(b_PC, b_GC, b_U) <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m6<span class="fl">.12</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>             mean         sd       5.5%        94.5%
+a     -0.12197510 0.07192588 -0.2369265 -0.007023655
+b_PC   1.01161103 0.06597258  0.9061741  1.117047948
+b_GC  -0.04081373 0.09728716 -0.1962974  0.114669941
+b_U    1.99648992 0.14770462  1.7604294  2.232550439
+sigma  1.01959911 0.05080176  0.9384081  1.100790130</code></pre>
+</div>
+</div>
+</section>
+<section id="confronting-confounding" class="level2">
+<h2 class="anchored" data-anchor-id="confronting-confounding">6.4 - Confronting confounding</h2>
+<p><strong>confounding:</strong> any context in which the association between an outcome <span class="math inline">\(Y\)</span> and predictor <span class="math inline">\(X\)</span> is not the same as it would be, if we had experimentally determined the values of <span class="math inline">\(X\)</span>.</p>
+<p>There are four types of elemental relations:</p>
+<ul>
+<li>The Fork: <span class="math inline">\(X \leftarrow Z \rightarrow Y\)</span>
+<ul>
+<li>The classic confounder. <span class="math inline">\(X\)</span> is conditionally independent of <span class="math inline">\(Y\)</span> given <span class="math inline">\(Z\)</span></li>
+</ul></li>
+<li>The Pipe: <span class="math inline">\(X \rightarrow Z \rightarrow Y\)</span>
+<ul>
+<li>Same conditional relation as the fork</li>
+</ul></li>
+<li>The Collider <span class="math inline">\(X \rightarrow Z \leftarrow Y\)</span>
+<ul>
+<li>Conditioning on <span class="math inline">\(Z\)</span> actually opens the path. So <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span> are independent, unless we condition on <span class="math inline">\(Z\)</span></li>
+</ul></li>
+<li>The Descendant: <span class="math inline">\(X \rightarrow Z \leftarrow Y, Z \rightarrow D\)</span>
+<ul>
+<li>Conditioning on a descendant <span class="math inline">\(D\)</span> will <em>partially</em> open the path between <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span></li>
+<li>Think about if <span class="math inline">\(Z\)</span> and <span class="math inline">\(D\)</span> had basically the same information, then it would be like you are conditioning on <span class="math inline">\(Z\)</span>, even though <span class="math inline">\(D\)</span> isn’t technically a cause of <span class="math inline">\(X\)</span> or <span class="math inline">\(Y\)</span></li>
+</ul></li>
+</ul>
+<p>So Richie has said that we should only close backdoor paths. That is, we want to remove any effects from paths that don’t have <span class="math inline">\(X\)</span> influencing <span class="math inline">\(Y\)</span>. This would also mean that Richie doesn’t want use to condition on <span class="math inline">\(Z\)</span>, if <span class="math inline">\(Z\)</span> is a mediator (pipe), as this would remove the mediation effect of <span class="math inline">\(X\)</span> onto <span class="math inline">\(Z\)</span>, and then <span class="math inline">\(Z\)</span> onto <span class="math inline">\(Y\)</span>. I get this, but it can be hard to wrap your head around first. Basically, what Richie is saying here is that any arrows that point from <span class="math inline">\(X\)</span> to <span class="math inline">\(Y\)</span> should be kept in, because that in effect is <span class="math inline">\(X\)</span>’s total effect on <span class="math inline">\(Y\)</span>.</p>
+<p>Let’s try an example:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>dag_6<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="st">  U [unobserved]</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a><span class="st">  X -&gt; Y</span></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a><span class="st">  X &lt;- U &lt;- A -&gt; C -&gt; Y</span></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a><span class="st">  U -&gt; B &lt;- C</span></span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a><span class="st">}"</span>)</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a><span class="fu">adjustmentSets</span>(dag_6<span class="fl">.1</span>, <span class="at">exposure =</span> <span class="st">'X'</span>, <span class="at">outcome=</span><span class="st">'Y'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>{ C }
+{ A }</code></pre>
+</div>
+</div>
+<p>Thus, to block the backdoor path, conditioning on either <span class="math inline">\(A\)</span> or <span class="math inline">\(C\)</span> will suffice. Notice that we don’t conidtion on <span class="math inline">\(B\)</span>. That is because the backdoor path that contains <span class="math inline">\(B\)</span> has a collider and is therefore already closed. We wouldn’t want any spurious association in our effect estimate.</p>
+<p>Let’s go to a beefy waffle house/divorce rate example:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>dag_6<span class="fl">.2</span> <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="st">  A -&gt; D</span></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a><span class="st">  A -&gt; M -&gt; D</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a><span class="st">  A &lt;- S -&gt; M</span></span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a><span class="st">  S -&gt; W -&gt; D</span></span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a><span class="st">}"</span>)</span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a><span class="fu">adjustmentSets</span>(dag_6<span class="fl">.2</span>, <span class="at">exposure =</span> <span class="st">'W'</span>, <span class="at">outcome=</span><span class="st">'D'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>{ A, M }
+{ S }</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">impliedConditionalIndependencies</span>(dag_6<span class="fl">.2</span> )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>A _||_ W | S
+D _||_ S | A, M, W
+M _||_ W | S</code></pre>
+</div>
+</div>
 </section>
 
 </main>

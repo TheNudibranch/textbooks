@@ -382,3 +382,46 @@ m6.12 <- quap(alist(
 precis(m6.12)
 ```
 
+## 6.4 - Confronting confounding
+
+**confounding:** any context in which the association between an outcome $Y$ and predictor $X$ is not the same as it would be, if we had experimentally determined the values of $X$.
+
+There are four types of elemental relations:
+
+- The Fork: $X \leftarrow Z \rightarrow Y$
+  - The classic confounder. $X$ is conditionally independent of $Y$ given $Z$
+- The Pipe: $X \rightarrow Z \rightarrow Y$
+  - Same conditional relation as the fork
+- The Collider $X \rightarrow Z \leftarrow Y$
+  - Conditioning on $Z$ actually opens the path. So $X$ and $Y$ are independent, unless we condition on $Z$
+- The Descendant: $X \rightarrow Z \leftarrow Y, Z \rightarrow D$
+  - Conditioning on a descendant $D$ will *partially* open the path between $X$ and $Y$
+  - Think about if $Z$ and $D$ had basically the same information, then it would be like you are conditioning on $Z$, even though $D$ isn't technically a cause of $X$ or $Y$
+  
+So Richie has said that we should only close backdoor paths. That is, we want to remove any effects from paths that don't have $X$ influencing $Y$. This would also mean that Richie doesn't want use to condition on $Z$, if $Z$ is a mediator (pipe), as this would remove the mediation effect of $X$ onto $Z$, and then $Z$ onto $Y$. I get this, but it can be hard to wrap your head around first. Basically, what Richie is saying here is that any arrows that point from $X$ to $Y$ should be kept in, because that in effect is $X$'s total effect on $Y$.  
+  
+Let's try an example:
+```{r}
+dag_6.1 <- dagitty("dag{
+  U [unobserved]
+  X -> Y
+  X <- U <- A -> C -> Y
+  U -> B <- C
+}")
+adjustmentSets(dag_6.1, exposure = 'X', outcome='Y')
+```
+Thus, to block the backdoor path, conditioning on either $A$ or $C$ will suffice. Notice that we don't conidtion on $B$. That is because the backdoor path that contains $B$ has a collider and is therefore already closed. We wouldn't want any spurious association in our effect estimate.
+
+Let's go to a beefy waffle house/divorce rate example:
+
+```{r}
+dag_6.2 <- dagitty("dag{
+  A -> D
+  A -> M -> D
+  A <- S -> M
+  S -> W -> D
+}")
+adjustmentSets(dag_6.2, exposure = 'W', outcome='D')
+impliedConditionalIndependencies(dag_6.2 )
+```
+
