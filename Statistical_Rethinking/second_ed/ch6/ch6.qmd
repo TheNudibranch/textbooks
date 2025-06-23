@@ -424,4 +424,291 @@ dag_6.2 <- dagitty("dag{
 adjustmentSets(dag_6.2, exposure = 'W', outcome='D')
 impliedConditionalIndependencies(dag_6.2 )
 ```
+## Problems
 
+### M.1
+
+Recall the DAG on pg 186:
+```{r}
+dag_m1.1 <- dagitty("dag{
+  U [unobserved]
+  A -> C -> Y
+  A -> U -> B <- C
+  U -> X -> Y
+}")
+coordinates(dag_m1.1) <- list(x=c('A'=0.5, 'B'=0.5, 'C'=1, 'U'=0, 'X'=0, 'Y'=1), 
+                         y=c('A'=-1.5, 'B'=-0.5, 'C'=-1, 'U'=-1, 'X'=0, 'Y'=0))
+drawdag(dag_m1.1)
+```
+
+Now add a new unobserved variable $V$ that makes the path $C \leftarrow V \rightarrow Y$:
+```{r}
+dag_m1.2 <- dagitty("dag{
+  U [unobserved]
+  V [unobserved]
+  A -> C -> Y
+  A -> U -> B <- C
+  U -> X -> Y
+  C <- V -> Y
+}")
+coordinates(dag_m1.2) <- list(x=c('A'=0.5, 'B'=0.5, 'C'=1, 'U'=0, 'X'=0, 'Y'=1, V=1.5), 
+                         y=c('A'=-1.5, 'B'=-0.5, 'C'=-1, 'U'=-1, 'X'=0, 'Y'=0, V=-0.5))
+drawdag(dag_m1.2)
+```
+These are the new following paths from $X$ to $Y$, we only need to close the first path:
+
+- $X \leftarrow U \leftarrow A \rightarrow C \rightarrow Y$
+- $X \leftarrow U \leftarrow A \rightarrow C \leftarrow V\rightarrow Y$
+- $X \rightarrow Y$
+- $X \leftarrow U \rightarrow B \leftarrow C \rightarrow Y$
+- $X \leftarrow U \rightarrow B \leftarrow C \leftarrow V \rightarrow Y$
+
+The following are the sets that we could condition on (we can't observe $U$ or $V$):
+
+- $\{A\}$
+
+Let's go ahead and check and see what has changed
+```{r}
+adjustmentSets(dag_m1.1, exposure='X', outcome = 'Y')
+adjustmentSets(dag_m1.2, exposure='X', outcome = 'Y')
+```
+
+### M.2
+
+Need to be careful about just looking at the pair plots. We care about the *conditional association*, not the association before the variables are put into the model. Let's look at an example with the following DAG $X \rightarrow Z \rightarrow Y$
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+n <- 100
+X <- rnorm(n)
+Z <- rnorm(n,X, 0.5)
+Y <- rnorm(n,Z,0.8)
+data <- cbind(X,Z,Y) |> as.data.frame()
+cor(data)
+pairs(data, pch=16, col=rangi2)
+```
+
+We clearly have correlation between the predictors, but not necessarily multicollinearity. Let's see what happens when we build the model:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+m2.3 <- quap(alist(
+  Y ~ dnorm(mu, sigma),
+  mu <- a + bZ*Z + bX*X,
+  a ~ dnorm(0,2),
+  bZ ~ dnorm(0,2),
+  bX ~ dnorm(0,2),
+  sigma ~ dexp(1)
+), data=data)
+
+m2.2 <- quap(alist(
+  Y ~ dnorm(mu, sigma),
+  mu <- a + bZ*Z,
+  a ~ dnorm(0,2),
+  bZ ~ dnorm(0,2),
+  sigma ~ dexp(1)
+), data=data)
+
+m2.1 <- quap(alist(
+  Y ~ dnorm(mu, sigma),
+  mu <- a + bX*X,
+  a ~ dnorm(0,2),
+  bX ~ dnorm(0,2),
+  sigma ~ dexp(1)
+), data=data)
+
+plot(coeftab(m2.1, m2.2, m2.3), pars=c('bZ', 'bX'))
+```
+
+Notice that $\beta_X$ didn't stay roughly the same but increase in uncertainty, it shrunk to practically zero. While $\beta_Z$ stayed roughly the same but did become somewhat more uncertain. 
+
+In the legs example, both left and right legs have causal arrows from height - they share a common source. In this example, all the variance present predicting $Y$ with $X$ is already explained by $Z$.
+
+### M.3
+
+#### DAG 1
+
+```{r}
+dag_m3.1 <- dagitty("dag{
+  X <- Z <- A
+  X -> Y <- A
+  Z -> Y
+}")
+coordinates(dag_m3.1) <- list(x=c(X=0, Y=1, A=1, Z=0.5), 
+                              y=c(X=0, Y=0, A=-1, Z=-1))
+drawdag(dag_m3.1)
+```
+
+Backdoor paths are:
+
+- $X \leftarrow Z \leftarrow A \rightarrow Y$
+- $X \leftarrow Z \rightarrow Y$
+
+Need to condition on $Z$.
+```{r}
+adjustmentSets(dag_m3.1, exposure='X', outcome='Y')
+```
+
+
+#### DAG 2
+
+```{r}
+dag_m3.2 <- dagitty("dag{
+  X -> Z <- A
+  X -> Y <- A
+  Z -> Y
+}")
+coordinates(dag_m3.2) <- list(x=c(X=0, Y=1, A=1, Z=0.5), 
+                              y=c(X=0, Y=0, A=-1, Z=-1))
+drawdag(dag_m3.2)
+```
+
+Don't condition on anything since we want the total causal effect, not the direct effect.
+
+
+#### DAG 3
+
+```{r}
+dag_m3.3 <- dagitty("dag{
+  X <- A -> Z <- Y
+  X -> Y
+  X -> Z
+}")
+coordinates(dag_m3.3) <- list(x=c(X=0, Y=1, A=0, Z=0.5), 
+                              y=c(X=0, Y=0, A=-1, Z=-1))
+drawdag(dag_m3.3)
+```
+
+No need to condition since $Z$ is a collider and blocks the backdoor path
+
+```{r}
+adjustmentSets(dag_m3.3, exposure='X', outcome='Y')
+```
+
+#### DAG 4
+
+```{r}
+dag_m3.4 <- dagitty("dag{
+  X <- A -> Z -> Y
+  X -> Y
+  X -> Z
+}")
+coordinates(dag_m3.4) <- list(x=c(X=0, Y=1, A=0, Z=0.5), 
+                              y=c(X=0, Y=0, A=-1, Z=-1))
+drawdag(dag_m3.4)
+```
+
+Need to condition on only $A$ since we still want the path that flows from $X \rightarrow Z \rightarrow Y$.
+
+```{r}
+adjustmentSets(dag_m3.4, exposure='X', outcome='Y')
+```
+
+### H.3
+
+Here is the following DAG for the fox data:
+
+```{r}
+dag_h4 <- dagitty('dag{
+  area -> avgfood -> groupsize -> weight
+  avgfood -> weight
+}')
+coordinates(dag_h4) <- list(x=c(area=0.5, avgfood=0, groupsize=1, weight=0.5),
+                            y=c(area=-1, avgfood=-0.5, groupsize=-0.5, weight=0))
+
+drawdag(dag_h4)
+```
+
+Let's data a look at the data:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+data("foxes")
+d <- foxes
+pairs(foxes, pch=16, col=rangi2)
+```
+
+Let's build a simple model to infer the total causal effect of area on weight:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+d <- foxes
+d$A <- d$area |> standardize()
+d$W <- d$weight |> standardize()
+d$F <- d$avgfood |> standardize()
+d$G <- d$groupsize |> standardize()
+
+m_h3 <- quap(alist(
+  W ~ dnorm(mu, sigma),
+  mu <- a + bA*A,
+  a ~ dnorm(0,0.7),
+  bA ~ dnorm(0,0.8),
+  sigma ~ dexp(1)
+), data=d)
+
+prior <- extract.prior(m_h3, n = 100) |> as.data.frame()
+plot(W ~ A, data=d, pch=16, col=rangi2)
+for (i in 1:60) abline(a=prior[i,1], b=prior[i,2], col=col.alpha('grey',0.3), lwd=2)
+```
+
+Prior looks good after some tinkering, let's look at the effect:
+```{r}
+precis(m_h3)
+```
+Not seeing much of a meaningful effect of area on weight.
+
+### H.4
+Let's look at the effect of avgfood now. I would assume that adding food would increase the weight. There are now covariates given the model that we need to account for to get the total causal effect:
+
+```{r}
+m_h4 <- quap(alist(
+  W ~ dnorm(mu, sigma),
+  mu <- a + bF*F,
+  a ~ dnorm(0,0.7),
+  bF ~ dnorm(0,0.8),
+  sigma ~ dexp(1)
+), data=d)
+
+precis(m_h4)
+```
+Hmm, not much to see here.
+
+### H.5
+
+For this DAG, we need to account for avgfood since there is an backdoor path $\text{groupsize} \leftarrow \text{avgfood} \rightarrow \text{weight}$.
+
+```{r}
+m_h5 <- quap(alist(
+  W ~ dnorm(mu, sigma),
+  mu <- a + bF*F + bG*G,
+  a ~ dnorm(0,0.7),
+  bF ~ dnorm(0,0.8),
+  bG ~ dnorm(0,1),
+  sigma ~ dexp(1)
+), data=d)
+
+precis(m_h5)
+```
+
+Hey, cool! We found a negative association for $\beta_{\text{groupsize}}$! And, it looks like $\beta_{\text{avgood}}$ has a positive value now. But wait... what's that lurking in the dark. Could it be multicollinearity?:
+
+```{r}
+post <- extract.samples(m_h5, n=1e4)
+plot(bG ~ bF, data=post, col=col.alpha(rangi2))
+abline(a=0, b=-1, lwd=2)
+```
+
+Yeah, looks like it, or maybe something akin to it. What's even worse is that effects essentially cancel each other out.
+
+From the DAG and further thinking it looks like area effects both avgfood and groupsize (through avgfood), but avgfood has a positive association with weight, and groupsize a negative. But, since both avgfood and groupsize are highly correlated, as they are influenced by the same ancestral predictor (area), their effect for weight cancels each other out. Another way to think of this is a *masked relation*. 

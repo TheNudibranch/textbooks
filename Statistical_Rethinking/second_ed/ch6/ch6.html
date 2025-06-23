@@ -113,6 +113,15 @@ window.Quarto = {
   <li><a href="#post-treatment-bias" id="toc-post-treatment-bias" class="nav-link" data-scroll-target="#post-treatment-bias">6.2 - Post Treatment Bias</a></li>
   <li><a href="#collider-bias" id="toc-collider-bias" class="nav-link" data-scroll-target="#collider-bias">6.3 - Collider Bias</a></li>
   <li><a href="#confronting-confounding" id="toc-confronting-confounding" class="nav-link" data-scroll-target="#confronting-confounding">6.4 - Confronting confounding</a></li>
+  <li><a href="#problems" id="toc-problems" class="nav-link" data-scroll-target="#problems">Problems</a>
+  <ul class="collapse">
+  <li><a href="#m.1" id="toc-m.1" class="nav-link" data-scroll-target="#m.1">M.1</a></li>
+  <li><a href="#m.2" id="toc-m.2" class="nav-link" data-scroll-target="#m.2">M.2</a></li>
+  <li><a href="#m.3" id="toc-m.3" class="nav-link" data-scroll-target="#m.3">M.3</a></li>
+  <li><a href="#h.3" id="toc-h.3" class="nav-link" data-scroll-target="#h.3">H.3</a></li>
+  <li><a href="#h.4" id="toc-h.4" class="nav-link" data-scroll-target="#h.4">H.4</a></li>
+  <li><a href="#h.5" id="toc-h.5" class="nav-link" data-scroll-target="#h.5">H.5</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -175,7 +184,7 @@ window.Quarto = {
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(tw[selected], nw[selected])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] -0.8242093</code></pre>
+<pre><code>[1] -0.8268686</code></pre>
 </div>
 </div>
 </section>
@@ -775,6 +784,445 @@ D _||_ S | A, M, W
 M _||_ W | S</code></pre>
 </div>
 </div>
+</section>
+<section id="problems" class="level2">
+<h2 class="anchored" data-anchor-id="problems">Problems</h2>
+<section id="m.1" class="level3">
+<h3 class="anchored" data-anchor-id="m.1">M.1</h3>
+<p>Recall the DAG on pg 186:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>dag_m1<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a><span class="st">  U [unobserved]</span></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a><span class="st">  A -&gt; C -&gt; Y</span></span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a><span class="st">  A -&gt; U -&gt; B &lt;- C</span></span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a><span class="st">  U -&gt; X -&gt; Y</span></span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a><span class="st">}"</span>)</span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a><span class="fu">coordinates</span>(dag_m1<span class="fl">.1</span>) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x=</span><span class="fu">c</span>(<span class="st">'A'</span><span class="ot">=</span><span class="fl">0.5</span>, <span class="st">'B'</span><span class="ot">=</span><span class="fl">0.5</span>, <span class="st">'C'</span><span class="ot">=</span><span class="dv">1</span>, <span class="st">'U'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'X'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'Y'</span><span class="ot">=</span><span class="dv">1</span>), </span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>                         <span class="at">y=</span><span class="fu">c</span>(<span class="st">'A'</span><span class="ot">=</span><span class="sc">-</span><span class="fl">1.5</span>, <span class="st">'B'</span><span class="ot">=</span><span class="sc">-</span><span class="fl">0.5</span>, <span class="st">'C'</span><span class="ot">=</span><span class="sc">-</span><span class="dv">1</span>, <span class="st">'U'</span><span class="ot">=</span><span class="sc">-</span><span class="dv">1</span>, <span class="st">'X'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'Y'</span><span class="ot">=</span><span class="dv">0</span>))</span>
+<span id="cb54-9"><a href="#cb54-9" aria-hidden="true" tabindex="-1"></a><span class="fu">drawdag</span>(dag_m1<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Now add a new unobserved variable <span class="math inline">\(V\)</span> that makes the path <span class="math inline">\(C \leftarrow V \rightarrow Y\)</span>:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>dag_m1<span class="fl">.2</span> <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="st">  U [unobserved]</span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="st">  V [unobserved]</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a><span class="st">  A -&gt; C -&gt; Y</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a><span class="st">  A -&gt; U -&gt; B &lt;- C</span></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a><span class="st">  U -&gt; X -&gt; Y</span></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a><span class="st">  C &lt;- V -&gt; Y</span></span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a><span class="st">}"</span>)</span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a><span class="fu">coordinates</span>(dag_m1<span class="fl">.2</span>) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x=</span><span class="fu">c</span>(<span class="st">'A'</span><span class="ot">=</span><span class="fl">0.5</span>, <span class="st">'B'</span><span class="ot">=</span><span class="fl">0.5</span>, <span class="st">'C'</span><span class="ot">=</span><span class="dv">1</span>, <span class="st">'U'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'X'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'Y'</span><span class="ot">=</span><span class="dv">1</span>, <span class="at">V=</span><span class="fl">1.5</span>), </span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a>                         <span class="at">y=</span><span class="fu">c</span>(<span class="st">'A'</span><span class="ot">=</span><span class="sc">-</span><span class="fl">1.5</span>, <span class="st">'B'</span><span class="ot">=</span><span class="sc">-</span><span class="fl">0.5</span>, <span class="st">'C'</span><span class="ot">=</span><span class="sc">-</span><span class="dv">1</span>, <span class="st">'U'</span><span class="ot">=</span><span class="sc">-</span><span class="dv">1</span>, <span class="st">'X'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'Y'</span><span class="ot">=</span><span class="dv">0</span>, <span class="at">V=</span><span class="sc">-</span><span class="fl">0.5</span>))</span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a><span class="fu">drawdag</span>(dag_m1<span class="fl">.2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>These are the new following paths from <span class="math inline">\(X\)</span> to <span class="math inline">\(Y\)</span>, we only need to close the first path:</p>
+<ul>
+<li><span class="math inline">\(X \leftarrow U \leftarrow A \rightarrow C \rightarrow Y\)</span></li>
+<li><span class="math inline">\(X \leftarrow U \leftarrow A \rightarrow C \leftarrow V\rightarrow Y\)</span></li>
+<li><span class="math inline">\(X \rightarrow Y\)</span></li>
+<li><span class="math inline">\(X \leftarrow U \rightarrow B \leftarrow C \rightarrow Y\)</span></li>
+<li><span class="math inline">\(X \leftarrow U \rightarrow B \leftarrow C \leftarrow V \rightarrow Y\)</span></li>
+</ul>
+<p>The following are the sets that we could condition on (we can’t observe <span class="math inline">\(U\)</span> or <span class="math inline">\(V\)</span>):</p>
+<ul>
+<li><span class="math inline">\(\{A\}\)</span></li>
+</ul>
+<p>Let’s go ahead and check and see what has changed</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">adjustmentSets</span>(dag_m1<span class="fl">.1</span>, <span class="at">exposure=</span><span class="st">'X'</span>, <span class="at">outcome =</span> <span class="st">'Y'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>{ C }
+{ A }</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">adjustmentSets</span>(dag_m1<span class="fl">.2</span>, <span class="at">exposure=</span><span class="st">'X'</span>, <span class="at">outcome =</span> <span class="st">'Y'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>{ A }</code></pre>
+</div>
+</div>
+</section>
+<section id="m.2" class="level3">
+<h3 class="anchored" data-anchor-id="m.2">M.2</h3>
+<p>Need to be careful about just looking at the pair plots. We care about the <em>conditional association</em>, not the association before the variables are put into the model. Let’s look at an example with the following DAG <span class="math inline">\(X \rightarrow Z \rightarrow Y\)</span></p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n,X, <span class="fl">0.5</span>)</span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>Y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n,Z,<span class="fl">0.8</span>)</span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">cbind</span>(X,Z,Y) <span class="sc">|&gt;</span> <span class="fu">as.data.frame</span>()</span>
+<span id="cb60-6"><a href="#cb60-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>          X         Z         Y
+X 1.0000000 0.8808459 0.6650703
+Z 0.8808459 1.0000000 0.7538825
+Y 0.6650703 0.7538825 1.0000000</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pairs</span>(data, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>rangi2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We clearly have correlation between the predictors, but not necessarily multicollinearity. Let’s see what happens when we build the model:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>m2<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>  Y <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bZ<span class="sc">*</span>Z <span class="sc">+</span> bX<span class="sc">*</span>X,</span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>  bZ <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb63-8"><a href="#cb63-8" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>data)</span>
+<span id="cb63-9"><a href="#cb63-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-10"><a href="#cb63-10" aria-hidden="true" tabindex="-1"></a>m2<span class="fl">.2</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb63-11"><a href="#cb63-11" aria-hidden="true" tabindex="-1"></a>  Y <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb63-12"><a href="#cb63-12" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bZ<span class="sc">*</span>Z,</span>
+<span id="cb63-13"><a href="#cb63-13" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb63-14"><a href="#cb63-14" aria-hidden="true" tabindex="-1"></a>  bZ <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb63-15"><a href="#cb63-15" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb63-16"><a href="#cb63-16" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>data)</span>
+<span id="cb63-17"><a href="#cb63-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-18"><a href="#cb63-18" aria-hidden="true" tabindex="-1"></a>m2<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb63-19"><a href="#cb63-19" aria-hidden="true" tabindex="-1"></a>  Y <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb63-20"><a href="#cb63-20" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX<span class="sc">*</span>X,</span>
+<span id="cb63-21"><a href="#cb63-21" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb63-22"><a href="#cb63-22" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb63-23"><a href="#cb63-23" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb63-24"><a href="#cb63-24" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>data)</span>
+<span id="cb63-25"><a href="#cb63-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-26"><a href="#cb63-26" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">coeftab</span>(m2<span class="fl">.1</span>, m2<span class="fl">.2</span>, m2<span class="fl">.3</span>), <span class="at">pars=</span><span class="fu">c</span>(<span class="st">'bZ'</span>, <span class="st">'bX'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Notice that <span class="math inline">\(\beta_X\)</span> didn’t stay roughly the same but increase in uncertainty, it shrunk to practically zero. While <span class="math inline">\(\beta_Z\)</span> stayed roughly the same but did become somewhat more uncertain.</p>
+<p>In the legs example, both left and right legs have causal arrows from height - they share a common source. In this example, all the variance present predicting <span class="math inline">\(Y\)</span> with <span class="math inline">\(X\)</span> is already explained by <span class="math inline">\(Z\)</span>.</p>
+</section>
+<section id="m.3" class="level3">
+<h3 class="anchored" data-anchor-id="m.3">M.3</h3>
+<section id="dag-1" class="level4">
+<h4 class="anchored" data-anchor-id="dag-1">DAG 1</h4>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>dag_m3<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{</span></span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a><span class="st">  X &lt;- Z &lt;- A</span></span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a><span class="st">  X -&gt; Y &lt;- A</span></span>
+<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a><span class="st">  Z -&gt; Y</span></span>
+<span id="cb64-5"><a href="#cb64-5" aria-hidden="true" tabindex="-1"></a><span class="st">}"</span>)</span>
+<span id="cb64-6"><a href="#cb64-6" aria-hidden="true" tabindex="-1"></a><span class="fu">coordinates</span>(dag_m3<span class="fl">.1</span>) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x=</span><span class="fu">c</span>(<span class="at">X=</span><span class="dv">0</span>, <span class="at">Y=</span><span class="dv">1</span>, <span class="at">A=</span><span class="dv">1</span>, <span class="at">Z=</span><span class="fl">0.5</span>), </span>
+<span id="cb64-7"><a href="#cb64-7" aria-hidden="true" tabindex="-1"></a>                              <span class="at">y=</span><span class="fu">c</span>(<span class="at">X=</span><span class="dv">0</span>, <span class="at">Y=</span><span class="dv">0</span>, <span class="at">A=</span><span class="sc">-</span><span class="dv">1</span>, <span class="at">Z=</span><span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb64-8"><a href="#cb64-8" aria-hidden="true" tabindex="-1"></a><span class="fu">drawdag</span>(dag_m3<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Backdoor paths are:</p>
+<ul>
+<li><span class="math inline">\(X \leftarrow Z \leftarrow A \rightarrow Y\)</span></li>
+<li><span class="math inline">\(X \leftarrow Z \rightarrow Y\)</span></li>
+</ul>
+<p>Need to condition on <span class="math inline">\(Z\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="fu">adjustmentSets</span>(dag_m3<span class="fl">.1</span>, <span class="at">exposure=</span><span class="st">'X'</span>, <span class="at">outcome=</span><span class="st">'Y'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>{ Z }</code></pre>
+</div>
+</div>
+</section>
+<section id="dag-2" class="level4">
+<h4 class="anchored" data-anchor-id="dag-2">DAG 2</h4>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>dag_m3<span class="fl">.2</span> <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{</span></span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a><span class="st">  X -&gt; Z &lt;- A</span></span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a><span class="st">  X -&gt; Y &lt;- A</span></span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a><span class="st">  Z -&gt; Y</span></span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a><span class="st">}"</span>)</span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a><span class="fu">coordinates</span>(dag_m3<span class="fl">.2</span>) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x=</span><span class="fu">c</span>(<span class="at">X=</span><span class="dv">0</span>, <span class="at">Y=</span><span class="dv">1</span>, <span class="at">A=</span><span class="dv">1</span>, <span class="at">Z=</span><span class="fl">0.5</span>), </span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>                              <span class="at">y=</span><span class="fu">c</span>(<span class="at">X=</span><span class="dv">0</span>, <span class="at">Y=</span><span class="dv">0</span>, <span class="at">A=</span><span class="sc">-</span><span class="dv">1</span>, <span class="at">Z=</span><span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a><span class="fu">drawdag</span>(dag_m3<span class="fl">.2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-34-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Don’t condition on anything since we want the total causal effect, not the direct effect.</p>
+</section>
+<section id="dag-3" class="level4">
+<h4 class="anchored" data-anchor-id="dag-3">DAG 3</h4>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>dag_m3<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{</span></span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a><span class="st">  X &lt;- A -&gt; Z &lt;- Y</span></span>
+<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a><span class="st">  X -&gt; Y</span></span>
+<span id="cb68-4"><a href="#cb68-4" aria-hidden="true" tabindex="-1"></a><span class="st">  X -&gt; Z</span></span>
+<span id="cb68-5"><a href="#cb68-5" aria-hidden="true" tabindex="-1"></a><span class="st">}"</span>)</span>
+<span id="cb68-6"><a href="#cb68-6" aria-hidden="true" tabindex="-1"></a><span class="fu">coordinates</span>(dag_m3<span class="fl">.3</span>) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x=</span><span class="fu">c</span>(<span class="at">X=</span><span class="dv">0</span>, <span class="at">Y=</span><span class="dv">1</span>, <span class="at">A=</span><span class="dv">0</span>, <span class="at">Z=</span><span class="fl">0.5</span>), </span>
+<span id="cb68-7"><a href="#cb68-7" aria-hidden="true" tabindex="-1"></a>                              <span class="at">y=</span><span class="fu">c</span>(<span class="at">X=</span><span class="dv">0</span>, <span class="at">Y=</span><span class="dv">0</span>, <span class="at">A=</span><span class="sc">-</span><span class="dv">1</span>, <span class="at">Z=</span><span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb68-8"><a href="#cb68-8" aria-hidden="true" tabindex="-1"></a><span class="fu">drawdag</span>(dag_m3<span class="fl">.3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-35-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>No need to condition since <span class="math inline">\(Z\)</span> is a collider and blocks the backdoor path</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">adjustmentSets</span>(dag_m3<span class="fl">.3</span>, <span class="at">exposure=</span><span class="st">'X'</span>, <span class="at">outcome=</span><span class="st">'Y'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code> {}</code></pre>
+</div>
+</div>
+</section>
+<section id="dag-4" class="level4">
+<h4 class="anchored" data-anchor-id="dag-4">DAG 4</h4>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>dag_m3<span class="fl">.4</span> <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{</span></span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a><span class="st">  X &lt;- A -&gt; Z -&gt; Y</span></span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a><span class="st">  X -&gt; Y</span></span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a><span class="st">  X -&gt; Z</span></span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a><span class="st">}"</span>)</span>
+<span id="cb71-6"><a href="#cb71-6" aria-hidden="true" tabindex="-1"></a><span class="fu">coordinates</span>(dag_m3<span class="fl">.4</span>) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x=</span><span class="fu">c</span>(<span class="at">X=</span><span class="dv">0</span>, <span class="at">Y=</span><span class="dv">1</span>, <span class="at">A=</span><span class="dv">0</span>, <span class="at">Z=</span><span class="fl">0.5</span>), </span>
+<span id="cb71-7"><a href="#cb71-7" aria-hidden="true" tabindex="-1"></a>                              <span class="at">y=</span><span class="fu">c</span>(<span class="at">X=</span><span class="dv">0</span>, <span class="at">Y=</span><span class="dv">0</span>, <span class="at">A=</span><span class="sc">-</span><span class="dv">1</span>, <span class="at">Z=</span><span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb71-8"><a href="#cb71-8" aria-hidden="true" tabindex="-1"></a><span class="fu">drawdag</span>(dag_m3<span class="fl">.4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-37-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Need to condition on only <span class="math inline">\(A\)</span> since we still want the path that flows from <span class="math inline">\(X \rightarrow Z \rightarrow Y\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="fu">adjustmentSets</span>(dag_m3<span class="fl">.4</span>, <span class="at">exposure=</span><span class="st">'X'</span>, <span class="at">outcome=</span><span class="st">'Y'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>{ A }</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="h.3" class="level3">
+<h3 class="anchored" data-anchor-id="h.3">H.3</h3>
+<p>Here is the following DAG for the fox data:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>dag_h4 <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">'dag{</span></span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a><span class="st">  area -&gt; avgfood -&gt; groupsize -&gt; weight</span></span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a><span class="st">  avgfood -&gt; weight</span></span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a><span class="st">}'</span>)</span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a><span class="fu">coordinates</span>(dag_h4) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x=</span><span class="fu">c</span>(<span class="at">area=</span><span class="fl">0.5</span>, <span class="at">avgfood=</span><span class="dv">0</span>, <span class="at">groupsize=</span><span class="dv">1</span>, <span class="at">weight=</span><span class="fl">0.5</span>),</span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a>                            <span class="at">y=</span><span class="fu">c</span>(<span class="at">area=</span><span class="sc">-</span><span class="dv">1</span>, <span class="at">avgfood=</span><span class="sc">-</span><span class="fl">0.5</span>, <span class="at">groupsize=</span><span class="sc">-</span><span class="fl">0.5</span>, <span class="at">weight=</span><span class="dv">0</span>))</span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-8"><a href="#cb74-8" aria-hidden="true" tabindex="-1"></a><span class="fu">drawdag</span>(dag_h4)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s data a look at the data:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"foxes"</span>)</span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> foxes</span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a><span class="fu">pairs</span>(foxes, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>rangi2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-40-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s build a simple model to infer the total causal effect of area on weight:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> foxes</span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>A <span class="ot">&lt;-</span> d<span class="sc">$</span>area <span class="sc">|&gt;</span> <span class="fu">standardize</span>()</span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>W <span class="ot">&lt;-</span> d<span class="sc">$</span>weight <span class="sc">|&gt;</span> <span class="fu">standardize</span>()</span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>F <span class="ot">&lt;-</span> d<span class="sc">$</span>avgfood <span class="sc">|&gt;</span> <span class="fu">standardize</span>()</span>
+<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>G <span class="ot">&lt;-</span> d<span class="sc">$</span>groupsize <span class="sc">|&gt;</span> <span class="fu">standardize</span>()</span>
+<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-7"><a href="#cb76-7" aria-hidden="true" tabindex="-1"></a>m_h3 <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb76-8"><a href="#cb76-8" aria-hidden="true" tabindex="-1"></a>  W <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb76-9"><a href="#cb76-9" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bA<span class="sc">*</span>A,</span>
+<span id="cb76-10"><a href="#cb76-10" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.7</span>),</span>
+<span id="cb76-11"><a href="#cb76-11" aria-hidden="true" tabindex="-1"></a>  bA <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.8</span>),</span>
+<span id="cb76-12"><a href="#cb76-12" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb76-13"><a href="#cb76-13" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb76-14"><a href="#cb76-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-15"><a href="#cb76-15" aria-hidden="true" tabindex="-1"></a>prior <span class="ot">&lt;-</span> <span class="fu">extract.prior</span>(m_h3, <span class="at">n =</span> <span class="dv">100</span>) <span class="sc">|&gt;</span> <span class="fu">as.data.frame</span>()</span>
+<span id="cb76-16"><a href="#cb76-16" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(W <span class="sc">~</span> A, <span class="at">data=</span>d, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>rangi2)</span>
+<span id="cb76-17"><a href="#cb76-17" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">60</span>) <span class="fu">abline</span>(<span class="at">a=</span>prior[i,<span class="dv">1</span>], <span class="at">b=</span>prior[i,<span class="dv">2</span>], <span class="at">col=</span><span class="fu">col.alpha</span>(<span class="st">'grey'</span>,<span class="fl">0.3</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-41-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Prior looks good after some tinkering, let’s look at the effect:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m_h3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>               mean         sd       5.5%     94.5%
+a     -3.801390e-07 0.09125120 -0.1458374 0.1458367
+bA     1.922088e-02 0.09182493 -0.1275331 0.1659748
+sigma  9.912640e-01 0.06466614  0.8879150 1.0946130</code></pre>
+</div>
+</div>
+<p>Not seeing much of a meaningful effect of area on weight.</p>
+</section>
+<section id="h.4" class="level3">
+<h3 class="anchored" data-anchor-id="h.4">H.4</h3>
+<p>Let’s look at the effect of avgfood now. I would assume that adding food would increase the weight. There are now covariates given the model that we need to account for to get the total causal effect:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a>m_h4 <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>  W <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bF<span class="sc">*</span>F,</span>
+<span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.7</span>),</span>
+<span id="cb79-5"><a href="#cb79-5" aria-hidden="true" tabindex="-1"></a>  bF <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.8</span>),</span>
+<span id="cb79-6"><a href="#cb79-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb79-7"><a href="#cb79-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb79-8"><a href="#cb79-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-9"><a href="#cb79-9" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m_h4)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>               mean         sd       5.5%     94.5%
+a      6.010051e-07 0.09124018 -0.1458188 0.1458200
+bF    -2.470902e-02 0.09181380 -0.1714452 0.1220272
+sigma  9.911423e-01 0.06465831  0.8878058 1.0944788</code></pre>
+</div>
+</div>
+<p>Hmm, not much to see here.</p>
+</section>
+<section id="h.5" class="level3">
+<h3 class="anchored" data-anchor-id="h.5">H.5</h3>
+<p>For this DAG, we need to account for avgfood since there is an backdoor path <span class="math inline">\(\text{groupsize} \leftarrow \text{avgfood} \rightarrow \text{weight}\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a>m_h5 <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>  W <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bF<span class="sc">*</span>F <span class="sc">+</span> bG<span class="sc">*</span>G,</span>
+<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.7</span>),</span>
+<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a>  bF <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.8</span>),</span>
+<span id="cb81-6"><a href="#cb81-6" aria-hidden="true" tabindex="-1"></a>  bG <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb81-7"><a href="#cb81-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb81-8"><a href="#cb81-8" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb81-9"><a href="#cb81-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-10"><a href="#cb81-10" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m_h5)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>               mean         sd       5.5%      94.5%
+a     -1.062331e-06 0.08657473 -0.1383642  0.1383621
+bF     5.789728e-01 0.19342389  0.2698440  0.8881015
+bG    -6.777248e-01 0.19383347 -0.9875082 -0.3679415
+sigma  9.396527e-01 0.06136589  0.8415781  1.0377272</code></pre>
+</div>
+</div>
+<p>Hey, cool! We found a negative association for <span class="math inline">\(\beta_{\text{groupsize}}\)</span>! And, it looks like <span class="math inline">\(\beta_{\text{avgood}}\)</span> has a positive value now. But wait… what’s that lurking in the dark. Could it be multicollinearity?:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m_h5, <span class="at">n=</span><span class="fl">1e4</span>)</span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bG <span class="sc">~</span> bF, <span class="at">data=</span>post, <span class="at">col=</span><span class="fu">col.alpha</span>(rangi2))</span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">a=</span><span class="dv">0</span>, <span class="at">b=</span><span class="sc">-</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch6_files/figure-html/unnamed-chunk-45-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Yeah, looks like it, or maybe something akin to it. What’s even worse is that effects essentially cancel each other out.</p>
+<p>From the DAG and further thinking it looks like area effects both avgfood and groupsize (through avgfood), but avgfood has a positive association with weight, and groupsize a negative. But, since both avgfood and groupsize are highly correlated, as they are influenced by the same ancestral predictor (area), their effect for weight cancels each other out. Another way to think of this is a <em>masked relation</em>.</p>
+</section>
 </section>
 
 </main>
