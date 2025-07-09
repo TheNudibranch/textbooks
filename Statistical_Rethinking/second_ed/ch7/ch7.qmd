@@ -168,3 +168,92 @@ for(i in 1:6) paste0('plot_func(m7.', i,',',i, ')') |> parse(text=_) |> eval()
 Notice that the model predicts negative brain size for `m7.6`, not great. Model `m7.1` could be said to be underfit. This means that it is not sensitive to changes in the sample. If we removed a point, it would probably look relatively the same. Alternatively, model `m7.4` is overfit. If we remove a point, the polynomial mean line would look wildly different.
 
 Bias-variance: bias (underfitting) and variance (overfitting). 
+
+## 7.2 - Entropy and accuracy
+
+We need to:
+
+- Establish a measurement scale for distance from perfect accuracy
+- Need to measure *deviance* as an approximation of relative distance from perfect accuracy
+- Establish that it is *deviance* out-of-sample that is only of interest
+
+To define a target, there are two main dimensions to worry about:
+
+- cost-benefit analysis
+- Accuracy in context
+
+Joint probability is the measure we want. It's the unique measure that correctly counts up the relative number of ways each event could happen. The true model will also have the highest joint probability.
+
+**Information:** The reduction in uncertainty when we learn an outcome.
+
+What is a good measure of uncertainty:
+
+- A measure of uncertainty should be continuous
+- The measure should increase as the number of possible events increases
+- Measures should be additive. 
+
+The function that satisfies these desiderata has one form and is called **information entropy**. For $n$ possible events, with each event $i$ occurring with probability $p_i$, then the entropy is:
+
+$$H(p)=-E_p[\log(p_i)]=-\sum^n_{i=1}p_i\log(p_i)$$
+
+We can use entropy to build measures of accuracy. Also, when $p_i=0$, we can use L'Hopitals rule to show $p_i\log(p_i)=0$. Notice, also that maximizing entropy is the same as decreasing uncertainty. 
+
+**Divergence:** The additional uncertainty induced by using probabilites from one distribution to describe anoter distribution. 
+
+The KL divergence is defined as:
+
+$$D_{\text{KL}}(p,q)=\sum_i p_i \log(p_i/q_i)$$
+
+In plain english: the average difference in log probability between the target $p$ and model $q$. This is also just the difference between two entropies: the entropy of the target distribution $p$ and the *cross entropy* arising from using $q$ to predict $p$. We can use this metric to predict different models.
+
+One thing to callout here is the definition of cross entropy:
+
+$$H(p,q)=-E\log(p_i)=-\sum^n_{i=1}p_i\log(q_i)$$
+This is really just the expected value of $\log(q)$ with respect to $p$. This also shows why KL Divergence is not symmetric - you are changing the reference distribution for the cross entropy.  
+
+Notice that we almost never have $p$, the true distribution. But, we have some estimates $q$ and $r$, we can compare these two since $p$ will drop out in the comparison. It is convention to just take the sum of the log-probabilities. There is a convenient function to do just this:
+
+```{r}
+set.seed(1)
+lppd(m7.1,n=1e4)
+```
+If you summed the above, you'd get the log-probability score. Larger values are better since they indicate larger average accuracy. It is common to see this called deviance, but multiplied by -2. the -2 is for historical reasons and is really done so the sample distribution falls more in line with a Chi-squared distribution.
+
+The `lppd` function shown above is called the **log-pointwise-predictive-density** as is defined as:
+
+$$\text{lppd}(y,\Theta)=\sum_i \log\frac{1}{S}\sum_s p(y_i|\Theta_s)$$
+
+Where $S$ is the number of samples and $\Theta_s$ is the s-th sampled parameter vector from the posterior.
+
+Here is the code to do just that:
+
+```{r}
+set.seed(1)
+logprob <- sim(m7.1, ll=T, n=1e4) # Same function used in ch4, will return 
+  # a matrix of log-probability values of ll=T
+ns <- nrow(logprob)
+n <- ncol(logprob)
+f <- \(x) log_sum_exp(logprob[,x]) - log(ns)
+vapply(1:n, f, numeric(1))
+```
+
+We are still going to suffer from the same issue that the $R^2$ had: the scores will get better as the model becomes more complex.
+
+```{r}
+set.seed(1)
+vapply(1:6, \(x){
+  paste0('lppd(m7.',x,') |> sum()') |> parse(text=_) |> eval()
+}, numeric(1))
+```
+
+```{r}
+logprob <- sim(m7.6, ll=T, n=1e4) # Same function used in ch4, will return 
+  # a matrix of log-probability values of ll=T
+ns <- nrow(logprob)
+n <- ncol(logprob)
+f <- \(x) log_sum_exp(logprob[,x]) - log(ns)
+vapply(1:n, f, numeric(1))
+
+precis(m7.6, depth=2)
+```
+

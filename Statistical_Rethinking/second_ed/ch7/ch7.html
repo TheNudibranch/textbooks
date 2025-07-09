@@ -110,6 +110,7 @@ window.Quarto = {
   <ul>
   <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">7.0</a></li>
   <li><a href="#problems-with-parameters" id="toc-problems-with-parameters" class="nav-link" data-scroll-target="#problems-with-parameters">7.1 - Problems with parameters</a></li>
+  <li><a href="#entropy-and-accuracy" id="toc-entropy-and-accuracy" class="nav-link" data-scroll-target="#entropy-and-accuracy">7.2 - Entropy and accuracy</a></li>
   </ul>
 </nav>
 </div>
@@ -229,7 +230,7 @@ window.Quarto = {
 {
     mean(x^2) - mean(x)^2
 }
-&lt;bytecode: 0x0000028ebc32fba0&gt;
+&lt;bytecode: 0x0000025753263a58&gt;
 &lt;environment: namespace:rethinking&gt;</code></pre>
 </div>
 </div>
@@ -250,7 +251,7 @@ window.Quarto = {
 <span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="fu">R2_is_bad</span>(m7<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.4774589</code></pre>
+<pre><code>[1] 0.4770211</code></pre>
 </div>
 </div>
 <p>Alright, let’s go crazy with polynomials:</p>
@@ -326,6 +327,109 @@ window.Quarto = {
 </div>
 <p>Notice that the model predicts negative brain size for <code>m7.6</code>, not great. Model <code>m7.1</code> could be said to be underfit. This means that it is not sensitive to changes in the sample. If we removed a point, it would probably look relatively the same. Alternatively, model <code>m7.4</code> is overfit. If we remove a point, the polynomial mean line would look wildly different.</p>
 <p>Bias-variance: bias (underfitting) and variance (overfitting).</p>
+</section>
+<section id="entropy-and-accuracy" class="level2">
+<h2 class="anchored" data-anchor-id="entropy-and-accuracy">7.2 - Entropy and accuracy</h2>
+<p>We need to:</p>
+<ul>
+<li>Establish a measurement scale for distance from perfect accuracy</li>
+<li>Need to measure <em>deviance</em> as an approximation of relative distance from perfect accuracy</li>
+<li>Establish that it is <em>deviance</em> out-of-sample that is only of interest</li>
+</ul>
+<p>To define a target, there are two main dimensions to worry about:</p>
+<ul>
+<li>cost-benefit analysis</li>
+<li>Accuracy in context</li>
+</ul>
+<p>Joint probability is the measure we want. It’s the unique measure that correctly counts up the relative number of ways each event could happen. The true model will also have the highest joint probability.</p>
+<p><strong>Information:</strong> The reduction in uncertainty when we learn an outcome.</p>
+<p>What is a good measure of uncertainty:</p>
+<ul>
+<li>A measure of uncertainty should be continuous</li>
+<li>The measure should increase as the number of possible events increases</li>
+<li>Measures should be additive.</li>
+</ul>
+<p>The function that satisfies these desiderata has one form and is called <strong>information entropy</strong>. For <span class="math inline">\(n\)</span> possible events, with each event <span class="math inline">\(i\)</span> occurring with probability <span class="math inline">\(p_i\)</span>, then the entropy is:</p>
+<p><span class="math display">\[H(p)=-E_p[\log(p_i)]=-\sum^n_{i=1}p_i\log(p_i)\]</span></p>
+<p>We can use entropy to build measures of accuracy. Also, when <span class="math inline">\(p_i=0\)</span>, we can use L’Hopitals rule to show <span class="math inline">\(p_i\log(p_i)=0\)</span>. Notice, also that maximizing entropy is the same as decreasing uncertainty.</p>
+<p><strong>Divergence:</strong> The additional uncertainty induced by using probabilites from one distribution to describe anoter distribution.</p>
+<p>The KL divergence is defined as:</p>
+<p><span class="math display">\[D_{\text{KL}}(p,q)=\sum_i p_i \log(p_i/q_i)\]</span></p>
+<p>In plain english: the average difference in log probability between the target <span class="math inline">\(p\)</span> and model <span class="math inline">\(q\)</span>. This is also just the difference between two entropies: the entropy of the target distribution <span class="math inline">\(p\)</span> and the <em>cross entropy</em> arising from using <span class="math inline">\(q\)</span> to predict <span class="math inline">\(p\)</span>. We can use this metric to predict different models.</p>
+<p>One thing to callout here is the definition of cross entropy:</p>
+<p><span class="math display">\[H(p,q)=-E\log(p_i)=-\sum^n_{i=1}p_i\log(q_i)\]</span> This is really just the expected value of <span class="math inline">\(\log(q)\)</span> with respect to <span class="math inline">\(p\)</span>. This also shows why KL Divergence is not symmetric - you are changing the reference distribution for the cross entropy.</p>
+<p>Notice that we almost never have <span class="math inline">\(p\)</span>, the true distribution. But, we have some estimates <span class="math inline">\(q\)</span> and <span class="math inline">\(r\)</span>, we can compare these two since <span class="math inline">\(p\)</span> will drop out in the comparison. It is convention to just take the sum of the log-probabilities. There is a convenient function to do just this:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">lppd</span>(m7<span class="fl">.1</span>,<span class="at">n=</span><span class="fl">1e4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1]  0.6108805  0.6485537  0.5420751  0.6231307  0.4572693  0.4230150 -0.8374654</code></pre>
+</div>
+</div>
+<p>If you summed the above, you’d get the log-probability score. Larger values are better since they indicate larger average accuracy. It is common to see this called deviance, but multiplied by -2. the -2 is for historical reasons and is really done so the sample distribution falls more in line with a Chi-squared distribution.</p>
+<p>The <code>lppd</code> function shown above is called the <strong>log-pointwise-predictive-density</strong> as is defined as:</p>
+<p><span class="math display">\[\text{lppd}(y,\Theta)=\sum_i \log\frac{1}{S}\sum_s p(y_i|\Theta_s)\]</span></p>
+<p>Where <span class="math inline">\(S\)</span> is the number of samples and <span class="math inline">\(\Theta_s\)</span> is the s-th sampled parameter vector from the posterior.</p>
+<p>Here is the code to do just that:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>logprob <span class="ot">&lt;-</span> <span class="fu">sim</span>(m7<span class="fl">.1</span>, <span class="at">ll=</span>T, <span class="at">n=</span><span class="fl">1e4</span>) <span class="co"># Same function used in ch4, will return </span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># a matrix of log-probability values of ll=T</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>ns <span class="ot">&lt;-</span> <span class="fu">nrow</span>(logprob)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">ncol</span>(logprob)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> \(x) <span class="fu">log_sum_exp</span>(logprob[,x]) <span class="sc">-</span> <span class="fu">log</span>(ns)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span>n, f, <span class="fu">numeric</span>(<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1]  0.6108805  0.6485537  0.5420751  0.6231307  0.4572693  0.4230150 -0.8374654</code></pre>
+</div>
+</div>
+<p>We are still going to suffer from the same issue that the <span class="math inline">\(R^2\)</span> had: the scores will get better as the model becomes more complex.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, \(x){</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">paste0</span>(<span class="st">'lppd(m7.'</span>,x,<span class="st">') |&gt; sum()'</span>) <span class="sc">|&gt;</span> <span class="fu">parse</span>(<span class="at">text=</span>_) <span class="sc">|&gt;</span> <span class="fu">eval</span>()</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>}, <span class="fu">numeric</span>(<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1]    2.416994    2.566165    3.741488    5.333750   14.095009 -606.485083</code></pre>
+</div>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>logprob <span class="ot">&lt;-</span> <span class="fu">sim</span>(m7<span class="fl">.6</span>, <span class="at">ll=</span>T, <span class="at">n=</span><span class="fl">1e4</span>) <span class="co"># Same function used in ch4, will return </span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># a matrix of log-probability values of ll=T</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>ns <span class="ot">&lt;-</span> <span class="fu">nrow</span>(logprob)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">ncol</span>(logprob)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> \(x) <span class="fu">log_sum_exp</span>(logprob[,x]) <span class="sc">-</span> <span class="fu">log</span>(ns)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span>n, f, <span class="fu">numeric</span>(<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -136.261379 -420.150617  -58.781680    3.429006    5.640072    5.642777
+[7]    5.609147</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m7<span class="fl">.6</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>           mean          sd       5.5%      94.5%
+b[1]  1.4127005 0.003221105  1.4075525  1.4178484
+b[2]  0.1664465 0.006733439  0.1556852  0.1772079
+b[3] -2.0448680 0.005812292 -2.0541572 -2.0355788
+b[4] -1.1757658 0.008049811 -1.1886310 -1.1629007
+b[5]  0.5812014 0.002336917  0.5774666  0.5849363
+a     0.8075114 0.001780075  0.8046665  0.8103563</code></pre>
+</div>
+</div>
 </section>
 
 </main>
