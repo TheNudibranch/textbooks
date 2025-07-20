@@ -10,6 +10,7 @@ toc: true
 #| code-fold: true
 library(rethinking)
 library(dagitty)
+library(tidyverse)
 ```
 
 ## 7.0
@@ -256,4 +257,388 @@ vapply(1:n, f, numeric(1))
 
 precis(m7.6, depth=2)
 ```
+
+Let's simulate some training and testing datasets and see how deviance changes (both in and out of sample) with the number of free parameters:
+
+```{r}
+#| eval: false
+
+# To save time I'm only going to do 100 replications
+### Takes too long to run, but you get the gist
+
+N <- 20
+kseq <- 1:5
+dev <- vapply(kseq, \(x) {
+  r <- replicate(5, sim_train_test(N,x))
+  c(mean(r[1,]), mean(r[2,]), sd(r[1,]), sd(r[2,]))
+}, numeric(4))
+
+plot(1:5, dev[1,], ylim=c(min(dev[1:2,])-5, max(dev[1:2,])+10), xlim=c(1,5.1))
+points(1:5, dev[2,], col='darkblue', pch=16)
+```
+
+## 7.3 - Golem taming: regularization
+
+- Quick intro to regularization
+- Multilevel models allow the model to choose how much regularization they need
+- Regularization doesn't matter much in the case of larger sample sizes
+- Equivalent to ridge regression in classical statistics
+
+## 7.4 - Predicting predictive accuracy
+
+Time to start using PSIS-LOOCV: pareto smoothed importance sampling for leave-one-out cross-validation. Let's say that we have a model, and we choose to fit it $N$ times, leaving out $y_i$ everytime we fit. Then the out-of-sample **log-pointwise predictive density** is given by
+
+$$\text{lppd}_{\text{CV}} = \sum_{i=1}^N \frac{1}{S} \sum^S_{i=1} \log P(y_i|\theta_{-i,s})$$
+
+where $\theta_{-i,s}$ is the $s$-th sample from the markov chain, approximating the posterior for when we left $y_i$ out of inference.
+
+This is cool, but it is expensive. A better approach is to weight each observation by its importance to the posterior and using that weight in conjunction with the posterior from the entire dataset to get an estimate of $\text{lppd}_{\text{CV}}$. For the weights we will use:
+
+$$r(\theta_s)=\frac{1}{p(y_i|\theta_s)}$$
+
+This then allows us to get:
+
+$$\text{lppd}_{\text{IS}} = \sum_{i=1}^N\log\frac{\sum^S_{s=1} r(\theta_s) p(y_i|s)}{\sum^S_{s=1} r(\theta_s)}$$
+
+Where we divide by the importance ratios do get a normalized estimate. The Pareto piece comes in when we need to smooth out $r(\theta_s)$. For influential observations, the rations will have very heavy tails. The Parteo distribution helps us smooth this out, as well as giving us a nice diagnostic parameter $k$ from the Pareto distribution fit to the importance rations for each point. If $k < 0.7$ we have a good estimate and don't need to worry about our approximation (as much). 
+
+Let's go back to information criteria. Bet you didn't notice that when we looked at the difference between train and test deviance's by # of params., the distance between train and test was twice the number of parameters? This is actually one of the cool things that falls out of the theory. The OLS, the expected overfitting penalty is about twice the number of parameters.
+
+We can use this fact to get the AIC (Akaike Information Criteria):
+
+$$\text{AIC} = D_{\text{Train}} + 2p = -2\text{lppd} + 2p$$
+
+where $p$ is the number of free parameters. AIC is mostly defunct now as it relies on some strong assumptions:
+
+- The priors are flat or overwhelmed by the likelihood
+- The posterior distribution is approx. multivariate Gaussian
+- The sample size $N$ is much greater than the number of parameters
+
+The DIC is a more general metric that is okay with informative priors, but still requires that $N \gg k$.
+
+We'll focus on WAIC which does not make any assumptions about the shape of the posterior and converges to the leave-one-out approximation in large samples. It is really just the log-posterior-predictive-density we calculated earlier but with a penalty term proportional to the variance in the posterior predictions. It's goal is to approximate the out-of-sample KL divergence:
+
+$$\text{WAIC}(y,\Theta)=-2 (\text{lppd} - \sum_i\text{var}_{\theta}\log p(y_i|\theta))$$
+
+The penalty term (the sum) is sometimes called the "effective number of parameters" $p_{\text{WAIC}}$. Richie will call this the "overfitting penalty".
+
+Let's walk through a WAIC calculation:
+
+```{r}
+set.seed(123)
+data(cars)
+m <- quap(alist(
+  dist ~ dnorm(mu, sigma),
+  mu <- a + b*speed,
+  a ~ dnorm(0,100),
+  b ~ dnorm(0,10),
+  sigma ~ dexp(1)
+), data=cars)
+
+post <- extract.samples(m,n=1e3)
+
+n_samples <- nrow(post)
+logprob <- vapply(1:n_samples, \(s){
+  mu <- post$a[s] + post$b[s]*cars$speed
+  dnorm(cars$dist, mu, post$sigma[s], log=T)
+}, numeric(nrow(cars)))
+
+lppd <- vapply(1:nrow(cars), \(x) log_sum_exp(logprob[x,]) - log(n_samples), numeric(1))
+
+# Penalty term
+pWAIC <- vapply(1:nrow(cars), \(x) var(logprob[x,]), numeric(1))
+
+-2*(sum(lppd) - sum(pWAIC))
+WAIC(m) # Get pointwise by setting `pointwise=T`
+
+waic_vec <- -2*(lppd - pWAIC)
+# std. error on WAIC
+sqrt(nrow(cars)*var(waic_vec))
+```
+Notice that we can approximate the standard error by assuming that each WAIC in the `waic_vec` came from a the same distribution, so the variance of the sum of the vector (essentially the mean times a constant, invoking the central limit theorem) is the variance of the distribution they came from times the number of samples.
+
+
+## 7.5 - Model Comparison
+Let's go back to chapter 6 where we built different causal models for inferring the effect of fungus on plant growth. Model `m6.6` just has the intercept, `m6.7` included both treatment and fungus, and `m6.8` is the model that includes treatment, but omits fungus (the correct one for the causal interpretation).
+
+```{r}
+#| code-fold: true
+set.seed(71)
+N <- 100
+
+h0 <- rnorm(N,10,2)
+treatment <- rep(0:1, each=N/2)
+fungus <- rbinom(N, size=1, prob=0.5 - treatment*0.4)
+h1 <- h0 + rnorm(N, 5 - 3*fungus)
+
+d <- data.frame(h0,h1,treatment, fungus)
+
+m6.6 <- quap(alist(
+  h1 ~ dnorm(mu, sigma),
+  mu <- h0*p,
+  p ~ dlnorm(0,0.25),
+  sigma ~ dexp(1)
+), data=d)
+
+m6.7 <- quap(alist(
+  h1 ~ dnorm(mu, sigma),
+  mu <- h0*p,
+  p <- a + bt*treatment + bf*fungus,
+  a ~ dlnorm(0,0.2),
+  bt ~ dnorm(0,0.5),
+  bf ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+m6.8 <- quap(alist(
+  h1 ~ dnorm(mu, sigma),
+  mu <- h0*p,
+  p <- a + bt*treatment,
+  a ~ dlnorm(0,0.2),
+  bt ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+```
+
+
+Let's check the WAIC to see which is better:
+```{r}
+compare(m6.6, m6.7, m6.8, func=WAIC) # Can also do func=PSIS
+```
+First column is the WAIC (smaller is better). Notice how the variable with the fungus variable performed best. The `dWAIC` column is the distance from the model in question to the top (best) model. The `dSE` column is the standard error of the difference between models. Let's do a quick calculation walkthrough:
+
+```{r}
+waic_m6.7 <- WAIC(m6.7, pointwise=T)$WAIC
+waic_m6.8 <- WAIC(m6.8, pointwise=T)$WAIC
+n <- length(waic_m6.7)
+diff_m <- waic_m6.7 - waic_m6.8
+
+sqrt(n*var(diff_m))
+```
+Give the standard error, we know that the expected difference is quite far from zero ($\mu \pm 2.6SE$ assuming CLT kicked in).
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+plot(compare(m6.6, m6.7, m6.8))
+```
+
+The filled in points are the in-sample deviance (just the $\text{lppd}$ without the penalty term). The circle points (on the same line) are the WAIC values. The triangle point and line segments show the difference between the best model's WAIC.
+
+Let's hone in on `m6.6` and `m6.8`. We can see their `dSE` slot in the returned S4 object.
+
+```{r}
+compare(m6.6, m6.7, m6.8)@dSE
+```
+You notice that the standard error of the difference is bigger than the difference itself. Therefore we can not reliably say which model is better than the other.
+
+You'll notice that `weight` was in the comparison table. That is primarily used for model averaging. It is calculated as such:
+
+$$w_i = \frac{\exp(-0.5\Delta_i)}{\sum_j\exp(-0.5\Delta_i)}$$
+
+where $\Delta_i$ is the difference between model $i$'s WAIC value and the best WAIC in the set.
+
+Let's now go back to chapter 5 and refit the divorce models:
+
+```{r}
+data(WaffleDivorce)
+d <- WaffleDivorce 
+
+d$D <- standardize(d$Divorce)
+d$M <- standardize(d$Marriage)
+d$A <- standardize(d$MedianAgeMarriage)
+
+m5.1 <- quap(alist(
+  D ~ dnorm(mu, sigma),
+  mu <- a + bA * A,
+  a ~ dnorm(0,0.2),
+  bA ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+m5.2 <- quap(alist(
+  D ~ dnorm(mu, sigma),
+  mu <- a + bM * M,
+  a ~ dnorm(0,0.2),
+  bM ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+m5.3 <- quap(alist(
+  D ~ dnorm(mu, sigma),
+  mu <- a + bM * M + bA * A,
+  a ~ dnorm(0,0.2),
+  bM ~ dnorm(0,0.5),
+  bA ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+```
+
+Just a reminder that Marriage rate $M$ has little association with divorce rate $D$, once Age $A$ is included into the model `m5.3`.
+
+Now let's compare:
+
+```{r}
+compare(m5.1, m5.2, m5.3, func=PSIS)
+```
+
+Since $M$ has very little effect on $D$, removing it from the model and using only $A$ (`m5.1`) performs very well. Adding $M$ back in `m5.3` dilutes the effects, but is not significantly different.
+
+Also, notice that we got some warnings for the PSIS of the fits. While there is no warning from WAIC, we would still see some outlier measure by looking at the penalty.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+PSIS_m5.3 <- PSIS(m5.3, pointwise=T)
+WAIC_m5.3 <- WAIC(m5.3, pointwise=T)
+plot(PSIS_m5.3$k, WAIC_m5.3$penalty, xlab='PSIS Parteo K', ylab='WAIC Penalty', col=rangi2, pch=16)
+abline(v=0.5, lwd=2, lty=2)
+```
+
+Idaho is the top-right most point and Maine is the second-most outlier. The reason for Idaho is that is has a very low divorce rate for its age at marriage. Recall that the total number of parameters model `m5.3` is 4, but if we run sum all the penalty terms above, we would get something close to 6.
+
+An alternative here is the use **robust regression**. We will swap out the Gaussian distribution we have been using thus far for the likelihood with a t-distribution. The t-distribution has parameter $\nu$ which controls the thickness of the tails. We'll use $\nu=2$ for thicker tails be keeping it so that the variance and mean of the student-t is still defined (variance only defined for $\nu > 2$).
+
+```{r}
+m5.3t <- quap(alist(
+  D ~ dstudent(2, mu, sigma),
+  mu <- a + bM*M + bA*A,
+  a ~ dnorm(0,0.2),
+  bM ~ dnorm(0,0.5),
+  bA ~ dnorm(0,0.5),
+  sigma ~ dexp(1)
+), data=d)
+
+plot(coeftab(m5.3, m5.3t), pars=c('bM', 'bA'))
+```
+
+You'll notice that $\beta_A$ is farther from zero. This is because when Idaho was influential in the model it lowered the coefficient since it had a low divorce rate and a low median age at marriage. Let's also check the $\hat{k}$ now:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+PSIS_m5.3 <- PSIS(m5.3t, pointwise=T)
+WAIC_m5.3 <- WAIC(m5.3t, pointwise=T)
+plot(PSIS_m5.3$k, WAIC_m5.3$penalty, xlab='PSIS Parteo K', ylab='WAIC Penalty', col=rangi2, pch=16)
+abline(v=0.5, lwd=2, lty=2)
+```
+
+## Exercises
+
+### H.1
+
+There was a poorly drawn curve in the WSJ fitting some data on tax rates. Let's correctly draw some curves predicting tax revenue from tax rate.
+
+```{r}
+data(Laffer)
+d <- Laffer
+
+plot(tax_revenue ~ tax_rate, data=d, pch=16)
+```
+
+Let's try four models. An intercept only, a linear, a quadratic, and a log.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+m_h.1.1 <- quap(alist(
+  tax_revenue ~ dnorm(mu, sig),
+  mu <- a,
+  a ~ dnorm(0,1),
+  sig ~ dexp(1)
+), data=d)
+
+m_h.1.2 <- quap(alist(
+  tax_revenue ~ dnorm(mu, sig),
+  mu <- a + bX[1]*tax_rate,
+  bX ~ dnorm(0,2),
+  a ~ dnorm(0,1),
+  sig ~ dexp(1)
+), data=d, start=list(bX=rep(0,1)))
+
+m_h.1.3 <- quap(alist(
+  tax_revenue ~ dnorm(mu, sig),
+  mu <- a + bX[1]*tax_rate + bX[2]*tax_rate^2,
+  bX ~ dnorm(0,2),
+  a ~ dnorm(0,1),
+  sig ~ dexp(1)
+), data=d, start=list(bX=rep(0,2)))
+
+m_h.1.4 <- quap(alist(
+  tax_revenue ~ dnorm(mu, sig),
+  mu <- a + bX[1]*tax_rate + bX[2]*tax_rate^2 + bX[3]*tax_rate^3,
+  bX ~ dnorm(0,2),
+  a ~ dnorm(0,1),
+  sig ~ dexp(1)
+), data=d, start=list(bX=rep(0,3)))
+
+
+x_seq <- seq(-0.5, 40)
+plot(tax_revenue ~ tax_rate, data=d, pch=16)
+m_h.1.1 |> link(data=list(tax_rate=x_seq)) |> colMeans() |> lines(x=x_seq, y=_, lwd=2, col=1)
+m_h.1.2 |> link(data=list(tax_rate=x_seq)) |> colMeans() |> lines(x=x_seq, y=_, lwd=2, col=2)
+m_h.1.3 |> link(data=list(tax_rate=x_seq)) |> colMeans() |> lines(x=x_seq, y=_, lwd=2, col=3)
+m_h.1.4 |> link(data=list(tax_rate=x_seq)) |> colMeans() |> lines(x=x_seq, y=_, lwd=2, col=4)
+
+```
+
+Let's use WAIC to see how they performed.
+
+```{r}
+compare(m_h.1.1, m_h.1.2, m_h.1.3, m_h.1.4)
+```
+
+It actually looks like the curve, either the cubic or the quadratic doesn't help us much. The difference between the linear and the quadtratic is 2.1, but the SE is 2.97. A plot might be easier to see:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+compare(m_h.1.1, m_h.1.2, m_h.1.3, m_h.1.4) |> plot()
+```
+
+Recall the that filled in dots are the in-sample deviance. The hollow dots are the WAIC. It appears that even the intercept only model isn't much better than the quadratic model. Also, look at the $p_{\text{WAIC}}$ terms. My guess is that we would see some high $\hat{k}$ values had we used PSIS.
+
+### H.2
+Let's look at the importance of the one outlier in the dataset using both WAIC and PSIS. We'll use the quadratic model for this.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+PSIS_m_h.1.3 <- PSIS(m_h.1.3, pointwise=T)
+WAIC_m_h.1.3 <- WAIC(m_h.1.3, pointwise=T)
+plot(PSIS_m_h.1.3$k, WAIC_m_h.1.3$penalty, xlab='PSIS Parteo K', ylab='WAIC Penalty', col=rangi2, pch=16)
+abline(v=0.5, lwd=2, lty=2)
+```
+Wow, that is crazy. Let's see what happens if we use the t-distribution for the likelihood to corect for this:
+
+```{r}
+m_h.1.3t <- quap(alist(
+  tax_revenue ~ dstudent(2, mu, sig),
+  mu <- a + bX[1]*tax_rate + bX[2]*tax_rate^2,
+  bX ~ dnorm(0,2),
+  a ~ dnorm(0,1),
+  sig ~ dexp(1)
+), data=d, start=list(bX=rep(0,2)))
+
+PSIS_m_h.1.3t <- PSIS(m_h.1.3t, pointwise=T)
+WAIC_m_h.1.3t <- WAIC(m_h.1.3t, pointwise=T)
+plot(PSIS_m_h.1.3t$k, WAIC_m_h.1.3t$penalty, xlab='PSIS Parteo K', ylab='WAIC Penalty', col=rangi2, pch=16)
+abline(v=0.5, lwd=2, lty=2)
+```
+
+Still not great, but mich better!
+
+### H.3
 

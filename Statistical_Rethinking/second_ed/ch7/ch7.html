@@ -111,6 +111,13 @@ window.Quarto = {
   <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">7.0</a></li>
   <li><a href="#problems-with-parameters" id="toc-problems-with-parameters" class="nav-link" data-scroll-target="#problems-with-parameters">7.1 - Problems with parameters</a></li>
   <li><a href="#entropy-and-accuracy" id="toc-entropy-and-accuracy" class="nav-link" data-scroll-target="#entropy-and-accuracy">7.2 - Entropy and accuracy</a></li>
+  <li><a href="#golem-taming-regularization" id="toc-golem-taming-regularization" class="nav-link" data-scroll-target="#golem-taming-regularization">7.3 - Golem taming: regularization</a></li>
+  <li><a href="#predicting-predictive-accuracy" id="toc-predicting-predictive-accuracy" class="nav-link" data-scroll-target="#predicting-predictive-accuracy">7.4 - Predicting predictive accuracy</a></li>
+  <li><a href="#model-comparison" id="toc-model-comparison" class="nav-link" data-scroll-target="#model-comparison">7.5 - Model Comparison</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises">Exercises</a>
+  <ul class="collapse">
+  <li><a href="#h.1" id="toc-h.1" class="nav-link" data-scroll-target="#h.1">H.1</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -139,7 +146,8 @@ window.Quarto = {
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rethinking)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dagitty)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dagitty)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <section id="section" class="level2">
@@ -230,7 +238,7 @@ window.Quarto = {
 {
     mean(x^2) - mean(x)^2
 }
-&lt;bytecode: 0x0000025753263a58&gt;
+&lt;bytecode: 0x0000024cc5b2d840&gt;
 &lt;environment: namespace:rethinking&gt;</code></pre>
 </div>
 </div>
@@ -251,7 +259,7 @@ window.Quarto = {
 <span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="fu">R2_is_bad</span>(m7<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.4770211</code></pre>
+<pre><code>[1] 0.4774589</code></pre>
 </div>
 </div>
 <p>Alright, let’s go crazy with polynomials:</p>
@@ -366,7 +374,7 @@ window.Quarto = {
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">lppd</span>(m7<span class="fl">.1</span>,<span class="at">n=</span><span class="fl">1e4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1]  0.6108805  0.6485537  0.5420751  0.6231307  0.4572693  0.4230150 -0.8374654</code></pre>
+<pre><code>[1]  0.6098668  0.6483438  0.5496092  0.6234934  0.4648143  0.4347604 -0.8444630</code></pre>
 </div>
 </div>
 <p>If you summed the above, you’d get the log-probability score. Larger values are better since they indicate larger average accuracy. It is common to see this called deviance, but multiplied by -2. the -2 is for historical reasons and is really done so the sample distribution falls more in line with a Chi-squared distribution.</p>
@@ -386,7 +394,7 @@ window.Quarto = {
 <span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span>n, f, <span class="fu">numeric</span>(<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1]  0.6108805  0.6485537  0.5420751  0.6231307  0.4572693  0.4230150 -0.8374654</code></pre>
+<pre><code>[1]  0.6098668  0.6483438  0.5496092  0.6234934  0.4648143  0.4347604 -0.8444630</code></pre>
 </div>
 </div>
 <p>We are still going to suffer from the same issue that the <span class="math inline">\(R^2\)</span> had: the scores will get better as the model becomes more complex.</p>
@@ -399,7 +407,7 @@ window.Quarto = {
 <span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>}, <span class="fu">numeric</span>(<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1]    2.416994    2.566165    3.741488    5.333750   14.095009 -606.485083</code></pre>
+<pre><code>[1]    2.490390    2.566165    3.741488    5.333750   14.095009 -606.485083</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -430,6 +438,438 @@ b[5]  0.5812014 0.002336917  0.5774666  0.5849363
 a     0.8075114 0.001780075  0.8046665  0.8103563</code></pre>
 </div>
 </div>
+<p>Let’s simulate some training and testing datasets and see how deviance changes (both in and out of sample) with the number of free parameters:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># To save time I'm only going to do 100 replications</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="do">### Takes too long to run, but you get the gist</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>kseq <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>dev <span class="ot">&lt;-</span> <span class="fu">vapply</span>(kseq, \(x) {</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">replicate</span>(<span class="dv">5</span>, <span class="fu">sim_train_test</span>(N,x))</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="fu">mean</span>(r[<span class="dv">1</span>,]), <span class="fu">mean</span>(r[<span class="dv">2</span>,]), <span class="fu">sd</span>(r[<span class="dv">1</span>,]), <span class="fu">sd</span>(r[<span class="dv">2</span>,]))</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>}, <span class="fu">numeric</span>(<span class="dv">4</span>))</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, dev[<span class="dv">1</span>,], <span class="at">ylim=</span><span class="fu">c</span>(<span class="fu">min</span>(dev[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>,])<span class="sc">-</span><span class="dv">5</span>, <span class="fu">max</span>(dev[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>,])<span class="sc">+</span><span class="dv">10</span>), <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="fl">5.1</span>))</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, dev[<span class="dv">2</span>,], <span class="at">col=</span><span class="st">'darkblue'</span>, <span class="at">pch=</span><span class="dv">16</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="golem-taming-regularization" class="level2">
+<h2 class="anchored" data-anchor-id="golem-taming-regularization">7.3 - Golem taming: regularization</h2>
+<ul>
+<li>Quick intro to regularization</li>
+<li>Multilevel models allow the model to choose how much regularization they need</li>
+<li>Regularization doesn’t matter much in the case of larger sample sizes</li>
+<li>Equivalent to ridge regression in classical statistics</li>
+</ul>
+</section>
+<section id="predicting-predictive-accuracy" class="level2">
+<h2 class="anchored" data-anchor-id="predicting-predictive-accuracy">7.4 - Predicting predictive accuracy</h2>
+<p>Time to start using PSIS-LOOCV: pareto smoothed importance sampling for leave-one-out cross-validation. Let’s say that we have a model, and we choose to fit it <span class="math inline">\(N\)</span> times, leaving out <span class="math inline">\(y_i\)</span> everytime we fit. Then the out-of-sample <strong>log-pointwise predictive density</strong> is given by</p>
+<p><span class="math display">\[\text{lppd}_{\text{CV}} = \sum_{i=1}^N \frac{1}{S} \sum^S_{i=1} \log P(y_i|\theta_{-i,s})\]</span></p>
+<p>where <span class="math inline">\(\theta_{-i,s}\)</span> is the <span class="math inline">\(s\)</span>-th sample from the markov chain, approximating the posterior for when we left <span class="math inline">\(y_i\)</span> out of inference.</p>
+<p>This is cool, but it is expensive. A better approach is to weight each observation by its importance to the posterior and using that weight in conjunction with the posterior from the entire dataset to get an estimate of <span class="math inline">\(\text{lppd}_{\text{CV}}\)</span>. For the weights we will use:</p>
+<p><span class="math display">\[r(\theta_s)=\frac{1}{p(y_i|\theta_s)}\]</span></p>
+<p>This then allows us to get:</p>
+<p><span class="math display">\[\text{lppd}_{\text{IS}} = \sum_{i=1}^N\log\frac{\sum^S_{s=1} r(\theta_s) p(y_i|s)}{\sum^S_{s=1} r(\theta_s)}\]</span></p>
+<p>Where we divide by the importance ratios do get a normalized estimate. The Pareto piece comes in when we need to smooth out <span class="math inline">\(r(\theta_s)\)</span>. For influential observations, the rations will have very heavy tails. The Parteo distribution helps us smooth this out, as well as giving us a nice diagnostic parameter <span class="math inline">\(k\)</span> from the Pareto distribution fit to the importance rations for each point. If <span class="math inline">\(k &lt; 0.7\)</span> we have a good estimate and don’t need to worry about our approximation (as much).</p>
+<p>Let’s go back to information criteria. Bet you didn’t notice that when we looked at the difference between train and test deviance’s by # of params., the distance between train and test was twice the number of parameters? This is actually one of the cool things that falls out of the theory. The OLS, the expected overfitting penalty is about twice the number of parameters.</p>
+<p>We can use this fact to get the AIC (Akaike Information Criteria):</p>
+<p><span class="math display">\[\text{AIC} = D_{\text{Train}} + 2p = -2\text{lppd} + 2p\]</span></p>
+<p>where <span class="math inline">\(p\)</span> is the number of free parameters. AIC is mostly defunct now as it relies on some strong assumptions:</p>
+<ul>
+<li>The priors are flat or overwhelmed by the likelihood</li>
+<li>The posterior distribution is approx. multivariate Gaussian</li>
+<li>The sample size <span class="math inline">\(N\)</span> is much greater than the number of parameters</li>
+</ul>
+<p>The DIC is a more general metric that is okay with informative priors, but still requires that <span class="math inline">\(N \gg k\)</span>.</p>
+<p>We’ll focus on WAIC which does not make any assumptions about the shape of the posterior and converges to the leave-one-out approximation in large samples. It is really just the log-posterior-predictive-density we calculated earlier but with a penalty term proportional to the variance in the posterior predictions. It’s goal is to approximate the out-of-sample KL divergence:</p>
+<p><span class="math display">\[\text{WAIC}(y,\Theta)=-2 (\text{lppd} - \sum_i\text{var}_{\theta}\log p(y_i|\theta))\]</span></p>
+<p>The penalty term (the sum) is sometimes called the “effective number of parameters” <span class="math inline">\(p_{\text{WAIC}}\)</span>. Richie will call this the “overfitting penalty”.</p>
+<p>Let’s walk through a WAIC calculation:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(cars)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  dist <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> b<span class="sc">*</span>speed,</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">100</span>),</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  b <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">10</span>),</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>cars)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m,<span class="at">n=</span><span class="fl">1e3</span>)</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>n_samples <span class="ot">&lt;-</span> <span class="fu">nrow</span>(post)</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>logprob <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span>n_samples, \(s){</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> post<span class="sc">$</span>a[s] <span class="sc">+</span> post<span class="sc">$</span>b[s]<span class="sc">*</span>cars<span class="sc">$</span>speed</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dnorm</span>(cars<span class="sc">$</span>dist, mu, post<span class="sc">$</span>sigma[s], <span class="at">log=</span>T)</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>}, <span class="fu">numeric</span>(<span class="fu">nrow</span>(cars)))</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>lppd <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(cars), \(x) <span class="fu">log_sum_exp</span>(logprob[x,]) <span class="sc">-</span> <span class="fu">log</span>(n_samples), <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Penalty term</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>pWAIC <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(cars), \(x) <span class="fu">var</span>(logprob[x,]), <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a><span class="sc">-</span><span class="dv">2</span><span class="sc">*</span>(<span class="fu">sum</span>(lppd) <span class="sc">-</span> <span class="fu">sum</span>(pWAIC))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 423.2869</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">WAIC</span>(m) <span class="co"># Get pointwise by setting `pointwise=T`</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>      WAIC      lppd penalty  std_err
+1 423.0496 -206.8991 4.62574 17.58396</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>waic_vec <span class="ot">&lt;-</span> <span class="sc">-</span><span class="dv">2</span><span class="sc">*</span>(lppd <span class="sc">-</span> pWAIC)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="co"># std. error on WAIC</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(<span class="fu">nrow</span>(cars)<span class="sc">*</span><span class="fu">var</span>(waic_vec))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 17.88919</code></pre>
+</div>
+</div>
+<p>Notice that we can approximate the standard error by assuming that each WAIC in the <code>waic_vec</code> came from a the same distribution, so the variance of the sum of the vector (essentially the mean times a constant, invoking the central limit theorem) is the variance of the distribution they came from times the number of samples.</p>
+</section>
+<section id="model-comparison" class="level2">
+<h2 class="anchored" data-anchor-id="model-comparison">7.5 - Model Comparison</h2>
+<p>Let’s go back to chapter 6 where we built different causal models for inferring the effect of fungus on plant growth. Model <code>m6.6</code> just has the intercept, <code>m6.7</code> included both treatment and fungus, and <code>m6.8</code> is the model that includes treatment, but omits fungus (the correct one for the causal interpretation).</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">71</span>)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>h0 <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N,<span class="dv">10</span>,<span class="dv">2</span>)</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>treatment <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">1</span>, <span class="at">each=</span>N<span class="sc">/</span><span class="dv">2</span>)</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>fungus <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(N, <span class="at">size=</span><span class="dv">1</span>, <span class="at">prob=</span><span class="fl">0.5</span> <span class="sc">-</span> treatment<span class="sc">*</span><span class="fl">0.4</span>)</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>h1 <span class="ot">&lt;-</span> h0 <span class="sc">+</span> <span class="fu">rnorm</span>(N, <span class="dv">5</span> <span class="sc">-</span> <span class="dv">3</span><span class="sc">*</span>fungus)</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(h0,h1,treatment, fungus)</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>m6<span class="fl">.6</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>  h1 <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> h0<span class="sc">*</span>p,</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>  p <span class="sc">~</span> <span class="fu">dlnorm</span>(<span class="dv">0</span>,<span class="fl">0.25</span>),</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a>m6<span class="fl">.7</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a>  h1 <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb29-20"><a href="#cb29-20" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> h0<span class="sc">*</span>p,</span>
+<span id="cb29-21"><a href="#cb29-21" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> a <span class="sc">+</span> bt<span class="sc">*</span>treatment <span class="sc">+</span> bf<span class="sc">*</span>fungus,</span>
+<span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dlnorm</span>(<span class="dv">0</span>,<span class="fl">0.2</span>),</span>
+<span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a>  bt <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb29-24"><a href="#cb29-24" aria-hidden="true" tabindex="-1"></a>  bf <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb29-26"><a href="#cb29-26" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb29-27"><a href="#cb29-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-28"><a href="#cb29-28" aria-hidden="true" tabindex="-1"></a>m6<span class="fl">.8</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb29-29"><a href="#cb29-29" aria-hidden="true" tabindex="-1"></a>  h1 <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb29-30"><a href="#cb29-30" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> h0<span class="sc">*</span>p,</span>
+<span id="cb29-31"><a href="#cb29-31" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> a <span class="sc">+</span> bt<span class="sc">*</span>treatment,</span>
+<span id="cb29-32"><a href="#cb29-32" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dlnorm</span>(<span class="dv">0</span>,<span class="fl">0.2</span>),</span>
+<span id="cb29-33"><a href="#cb29-33" aria-hidden="true" tabindex="-1"></a>  bt <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb29-34"><a href="#cb29-34" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb29-35"><a href="#cb29-35" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Let’s check the WAIC to see which is better:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m6<span class="fl">.6</span>, m6<span class="fl">.7</span>, m6<span class="fl">.8</span>, <span class="at">func=</span>WAIC) <span class="co"># Can also do func=PSIS</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>         WAIC       SE    dWAIC      dSE    pWAIC       weight
+m6.7 361.8105 14.17580  0.00000       NA 3.785343 1.000000e+00
+m6.8 403.0649 11.23902 41.25445 10.42699 2.791505 1.100805e-09
+m6.6 406.2842 11.76437 44.47372 12.20547 1.752989 2.201174e-10</code></pre>
+</div>
+</div>
+<p>First column is the WAIC (smaller is better). Notice how the variable with the fungus variable performed best. The <code>dWAIC</code> column is the distance from the model in question to the top (best) model. The <code>dSE</code> column is the standard error of the difference between models. Let’s do a quick calculation walkthrough:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>waic_m6<span class="fl">.7</span> <span class="ot">&lt;-</span> <span class="fu">WAIC</span>(m6<span class="fl">.7</span>, <span class="at">pointwise=</span>T)<span class="sc">$</span>WAIC</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>waic_m6<span class="fl">.8</span> <span class="ot">&lt;-</span> <span class="fu">WAIC</span>(m6<span class="fl">.8</span>, <span class="at">pointwise=</span>T)<span class="sc">$</span>WAIC</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">length</span>(waic_m6<span class="fl">.7</span>)</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>diff_m <span class="ot">&lt;-</span> waic_m6<span class="fl">.7</span> <span class="sc">-</span> waic_m6<span class="fl">.8</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(n<span class="sc">*</span><span class="fu">var</span>(diff_m))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 10.28199</code></pre>
+</div>
+</div>
+<p>Give the standard error, we know that the expected difference is quite far from zero (<span class="math inline">\(\mu \pm 2.6SE\)</span> assuming CLT kicked in).</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">compare</span>(m6<span class="fl">.6</span>, m6<span class="fl">.7</span>, m6<span class="fl">.8</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch7_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The filled in points are the in-sample deviance (just the <span class="math inline">\(\text{lppd}\)</span> without the penalty term). The circle points (on the same line) are the WAIC values. The triangle point and line segments show the difference between the best model’s WAIC.</p>
+<p>Let’s hone in on <code>m6.6</code> and <code>m6.8</code>. We can see their <code>dSE</code> slot in the returned S4 object.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m6<span class="fl">.6</span>, m6<span class="fl">.7</span>, m6<span class="fl">.8</span>)<span class="sc">@</span>dSE</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>          m6.6     m6.7      m6.8
+m6.6        NA 12.17378  4.936713
+m6.7 12.173782       NA 10.384196
+m6.8  4.936713 10.38420        NA</code></pre>
+</div>
+</div>
+<p>You notice that the standard error of the difference is bigger than the difference itself. Therefore we can not reliably say which model is better than the other.</p>
+<p>You’ll notice that <code>weight</code> was in the comparison table. That is primarily used for model averaging. It is calculated as such:</p>
+<p><span class="math display">\[w_i = \frac{\exp(-0.5\Delta_i)}{\sum_j\exp(-0.5\Delta_i)}\]</span></p>
+<p>where <span class="math inline">\(\Delta_i\)</span> is the difference between model <span class="math inline">\(i\)</span>’s WAIC value and the best WAIC in the set.</p>
+<p>Let’s now go back to chapter 5 and refit the divorce models:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(WaffleDivorce)</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> WaffleDivorce </span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>D <span class="ot">&lt;-</span> <span class="fu">standardize</span>(d<span class="sc">$</span>Divorce)</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>M <span class="ot">&lt;-</span> <span class="fu">standardize</span>(d<span class="sc">$</span>Marriage)</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>A <span class="ot">&lt;-</span> <span class="fu">standardize</span>(d<span class="sc">$</span>MedianAgeMarriage)</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>  D <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bA <span class="sc">*</span> A,</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.2</span>),</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>  bA <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.2</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a>  D <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bM <span class="sc">*</span> M,</span>
+<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.2</span>),</span>
+<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>  bM <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-24"><a href="#cb37-24" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb37-25"><a href="#cb37-25" aria-hidden="true" tabindex="-1"></a>  D <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb37-26"><a href="#cb37-26" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bM <span class="sc">*</span> M <span class="sc">+</span> bA <span class="sc">*</span> A,</span>
+<span id="cb37-27"><a href="#cb37-27" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.2</span>),</span>
+<span id="cb37-28"><a href="#cb37-28" aria-hidden="true" tabindex="-1"></a>  bM <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb37-29"><a href="#cb37-29" aria-hidden="true" tabindex="-1"></a>  bA <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb37-30"><a href="#cb37-30" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb37-31"><a href="#cb37-31" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Just a reminder that Marriage rate <span class="math inline">\(M\)</span> has little association with divorce rate <span class="math inline">\(D\)</span>, once Age <span class="math inline">\(A\)</span> is included into the model <code>m5.3</code>.</p>
+<p>Now let’s compare:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m5<span class="fl">.1</span>, m5<span class="fl">.2</span>, m5<span class="fl">.3</span>, <span class="at">func=</span>PSIS)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Some Pareto k values are high (&gt;0.5). Set pointwise=TRUE to inspect individual points.
+Some Pareto k values are high (&gt;0.5). Set pointwise=TRUE to inspect individual points.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Some Pareto k values are very high (&gt;1). Set pointwise=TRUE to inspect individual points.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         PSIS       SE    dPSIS       dSE    pPSIS      weight
+m5.1 126.9733 14.41694  0.00000        NA 4.372411 0.859601814
+m5.3 130.6141 15.52562  3.64085  1.558914 6.486203 0.139218472
+m5.2 140.1557 10.86663 13.18239 10.458060 3.490896 0.001179714</code></pre>
+</div>
+</div>
+<p>Since <span class="math inline">\(M\)</span> has very little effect on <span class="math inline">\(D\)</span>, removing it from the model and using only <span class="math inline">\(A\)</span> (<code>m5.1</code>) performs very well. Adding <span class="math inline">\(M\)</span> back in <code>m5.3</code> dilutes the effects, but is not significantly different.</p>
+<p>Also, notice that we got some warnings for the PSIS of the fits. While there is no warning from WAIC, we would still see some outlier measure by looking at the penalty.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>PSIS_m5<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">PSIS</span>(m5<span class="fl">.3</span>, <span class="at">pointwise=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Some Pareto k values are high (&gt;0.5). Set pointwise=TRUE to inspect individual points.</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>WAIC_m5<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">WAIC</span>(m5<span class="fl">.3</span>, <span class="at">pointwise=</span>T)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(PSIS_m5<span class="fl">.3</span><span class="sc">$</span>k, WAIC_m5<span class="fl">.3</span><span class="sc">$</span>penalty, <span class="at">xlab=</span><span class="st">'PSIS Parteo K'</span>, <span class="at">ylab=</span><span class="st">'WAIC Penalty'</span>, <span class="at">col=</span>rangi2, <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fl">0.5</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch7_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Idaho is the top-right most point and Maine is the second-most outlier. The reason for Idaho is that is has a very low divorce rate for its age at marriage. Recall that the total number of parameters model <code>m5.3</code> is 4, but if we run sum all the penalty terms above, we would get something close to 6.</p>
+<p>An alternative here is the use <strong>robust regression</strong>. We will swap out the Gaussian distribution we have been using thus far for the likelihood with a t-distribution. The t-distribution has parameter <span class="math inline">\(\nu\)</span> which controls the thickness of the tails. We’ll use <span class="math inline">\(\nu=2\)</span> for thicker tails be keeping it so that the variance and mean of the student-t is still defined (variance only defined for <span class="math inline">\(\nu &gt; 2\)</span>).</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.3</span>t <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>  D <span class="sc">~</span> <span class="fu">dstudent</span>(<span class="dv">2</span>, mu, sigma),</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bM<span class="sc">*</span>M <span class="sc">+</span> bA<span class="sc">*</span>A,</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.2</span>),</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>  bM <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>  bA <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">coeftab</span>(m5<span class="fl">.3</span>, m5<span class="fl">.3</span>t), <span class="at">pars=</span><span class="fu">c</span>(<span class="st">'bM'</span>, <span class="st">'bA'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch7_files/figure-html/unnamed-chunk-24-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>You’ll notice that <span class="math inline">\(\beta_A\)</span> is farther from zero. This is because when Idaho was influential in the model it lowered the coefficient since it had a low divorce rate and a low median age at marriage. Let’s also check the <span class="math inline">\(\hat{k}\)</span> now:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>PSIS_m5<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">PSIS</span>(m5<span class="fl">.3</span>t, <span class="at">pointwise=</span>T)</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>WAIC_m5<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">WAIC</span>(m5<span class="fl">.3</span>t, <span class="at">pointwise=</span>T)</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(PSIS_m5<span class="fl">.3</span><span class="sc">$</span>k, WAIC_m5<span class="fl">.3</span><span class="sc">$</span>penalty, <span class="at">xlab=</span><span class="st">'PSIS Parteo K'</span>, <span class="at">ylab=</span><span class="st">'WAIC Penalty'</span>, <span class="at">col=</span>rangi2, <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fl">0.5</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch7_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="exercises" class="level2">
+<h2 class="anchored" data-anchor-id="exercises">Exercises</h2>
+<section id="h.1" class="level3">
+<h3 class="anchored" data-anchor-id="h.1">H.1</h3>
+<p>There was a poorly drawn curve in the WSJ fitting some data on tax rates. Let’s correctly draw some curves predicting tax revenue from tax rate.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Laffer)</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> Laffer</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(tax_revenue <span class="sc">~</span> tax_rate, <span class="at">data=</span>d, <span class="at">pch=</span><span class="dv">16</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch7_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s try four models. An intercept only, a linear, a quadratic, and a log.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.1</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a,</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.2</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX[<span class="dv">1</span>]<span class="sc">*</span>tax_rate,</span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span><span class="fu">list</span>(<span class="at">bX=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">1</span>)))</span>
+<span id="cb48-15"><a href="#cb48-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-16"><a href="#cb48-16" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.3</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb48-17"><a href="#cb48-17" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
+<span id="cb48-18"><a href="#cb48-18" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX[<span class="dv">1</span>]<span class="sc">*</span>tax_rate <span class="sc">+</span> bX[<span class="dv">2</span>]<span class="sc">*</span>tax_rate<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb48-19"><a href="#cb48-19" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb48-20"><a href="#cb48-20" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb48-21"><a href="#cb48-21" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb48-22"><a href="#cb48-22" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span><span class="fu">list</span>(<span class="at">bX=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">2</span>)))</span>
+<span id="cb48-23"><a href="#cb48-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-24"><a href="#cb48-24" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.4</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb48-25"><a href="#cb48-25" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
+<span id="cb48-26"><a href="#cb48-26" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX[<span class="dv">1</span>]<span class="sc">*</span>tax_rate <span class="sc">+</span> bX[<span class="dv">2</span>]<span class="sc">*</span>tax_rate<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> bX[<span class="dv">3</span>]<span class="sc">*</span>tax_rate<span class="sc">^</span><span class="dv">3</span>,</span>
+<span id="cb48-27"><a href="#cb48-27" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb48-28"><a href="#cb48-28" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb48-29"><a href="#cb48-29" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb48-30"><a href="#cb48-30" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span><span class="fu">list</span>(<span class="at">bX=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">3</span>)))</span>
+<span id="cb48-31"><a href="#cb48-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-32"><a href="#cb48-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-33"><a href="#cb48-33" aria-hidden="true" tabindex="-1"></a>x_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">40</span>)</span>
+<span id="cb48-34"><a href="#cb48-34" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(tax_revenue <span class="sc">~</span> tax_rate, <span class="at">data=</span>d, <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb48-35"><a href="#cb48-35" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.1</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">1</span>)</span>
+<span id="cb48-36"><a href="#cb48-36" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.2</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span>
+<span id="cb48-37"><a href="#cb48-37" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.3</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">3</span>)</span>
+<span id="cb48-38"><a href="#cb48-38" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.4</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch7_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s use WAIC to see how they performed.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m_h.<span class="fl">1.1</span>, m_h.<span class="fl">1.2</span>, m_h.<span class="fl">1.3</span>, m_h.<span class="fl">1.4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            WAIC       SE    dWAIC      dSE    pWAIC    weight
+m_h.1.4 122.2162 21.45352 0.000000       NA 7.005504 0.6952249
+m_h.1.3 124.9654 25.94464 2.749228 5.089075 8.063029 0.1758483
+m_h.1.2 125.8531 24.45088 3.636912 4.679455 6.954156 0.1128184
+m_h.1.1 129.7460 25.67176 7.529790 6.528055 7.319144 0.0161084</code></pre>
+</div>
+</div>
+<p>It actually looks like the curve, either the cubic or the quadratic doesn’t help us much. The difference between the linear and the quadtratic is 2.1, but the SE is 2.97. A plot might be easier to see:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m_h.<span class="fl">1.1</span>, m_h.<span class="fl">1.2</span>, m_h.<span class="fl">1.3</span>, m_h.<span class="fl">1.4</span>) <span class="sc">|&gt;</span> <span class="fu">plot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch7_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Recall the that filled in dots are the in-sample deviance. The hollow dots are the WAIC. It appears that even the intercept only model isn’t much better than the quadratic model. Also, look at the <span class="math inline">\(p_{\text{WAIC}}\)</span> terms, my guess is that we would see some high <span class="math inline">\(\hat{k}\)</span> values had we used PSIS.</p>
+</section>
 </section>
 
 </main>
