@@ -531,6 +531,62 @@ abline(v=0.5, lwd=2, lty=2)
 
 ## Exercises
 
+### M.1
+
+Here is the definition for the AIC:
+
+$$\text{AIC} = D_{\text{Train}} + 2p = -2\text{lppd} + 2p$$
+
+where $p$ is the number of free parameters. AIC is relies on the following assumptions:
+
+- The priors are flat or overwhelmed by the likelihood
+- The posterior distribution is approx. multivariate Gaussian
+- The sample size $N$ is much greater than the number of parameters
+
+Here is the following definition for WAIC:
+
+$$\text{WAIC}(y,\Theta)=-2 (\text{lppd} - \sum_i\text{var}_{\theta}\log p(y_i|\theta))$$
+Clearly, WAIC is more general than the AIC. It is able to take the entire posterior into account and does not need to make any assumptions about posterior shape. That said, if the assumptions of the above are met, we should converge to the same value for WAIC and AIC. 
+
+### M.3
+For information criteria, we need to use the same observations between models that we are evaluating. If we decide to reduce the number of observations for model $M_1$ when comparing to model $M_2$, then $M_1$ will be starting at an advantage. Recall, we want a lower deviance or WAIC score. Here is a small example below: 
+
+
+```{r}
+N <- 100
+
+h0 <- rnorm(N,10,2)
+treatment <- rep(0:1, each=N/2)
+fungus <- rbinom(N, size=1, prob=0.5 - treatment*0.4)
+h1 <- h0 + rnorm(N, 5 - 3*fungus)
+
+d <- data.frame(h0,h1,treatment, fungus)
+
+m6.6_high_n <- quap(alist(
+  h1 ~ dnorm(mu, sigma),
+  mu <- h0*p,
+  p ~ dlnorm(0,0.25),
+  sigma ~ dexp(1)
+), data=d)
+
+d <- d[sample(nrow(d), 10),]
+
+m6.6_low_n <- quap(alist(
+  h1 ~ dnorm(mu, sigma),
+  mu <- h0*p,
+  p ~ dlnorm(0,0.25),
+  sigma ~ dexp(1)
+), data=d)
+
+rbind(WAIC(m6.6_high_n), WAIC(m6.6_low_n)) |> as.data.frame() |> mutate(model=c('high N', 'low N')) |>
+  relocate(model)
+```
+
+Even though it is the same model, with the same DGP, the lower N model fairs better since we are summing over less terms.
+
+In the same vein, we cannot compare two models that are evaluated with different datasets. This is because we want to compare models, not data. If we use two different datasets then we no longer have apples to apples. We won't be able to tell if it is the $y_i$ in $p(y_i)$ or the actual model that is improving or hurting the deviance.
+
+
 ### H.1
 
 There was a poorly drawn curve in the WSJ fitting some data on tax rates. Let's correctly draw some curves predicting tax revenue from tax rate.
@@ -638,7 +694,48 @@ plot(PSIS_m_h.1.3t$k, WAIC_m_h.1.3t$penalty, xlab='PSIS Parteo K', ylab='WAIC Pe
 abline(v=0.5, lwd=2, lty=2)
 ```
 
-Still not great, but mich better!
+Still not great, but much better!
 
 ### H.3
+Let's build the bird dataframe. Columns are the islands and rows represent the respective species:
 
+```{r}
+birds <- data.frame(i_1=c(0.2, 0.2, 0.2, 0.2, 0.2),
+                    i_2=c(0.8, 0.1, 0.05, 0.025, 0.025),
+                    i_3=c(0.05, 0.15, 0.7, 0.05, 0.05))
+colSums(birds)
+```
+Let's compute the entropy of each island's distribution. Recall that entropy is given by:
+
+$$H(p)=-E_p[\log(p_i)]=-\sum^n_{i=1}p_i\log(p_i)$$
+
+```{r}
+entropy <- apply(birds, 2, \(x) -sum(x*log(x)))
+entropy
+```
+
+Let's now compute the KL divergence between the various islands. We are going to iterate through a assume that one island is the truth and then calculate the KL divergence as if the other two are the predictions. Recall that the KL divergence is given by:
+
+$$D_{\text{KL}}(p,q)=\sum_i p_i \log(p_i/q_i)$$
+
+where $p_i$ is the truth and $q_i$ is the prediction.
+
+```{r}
+kl <- function(truth, pred){
+  sum(truth * log(truth/pred))
+}
+
+comp <- expand.grid(truth=1:3, pred=1:3) |> filter(truth != pred) |> mutate(KL = NA) |> arrange(truth, pred)
+for (i in 1:nrow(comp)){
+  comp[i,3] <- kl(birds[[comp[i,1]]], birds[[comp[i,2]]])
+}
+comp
+```
+
+Now let's see which island predicts the other best
+
+```{r}
+comp |> arrange(KL)
+```
+
+Looks like 1 predicts 3 best and vice versa. It makes sense since island 1 is essentially a flat distribution and island 3 doesn't have any extremely high/low values like island 2.

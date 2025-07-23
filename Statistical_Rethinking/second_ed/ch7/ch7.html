@@ -116,7 +116,11 @@ window.Quarto = {
   <li><a href="#model-comparison" id="toc-model-comparison" class="nav-link" data-scroll-target="#model-comparison">7.5 - Model Comparison</a></li>
   <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises">Exercises</a>
   <ul class="collapse">
+  <li><a href="#m.1" id="toc-m.1" class="nav-link" data-scroll-target="#m.1">M.1</a></li>
+  <li><a href="#m.3" id="toc-m.3" class="nav-link" data-scroll-target="#m.3">M.3</a></li>
   <li><a href="#h.1" id="toc-h.1" class="nav-link" data-scroll-target="#h.1">H.1</a></li>
+  <li><a href="#h.2" id="toc-h.2" class="nav-link" data-scroll-target="#h.2">H.2</a></li>
+  <li><a href="#h.3" id="toc-h.3" class="nav-link" data-scroll-target="#h.3">H.3</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -238,7 +242,7 @@ window.Quarto = {
 {
     mean(x^2) - mean(x)^2
 }
-&lt;bytecode: 0x0000024cc5b2d840&gt;
+&lt;bytecode: 0x00000199eeb4d978&gt;
 &lt;environment: namespace:rethinking&gt;</code></pre>
 </div>
 </div>
@@ -374,7 +378,7 @@ window.Quarto = {
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">lppd</span>(m7<span class="fl">.1</span>,<span class="at">n=</span><span class="fl">1e4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1]  0.6098668  0.6483438  0.5496092  0.6234934  0.4648143  0.4347604 -0.8444630</code></pre>
+<pre><code>[1]  0.6098715  0.6483484  0.5496111  0.6234979  0.4648178  0.4347639 -0.8444734</code></pre>
 </div>
 </div>
 <p>If you summed the above, you’d get the log-probability score. Larger values are better since they indicate larger average accuracy. It is common to see this called deviance, but multiplied by -2. the -2 is for historical reasons and is really done so the sample distribution falls more in line with a Chi-squared distribution.</p>
@@ -394,7 +398,7 @@ window.Quarto = {
 <span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="fu">vapply</span>(<span class="dv">1</span><span class="sc">:</span>n, f, <span class="fu">numeric</span>(<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1]  0.6098668  0.6483438  0.5496092  0.6234934  0.4648143  0.4347604 -0.8444630</code></pre>
+<pre><code>[1]  0.6098715  0.6483484  0.5496111  0.6234979  0.4648178  0.4347639 -0.8444734</code></pre>
 </div>
 </div>
 <p>We are still going to suffer from the same issue that the <span class="math inline">\(R^2\)</span> had: the scores will get better as the model becomes more complex.</p>
@@ -407,7 +411,7 @@ window.Quarto = {
 <span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>}, <span class="fu">numeric</span>(<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1]    2.490390    2.566165    3.741488    5.333750   14.095009 -606.485083</code></pre>
+<pre><code>[1]    2.490403    2.566165    3.741488    5.333750   14.095009 -606.485083</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -770,21 +774,77 @@ m5.2 140.1557 10.86663 13.18239 10.458060 3.490896 0.001179714</code></pre>
 </section>
 <section id="exercises" class="level2">
 <h2 class="anchored" data-anchor-id="exercises">Exercises</h2>
+<section id="m.1" class="level3">
+<h3 class="anchored" data-anchor-id="m.1">M.1</h3>
+<p>Here is the definition for the AIC:</p>
+<p><span class="math display">\[\text{AIC} = D_{\text{Train}} + 2p = -2\text{lppd} + 2p\]</span></p>
+<p>where <span class="math inline">\(p\)</span> is the number of free parameters. AIC is relies on the following assumptions:</p>
+<ul>
+<li>The priors are flat or overwhelmed by the likelihood</li>
+<li>The posterior distribution is approx. multivariate Gaussian</li>
+<li>The sample size <span class="math inline">\(N\)</span> is much greater than the number of parameters</li>
+</ul>
+<p>Here is the following definition for WAIC:</p>
+<p><span class="math display">\[\text{WAIC}(y,\Theta)=-2 (\text{lppd} - \sum_i\text{var}_{\theta}\log p(y_i|\theta))\]</span> Clearly, WAIC is more general than the AIC. It is able to take the entire posterior into account and does not need to make any assumptions about posterior shape. That said, if the assumptions of the above are met, we should converge to the same value for WAIC and AIC.</p>
+</section>
+<section id="m.3" class="level3">
+<h3 class="anchored" data-anchor-id="m.3">M.3</h3>
+<p>For information criteria, we need to use the same observations between models that we are evaluating. If we decide to reduce the number of observations for model <span class="math inline">\(M_1\)</span> when comparing to model <span class="math inline">\(M_2\)</span>, then <span class="math inline">\(M_1\)</span> will be starting at an advantage. Recall, we want a lower deviance or WAIC score. Here is a small example below:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>h0 <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N,<span class="dv">10</span>,<span class="dv">2</span>)</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>treatment <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">1</span>, <span class="at">each=</span>N<span class="sc">/</span><span class="dv">2</span>)</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>fungus <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(N, <span class="at">size=</span><span class="dv">1</span>, <span class="at">prob=</span><span class="fl">0.5</span> <span class="sc">-</span> treatment<span class="sc">*</span><span class="fl">0.4</span>)</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>h1 <span class="ot">&lt;-</span> h0 <span class="sc">+</span> <span class="fu">rnorm</span>(N, <span class="dv">5</span> <span class="sc">-</span> <span class="dv">3</span><span class="sc">*</span>fungus)</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(h0,h1,treatment, fungus)</span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>m6<span class="fl">.6</span>_high_n <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a>  h1 <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> h0<span class="sc">*</span>p,</span>
+<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>  p <span class="sc">~</span> <span class="fu">dlnorm</span>(<span class="dv">0</span>,<span class="fl">0.25</span>),</span>
+<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-17"><a href="#cb47-17" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> d[<span class="fu">sample</span>(<span class="fu">nrow</span>(d), <span class="dv">10</span>),]</span>
+<span id="cb47-18"><a href="#cb47-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-19"><a href="#cb47-19" aria-hidden="true" tabindex="-1"></a>m6<span class="fl">.6</span>_low_n <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb47-20"><a href="#cb47-20" aria-hidden="true" tabindex="-1"></a>  h1 <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb47-21"><a href="#cb47-21" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> h0<span class="sc">*</span>p,</span>
+<span id="cb47-22"><a href="#cb47-22" aria-hidden="true" tabindex="-1"></a>  p <span class="sc">~</span> <span class="fu">dlnorm</span>(<span class="dv">0</span>,<span class="fl">0.25</span>),</span>
+<span id="cb47-23"><a href="#cb47-23" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb47-24"><a href="#cb47-24" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb47-25"><a href="#cb47-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-26"><a href="#cb47-26" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(<span class="fu">WAIC</span>(m6<span class="fl">.6</span>_high_n), <span class="fu">WAIC</span>(m6<span class="fl">.6</span>_low_n)) <span class="sc">|&gt;</span> <span class="fu">as.data.frame</span>() <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">model=</span><span class="fu">c</span>(<span class="st">'high N'</span>, <span class="st">'low N'</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb47-27"><a href="#cb47-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>   model      WAIC       lppd  penalty   std_err
+1 high N 412.11177 -204.05798 1.997902 14.053061
+2  low N  43.74516  -18.23555 3.637031  6.371206</code></pre>
+</div>
+</div>
+<p>Even though it is the same model, with the same DGP, the lower N model fairs better since we are summing over less terms.</p>
+<p>In the same vein, we cannot compare two models that are evaluated with different datasets. This is because we want to compare models, not data. If we use two different datasets then we no longer have apples to apples. We won’t be able to tell if it is the <span class="math inline">\(y_i\)</span> in <span class="math inline">\(p(y_i)\)</span> or the actual model that is improving or hurting the deviance.</p>
+</section>
 <section id="h.1" class="level3">
 <h3 class="anchored" data-anchor-id="h.1">H.1</h3>
 <p>There was a poorly drawn curve in the WSJ fitting some data on tax rates. Let’s correctly draw some curves predicting tax revenue from tax rate.</p>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Laffer)</span>
-<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> Laffer</span>
-<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(tax_revenue <span class="sc">~</span> tax_rate, <span class="at">data=</span>d, <span class="at">pch=</span><span class="dv">16</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Laffer)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> Laffer</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(tax_revenue <span class="sc">~</span> tax_rate, <span class="at">data=</span>d, <span class="at">pch=</span><span class="dv">16</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="ch7_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="ch7_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -793,49 +853,49 @@ m5.2 140.1557 10.86663 13.18239 10.458060 3.490896 0.001179714</code></pre>
 <div class="cell" data-layout-align="center">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.1</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
-<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
-<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a,</span>
-<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
-<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
-<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
-<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.2</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
-<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
-<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX[<span class="dv">1</span>]<span class="sc">*</span>tax_rate,</span>
-<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
-<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
-<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
-<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span><span class="fu">list</span>(<span class="at">bX=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">1</span>)))</span>
-<span id="cb48-15"><a href="#cb48-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-16"><a href="#cb48-16" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.3</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
-<span id="cb48-17"><a href="#cb48-17" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
-<span id="cb48-18"><a href="#cb48-18" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX[<span class="dv">1</span>]<span class="sc">*</span>tax_rate <span class="sc">+</span> bX[<span class="dv">2</span>]<span class="sc">*</span>tax_rate<span class="sc">^</span><span class="dv">2</span>,</span>
-<span id="cb48-19"><a href="#cb48-19" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
-<span id="cb48-20"><a href="#cb48-20" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
-<span id="cb48-21"><a href="#cb48-21" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
-<span id="cb48-22"><a href="#cb48-22" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span><span class="fu">list</span>(<span class="at">bX=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">2</span>)))</span>
-<span id="cb48-23"><a href="#cb48-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-24"><a href="#cb48-24" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.4</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
-<span id="cb48-25"><a href="#cb48-25" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
-<span id="cb48-26"><a href="#cb48-26" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX[<span class="dv">1</span>]<span class="sc">*</span>tax_rate <span class="sc">+</span> bX[<span class="dv">2</span>]<span class="sc">*</span>tax_rate<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> bX[<span class="dv">3</span>]<span class="sc">*</span>tax_rate<span class="sc">^</span><span class="dv">3</span>,</span>
-<span id="cb48-27"><a href="#cb48-27" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
-<span id="cb48-28"><a href="#cb48-28" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
-<span id="cb48-29"><a href="#cb48-29" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
-<span id="cb48-30"><a href="#cb48-30" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span><span class="fu">list</span>(<span class="at">bX=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">3</span>)))</span>
-<span id="cb48-31"><a href="#cb48-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-32"><a href="#cb48-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-33"><a href="#cb48-33" aria-hidden="true" tabindex="-1"></a>x_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">40</span>)</span>
-<span id="cb48-34"><a href="#cb48-34" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(tax_revenue <span class="sc">~</span> tax_rate, <span class="at">data=</span>d, <span class="at">pch=</span><span class="dv">16</span>)</span>
-<span id="cb48-35"><a href="#cb48-35" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.1</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">1</span>)</span>
-<span id="cb48-36"><a href="#cb48-36" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.2</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span>
-<span id="cb48-37"><a href="#cb48-37" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.3</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">3</span>)</span>
-<span id="cb48-38"><a href="#cb48-38" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.4</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.1</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a,</span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.2</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX[<span class="dv">1</span>]<span class="sc">*</span>tax_rate,</span>
+<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb50-13"><a href="#cb50-13" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb50-14"><a href="#cb50-14" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span><span class="fu">list</span>(<span class="at">bX=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">1</span>)))</span>
+<span id="cb50-15"><a href="#cb50-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-16"><a href="#cb50-16" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.3</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb50-17"><a href="#cb50-17" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
+<span id="cb50-18"><a href="#cb50-18" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX[<span class="dv">1</span>]<span class="sc">*</span>tax_rate <span class="sc">+</span> bX[<span class="dv">2</span>]<span class="sc">*</span>tax_rate<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb50-19"><a href="#cb50-19" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb50-20"><a href="#cb50-20" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb50-21"><a href="#cb50-21" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb50-22"><a href="#cb50-22" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span><span class="fu">list</span>(<span class="at">bX=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">2</span>)))</span>
+<span id="cb50-23"><a href="#cb50-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-24"><a href="#cb50-24" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.4</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb50-25"><a href="#cb50-25" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sig),</span>
+<span id="cb50-26"><a href="#cb50-26" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX[<span class="dv">1</span>]<span class="sc">*</span>tax_rate <span class="sc">+</span> bX[<span class="dv">2</span>]<span class="sc">*</span>tax_rate<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> bX[<span class="dv">3</span>]<span class="sc">*</span>tax_rate<span class="sc">^</span><span class="dv">3</span>,</span>
+<span id="cb50-27"><a href="#cb50-27" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb50-28"><a href="#cb50-28" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb50-29"><a href="#cb50-29" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb50-30"><a href="#cb50-30" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span><span class="fu">list</span>(<span class="at">bX=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">3</span>)))</span>
+<span id="cb50-31"><a href="#cb50-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-32"><a href="#cb50-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-33"><a href="#cb50-33" aria-hidden="true" tabindex="-1"></a>x_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">40</span>)</span>
+<span id="cb50-34"><a href="#cb50-34" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(tax_revenue <span class="sc">~</span> tax_rate, <span class="at">data=</span>d, <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb50-35"><a href="#cb50-35" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.1</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">1</span>)</span>
+<span id="cb50-36"><a href="#cb50-36" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.2</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span>
+<span id="cb50-37"><a href="#cb50-37" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.3</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">3</span>)</span>
+<span id="cb50-38"><a href="#cb50-38" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.4</span> <span class="sc">|&gt;</span> <span class="fu">link</span>(<span class="at">data=</span><span class="fu">list</span>(<span class="at">tax_rate=</span>x_seq)) <span class="sc">|&gt;</span> <span class="fu">colMeans</span>() <span class="sc">|&gt;</span> <span class="fu">lines</span>(<span class="at">x=</span>x_seq, <span class="at">y=</span>_, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="ch7_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+<p><img src="ch7_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
 </figure>
 </div>
 </div>
@@ -844,31 +904,156 @@ m5.2 140.1557 10.86663 13.18239 10.458060 3.490896 0.001179714</code></pre>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m_h.<span class="fl">1.1</span>, m_h.<span class="fl">1.2</span>, m_h.<span class="fl">1.3</span>, m_h.<span class="fl">1.4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m_h.<span class="fl">1.1</span>, m_h.<span class="fl">1.2</span>, m_h.<span class="fl">1.3</span>, m_h.<span class="fl">1.4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>            WAIC       SE    dWAIC      dSE    pWAIC    weight
-m_h.1.4 122.2162 21.45352 0.000000       NA 7.005504 0.6952249
-m_h.1.3 124.9654 25.94464 2.749228 5.089075 8.063029 0.1758483
-m_h.1.2 125.8531 24.45088 3.636912 4.679455 6.954156 0.1128184
-m_h.1.1 129.7460 25.67176 7.529790 6.528055 7.319144 0.0161084</code></pre>
+<pre><code>            WAIC       SE     dWAIC      dSE    pWAIC     weight
+m_h.1.4 125.0069 24.12778 0.0000000       NA 8.480274 0.38856944
+m_h.1.3 125.4215 26.45398 0.4145687 3.170750 8.351372 0.31582478
+m_h.1.2 126.3209 24.80603 1.3140086 3.697868 7.174815 0.20143517
+m_h.1.1 127.8416 23.94002 2.8347276 4.970262 6.338242 0.09417061</code></pre>
 </div>
 </div>
 <p>It actually looks like the curve, either the cubic or the quadratic doesn’t help us much. The difference between the linear and the quadtratic is 2.1, but the SE is 2.97. A plot might be easier to see:</p>
 <div class="cell" data-layout-align="center">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m_h.<span class="fl">1.1</span>, m_h.<span class="fl">1.2</span>, m_h.<span class="fl">1.3</span>, m_h.<span class="fl">1.4</span>) <span class="sc">|&gt;</span> <span class="fu">plot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m_h.<span class="fl">1.1</span>, m_h.<span class="fl">1.2</span>, m_h.<span class="fl">1.3</span>, m_h.<span class="fl">1.4</span>) <span class="sc">|&gt;</span> <span class="fu">plot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="ch7_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+<p><img src="ch7_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
 </figure>
 </div>
 </div>
 </div>
-<p>Recall the that filled in dots are the in-sample deviance. The hollow dots are the WAIC. It appears that even the intercept only model isn’t much better than the quadratic model. Also, look at the <span class="math inline">\(p_{\text{WAIC}}\)</span> terms, my guess is that we would see some high <span class="math inline">\(\hat{k}\)</span> values had we used PSIS.</p>
+<p>Recall the that filled in dots are the in-sample deviance. The hollow dots are the WAIC. It appears that even the intercept only model isn’t much better than the quadratic model. Also, look at the <span class="math inline">\(p_{\text{WAIC}}\)</span> terms. My guess is that we would see some high <span class="math inline">\(\hat{k}\)</span> values had we used PSIS.</p>
+</section>
+<section id="h.2" class="level3">
+<h3 class="anchored" data-anchor-id="h.2">H.2</h3>
+<p>Let’s look at the importance of the one outlier in the dataset using both WAIC and PSIS. We’ll use the quadratic model for this.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>PSIS_m_h.<span class="fl">1.3</span> <span class="ot">&lt;-</span> <span class="fu">PSIS</span>(m_h.<span class="fl">1.3</span>, <span class="at">pointwise=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Some Pareto k values are very high (&gt;1). Set pointwise=TRUE to inspect individual points.</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>WAIC_m_h.<span class="fl">1.3</span> <span class="ot">&lt;-</span> <span class="fu">WAIC</span>(m_h.<span class="fl">1.3</span>, <span class="at">pointwise=</span>T)</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(PSIS_m_h.<span class="fl">1.3</span><span class="sc">$</span>k, WAIC_m_h.<span class="fl">1.3</span><span class="sc">$</span>penalty, <span class="at">xlab=</span><span class="st">'PSIS Parteo K'</span>, <span class="at">ylab=</span><span class="st">'WAIC Penalty'</span>, <span class="at">col=</span>rangi2, <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fl">0.5</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch7_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Wow, that is crazy. Let’s see what happens if we use the t-distribution for the likelihood to corect for this:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>m_h.<span class="fl">1.3</span>t <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>  tax_revenue <span class="sc">~</span> <span class="fu">dstudent</span>(<span class="dv">2</span>, mu, sig),</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bX[<span class="dv">1</span>]<span class="sc">*</span>tax_rate <span class="sc">+</span> bX[<span class="dv">2</span>]<span class="sc">*</span>tax_rate<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>  bX <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>),</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>  sig <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span><span class="fu">list</span>(<span class="at">bX=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">2</span>)))</span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>PSIS_m_h.<span class="fl">1.3</span>t <span class="ot">&lt;-</span> <span class="fu">PSIS</span>(m_h.<span class="fl">1.3</span>t, <span class="at">pointwise=</span>T)</span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a>WAIC_m_h.<span class="fl">1.3</span>t <span class="ot">&lt;-</span> <span class="fu">WAIC</span>(m_h.<span class="fl">1.3</span>t, <span class="at">pointwise=</span>T)</span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(PSIS_m_h.<span class="fl">1.3</span>t<span class="sc">$</span>k, WAIC_m_h.<span class="fl">1.3</span>t<span class="sc">$</span>penalty, <span class="at">xlab=</span><span class="st">'PSIS Parteo K'</span>, <span class="at">ylab=</span><span class="st">'WAIC Penalty'</span>, <span class="at">col=</span>rangi2, <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fl">0.5</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch7_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Still not great, but much better!</p>
+</section>
+<section id="h.3" class="level3">
+<h3 class="anchored" data-anchor-id="h.3">H.3</h3>
+<p>Let’s build the bird dataframe. Columns are the islands and rows represent the respective species:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>birds <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">i_1=</span><span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="fl">0.2</span>),</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">i_2=</span><span class="fu">c</span>(<span class="fl">0.8</span>, <span class="fl">0.1</span>, <span class="fl">0.05</span>, <span class="fl">0.025</span>, <span class="fl">0.025</span>),</span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">i_3=</span><span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.15</span>, <span class="fl">0.7</span>, <span class="fl">0.05</span>, <span class="fl">0.05</span>))</span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a><span class="fu">colSums</span>(birds)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>i_1 i_2 i_3 
+  1   1   1 </code></pre>
+</div>
+</div>
+<p>Let’s compute the entropy of each island’s distribution. Recall that entropy is given by:</p>
+<p><span class="math display">\[H(p)=-E_p[\log(p_i)]=-\sum^n_{i=1}p_i\log(p_i)\]</span></p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>entropy <span class="ot">&lt;-</span> <span class="fu">apply</span>(birds, <span class="dv">2</span>, \(x) <span class="sc">-</span><span class="fu">sum</span>(x<span class="sc">*</span><span class="fu">log</span>(x)))</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>entropy</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>      i_1       i_2       i_3 
+1.6094379 0.7430039 0.9836003 </code></pre>
+</div>
+</div>
+<p>Let’s now compute the KL divergence between the various islands. We are going to iterate through a assume that one island is the truth and then calculate the KL divergence as if the other two are the predictions. Recall that the KL divergence is given by:</p>
+<p><span class="math display">\[D_{\text{KL}}(p,q)=\sum_i p_i \log(p_i/q_i)\]</span></p>
+<p>where <span class="math inline">\(p_i\)</span> is the truth and <span class="math inline">\(q_i\)</span> is the prediction.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>kl <span class="ot">&lt;-</span> <span class="cf">function</span>(truth, pred){</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sum</span>(truth <span class="sc">*</span> <span class="fu">log</span>(truth<span class="sc">/</span>pred))</span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a>comp <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">truth=</span><span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">pred=</span><span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) <span class="sc">|&gt;</span> <span class="fu">filter</span>(truth <span class="sc">!=</span> pred) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">KL =</span> <span class="cn">NA</span>) <span class="sc">|&gt;</span> <span class="fu">arrange</span>(truth, pred)</span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(comp)){</span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>  comp[i,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">kl</span>(birds[[comp[i,<span class="dv">1</span>]]], birds[[comp[i,<span class="dv">2</span>]]])</span>
+<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a>comp</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>  truth pred        KL
+1     1    2 0.9704061
+2     1    3 0.6387604
+3     2    1 0.8664340
+4     2    3 2.0109142
+5     3    1 0.6258376
+6     3    2 1.8388452</code></pre>
+</div>
+</div>
+<p>Now let’s see which island predicts the other best</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>comp <span class="sc">|&gt;</span> <span class="fu">arrange</span>(KL)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>  truth pred        KL
+1     3    1 0.6258376
+2     1    3 0.6387604
+3     2    1 0.8664340
+4     1    2 0.9704061
+5     3    2 1.8388452
+6     2    3 2.0109142</code></pre>
+</div>
+</div>
+<p>Looks like 1 predicts 3 best and vice versa. It makes sense since island 1 is essentially a flat distribution and island 3 doesn’t have any extremely high/low values like island 2.</p>
 </section>
 </section>
 
