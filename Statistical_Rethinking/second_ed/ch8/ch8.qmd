@@ -1,0 +1,49 @@
+---
+title: "Rethinking - Chapter 8"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+```{r}
+#| output: false
+#| code-fold: true
+library(rethinking)
+library(dagitty)
+library(tidyverse)
+```
+
+## 8.0
+
+- Interactions allow us to add effects that are conditional on the data
+- Multilevel models are essentially massive interaction models
+
+## 8.1 Building an Interaction
+
+- We see an increase in log GDP with ruggedness for African nations
+  - Might be due to slave trade
+- We can draw a DAG, but a DAG will not encode interactions. It does not say *how* the variables are related to $y$
+
+
+We need a model that can predict log GDP conditional on ruggedness *and* African nation. We could split the data between African and non-African nation, but this is bad because
+
+- We are throwing away information for estimating $\sigma$.
+  - Essentially assuming that there are two different variances (wrong)
+- We won't get an estimate of the predictive power of an `cont_africa` variable
+- Need a single model if we want to use WAIC (same data for each model)
+- We lose potential to borrow information across groups (ch 13)
+
+Let's load in the data:
+```{r}
+data(rugged)
+d <- rugged
+
+d$log_gdp <- log(d$rgdppc_2000)
+
+dd <- d[!is.na(d$rgdppc_2000),]
+dd$log_gdp_std <- dd$log_gdp / mean(dd$log_gdp)
+dd$rugged_std <- dd$rugged / max(dd$rugged)
+```
+
+We are dividing ruggedness by the max since we want to preserve the meaning of a zero ruggedness score. We divide `log_gdp` by the mean since we want a variable that gives us some indication of variance to the international average. That is, a 0.8 is 80% of the national average (80% of the international log GDP average).
+
