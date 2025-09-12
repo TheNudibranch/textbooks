@@ -47,3 +47,243 @@ dd$rugged_std <- dd$rugged / max(dd$rugged)
 
 We are dividing ruggedness by the max since we want to preserve the meaning of a zero ruggedness score. We divide `log_gdp` by the mean since we want a variable that gives us some indication of variance to the international average. That is, a 0.8 is 80% of the national average (80% of the international log GDP average).
 
+Let's create a simple model with reasonable priors:
+```{r}
+m8.1 <- quap(alist(
+  log_gdp_std ~ dnorm(mu, sigma),
+  mu <- a + b*(rugged_std - 0.215), # The mean is 0.215
+  a ~ dnorm(1,1),
+  b ~ dnorm(0,1),
+  sigma ~ dexp(1)
+), data=dd)
+```
+
+Let's look at the prior predictive checks:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+set.seed(7)
+prior <- extract.prior(m8.1)
+
+plot(NULL, xlim=c(0,1), ylim=c(0.5,1.5), xlab='ruggedness', ylab='Log GDP')
+abline(h=min(dd$log_gdp_std), lty=2)
+abline(h=max(dd$log_gdp_std), lty=2)
+
+# draw 51 lines
+rugged_seq <- seq(-0.1, 1.1, length.out=30)
+mu <- link(m8.1, post=prior, data=data.frame(rugged_std=rugged_seq))
+for (i in 1:50) lines(rugged_seq, mu[i,], col=col.alpha('black', 0.3))
+```
+
+So clearly we need to constrain $\alpha$ and $\beta$ better. Notice that for $\beta$, if we drew a line from the point (min rugged, max GDP) to (max rugged, min GDP), we would have a slope of around 0.6. That is the extreme, we need to be way tighter than that.
+
+```{r}
+m8.1 <- quap(alist(
+  log_gdp_std ~ dnorm(mu, sigma),
+  mu <- a + b*(rugged_std - 0.215), # The mean is 0.215
+  a ~ dnorm(1,0.1),
+  b ~ dnorm(0,0.3),
+  sigma ~ dexp(1)
+), data=dd)
+
+precis(m8.1)
+```
+
+Hmm, no real association between ruggedness and GDP. 
+
+Now let's talk about bringing Africa into the model. We could do an indicator variable where the equation looks something like:
+$$\mu_i = \alpha + \beta (r_i - \bar{r}) + \gamma A_i$$
+But this is flawed. This will tell the model that their is more uncertainty when Africa is present ($A_i = 1$). One way around this is to create two separate intercepts:
+
+$$\mu_i = \alpha_{\text{CID}[i]} + \beta (r_i - \bar{r})$$
+
+Where $\text{CID}$ is the continent index. 
+
+Not sure I totally understand what he is saying here since the uncertainty should be the same as the models are equivalent. It makes sense for a continent with less data to be hard to predict and thus have a larger interval.
+
+I kinda see what he is saying since the $\gamma$ term is bascially the additional uncertainty from knowning that we are in Africa, but because there is correlation in the intercept and $\gamma$ paramter, the actual predictions don't have any differences in uncertainty intervals. But I could see how it would be harder to reason about priors.
+
+```{r}
+dd$cid <- ifelse(dd$cont_africa == 1, 1, 2) # 1 if Africa
+
+# Lower unct for when af
+fit <- lm(log_gdp_std ~ rugged_std + cont_africa, data=dd) 
+fit |> predict(newdata=data.frame(rugged_std = rep(0.2,2), cont_africa=c(1,0)), interval='conf') %>% as.data.frame() %>%
+  mutate(diff = upr - lwr)
+
+fit1 <- lm(log_gdp_std ~ rugged_std + as.factor(cid) - 1, data=dd)
+fit1 |> predict(newdata=data.frame(rugged_std = rep(0.2,2), cid=c(1,2)), interval='conf') %>% as.data.frame() %>%
+  mutate(diff = upr - lwr)
+```
+
+```{r}
+vcov(fit) |> cov2cor()
+vcov(fit1) |> cov2cor()
+```
+
+Now that we have that little soap box put away, let's fit the model using indexes:
+```{r}
+m8.2 <- quap(alist(
+  log_gdp_std <- dnorm(mu, sigma),
+  mu <- a[cid] + b * (rugged_std - 0.215),
+  a[cid] ~ dnorm(1, 0.1),
+  b ~ dnorm(0, 0.3),
+  sigma ~ dexp(1)
+), data=dd)
+
+compare(m8.1, m8.2)
+precis(m8.2, depth=2)
+```
+
+Nice, looks like that helped. Let's see what the posterior difference is between the two intercepts:
+```{r}
+post <- extract.samples(m8.2)
+PI(post$a[,1] - post$a[,2])
+```
+
+Okay, let's now build a model that accounts for the interaction in the slope too. Essentially allowing for the slope to vary for African and Non-African nations:
+
+```{r}
+m8.3 <- quap(alist(
+  log_gdp_std <- dnorm(mu, sigma),
+  mu <- a[cid] + b[cid] * (rugged_std - 0.215),
+  a[cid] ~ dnorm(1, 0.1),
+  b[cid] ~ dnorm(0, 0.3),
+  sigma ~ dexp(1)
+), data=dd)
+
+precis(m8.3, depth=2)
+```
+Let's see if model comparison got any better:
+```{r}
+compare(m8.3, m8.2, m8.1, func=PSIS)
+```
+
+So a bit better, but we see that the standard error of the difference is almost the same as the difference itself. Let's plot the $\hat{k}$ values from PSIS:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+plot(PSIS(m8.3, pointwise=T)$k)
+```
+
+Some influential points, but honestly probs not that bad if they are less than 0.7.
+
+Let's go ahead and plot the interaction:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+par(mfrow=c(1,2))
+d.A1 <- dd[dd$cid==1, ]
+plot(d.A1$rugged_std, d.A1$log_gdp_std, pch=16, col=rangi2,
+     xlim=c(0,1), main='Afrcian Nations')
+mu <- link(m8.3, data=data.frame(cid=1, rugged_std=rugged_seq))
+mu_mean <- colMeans(mu)
+mu_ci <- mu |> apply(2, PI, prob=0.97)
+lines(rugged_seq, mu_mean, lwd=2)
+shade(mu_ci, rugged_seq, col=col.alpha(rangi2, 0.3))
+
+d.A0 <- dd[dd$cid==2, ]
+plot(d.A0$rugged_std, d.A0$log_gdp_std, pch=16, col=rangi2,
+     xlim=c(0,1), main='Non-African Nations')
+mu <- link(m8.3, data=data.frame(cid=2, rugged_std=rugged_seq))
+mu_mean <- colMeans(mu)
+mu_ci <- mu |> apply(2, PI, prob=0.97)
+lines(rugged_seq, mu_mean, lwd=2)
+shade(mu_ci, rugged_seq, col=col.alpha(rangi2, 0.3))
+```
+
+## 8.2 Symmetry of interactions
+
+Notice that it is equivalent to write the following for our interaction model that allows intercept and slope to vary with Africa:
+
+$$\mu_i = (2-\text{CID})(\alpha_1 + \beta_1(r_i - \bar{r})) + (\text{CID} - 1)(\alpha_2 + \beta_2(r_i - \bar{r}))$$
+
+Let's think about a question we might pose: Given some ruggedness value, what is the difference in log GDP (positive or negative) if we are in Africa:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+rugged_seq <- seq(0.2, 1.3, length.out=300)
+muA <- link(m8.3, data=data.frame(cid=1, rugged_std=rugged_seq))
+muN <- link(m8.3, data=data.frame(cid=2, rugged_std=rugged_seq))
+delta <- muA - muN
+plot(rugged_seq, colMeans(delta), type='l', lwd=2, ylab='Effect of being in Africa on Log GDP')
+delta |> apply(2,PI) |> shade(rugged_seq)
+abline(h=0, lty=2)
+```
+
+This is interesting, it is showing that for rugged values greater than 0.8, being in Africa actually means that we would expect to have a higher log GDP than if we were in a non-African country.
+
+Notice the dichotomy here. It is simultaneously true that:
+- The influence of ruggedness depends upon continent (different slopes for each continent)
+- The influence of continent depends on ruggedness (graph above)
+
+## 8.3 Continuous Interactions
+
+For this we are going to be looking at tulips:
+```{r}
+data(tulips)
+d <- tulips
+```
+
+We are going to be predicting `blooms` based on `water` and `shade`. The first model will consist of only main effects. Let's standardize the variables:
+
+```{r}
+d$blooms_std <- d$blooms / max(d$blooms)
+d$water_cent <- d$water - mean(d$water)
+d$shade_cent <- d$shade - mean(d$shade)
+```
+
+Refer to the text for a more thorough walkthrough of how we got to the priors. But we basically want to make sure that the intercept can't really exceed 0 and 1, and that the slopes could theoretically span the full range of the data if they need to. That is, since `water_cent` varies from -1 to 1 (2 unit diff), a slope of 0.5 would let us go the full 0 to 1 range if we need to (and the intercept was appropriate).
+
+```{r}
+m8.4 <- quap(alist(
+  blooms_std ~ dnorm(mu, sigma),
+  mu <- a + bw*water_cent + bs*shade_cent,
+  a ~ dnorm(0.5,0.25),
+  bw ~ dnorm(0, 0.25),
+  bs ~ dnorm(0, 0.25),
+  sigma ~ dexp(1)
+), data=d)
+```
+
+Now, let's talk about interaction effects. We may write the model as:
+
+\begin{align}
+\mu_i &= \alpha + \gamma_{W,i}W_i + \beta_S S_i\\
+\gamma_{W,i} &= \beta_W + \beta_{WS}S_i
+\end{align}
+
+The reason we do this is we want the effect of water to depend on itself, but also the level of shade. If we distribute we of course get the usual two-way interaction:
+
+$$\mu_i = \alpha + \beta_W W_i + \beta_S S_i + \beta_{WS} S_i W_i$$
+
+How do we set priors on the interaction? Consider the case where the interaction sets the effect of Water to zero when shade is at its max:
+
+$$\gamma_{W,i} = \beta_W + \beta_{WS}S_i = 0$$
+
+This implies that $\beta_{WS} = -\beta_W$. That would be the largest concievable interaction. Thus we are probably okay using the same prior:
+
+```{r}
+m8.5 <- quap(alist(
+  blooms_std ~ dnorm(mu, sigma),
+  mu <- a + bw*water_cent + bs*shade_cent + bws*shade_cent*water_cent,
+  a ~ dnorm(0.5,0.25),
+  bw ~ dnorm(0, 0.25),
+  bs ~ dnorm(0, 0.25),
+  bws ~ dnorm(0, 0.25),
+  sigma ~ dexp(1)
+), data=d)
+```
+
+We are going to make a **triptych**. Basically a plot that show the bivariate relationship between two params, but varies a third by keeping it constant within a given plot, but varying it when showing all plots.

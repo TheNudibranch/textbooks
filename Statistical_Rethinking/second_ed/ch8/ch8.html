@@ -110,6 +110,8 @@ window.Quarto = {
   <ul>
   <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">8.0</a></li>
   <li><a href="#building-an-interaction" id="toc-building-an-interaction" class="nav-link" data-scroll-target="#building-an-interaction">8.1 Building an Interaction</a></li>
+  <li><a href="#symmetry-of-interactions" id="toc-symmetry-of-interactions" class="nav-link" data-scroll-target="#symmetry-of-interactions">8.2 Symmetry of interactions</a></li>
+  <li><a href="#continuous-interactions" id="toc-continuous-interactions" class="nav-link" data-scroll-target="#continuous-interactions">8.3 Continuous Interactions</a></li>
   </ul>
 </nav>
 </div>
@@ -183,6 +185,333 @@ window.Quarto = {
 </details>
 </div>
 <p>We are dividing ruggedness by the max since we want to preserve the meaning of a zero ruggedness score. We divide <code>log_gdp</code> by the mean since we want a variable that gives us some indication of variance to the international average. That is, a 0.8 is 80% of the national average (80% of the international log GDP average).</p>
+<p>Let’s create a simple model with reasonable priors:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>m8<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  log_gdp_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> b<span class="sc">*</span>(rugged_std <span class="sc">-</span> <span class="fl">0.215</span>), <span class="co"># The mean is 0.215</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>,<span class="dv">1</span>),</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  b <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dd)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Let’s look at the prior predictive checks:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>prior <span class="ot">&lt;-</span> <span class="fu">extract.prior</span>(m8<span class="fl">.1</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="fl">0.5</span>,<span class="fl">1.5</span>), <span class="at">xlab=</span><span class="st">'ruggedness'</span>, <span class="at">ylab=</span><span class="st">'Log GDP'</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="fu">min</span>(dd<span class="sc">$</span>log_gdp_std), <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="fu">max</span>(dd<span class="sc">$</span>log_gdp_std), <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># draw 51 lines</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>rugged_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">0.1</span>, <span class="fl">1.1</span>, <span class="at">length.out=</span><span class="dv">30</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m8<span class="fl">.1</span>, <span class="at">post=</span>prior, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">rugged_std=</span>rugged_seq))</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">50</span>) <span class="fu">lines</span>(rugged_seq, mu[i,], <span class="at">col=</span><span class="fu">col.alpha</span>(<span class="st">'black'</span>, <span class="fl">0.3</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>So clearly we need to constrain <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> better. Notice that for <span class="math inline">\(\beta\)</span>, if we drew a line from the point (min rugged, max GDP) to (max rugged, min GDP), we would have a slope of around 0.6. That is the extreme, we need to be way tighter than that.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>m8<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  log_gdp_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> b<span class="sc">*</span>(rugged_std <span class="sc">-</span> <span class="fl">0.215</span>), <span class="co"># The mean is 0.215</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>,<span class="fl">0.1</span>),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  b <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.3</span>),</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dd)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m8<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>             mean          sd       5.5%      94.5%
+a     0.999999515 0.010411972  0.9833592 1.01663986
+b     0.001990935 0.054793464 -0.0855796 0.08956147
+sigma 0.136497402 0.007396152  0.1246769 0.14831788</code></pre>
+</div>
+</div>
+<p>Hmm, no real association between ruggedness and GDP.</p>
+<p>Now let’s talk about bringing Africa into the model. We could do an indicator variable where the equation looks something like: <span class="math display">\[\mu_i = \alpha + \beta (r_i - \bar{r}) + \gamma A_i\]</span> But this is flawed. This will tell the model that their is more uncertainty when Africa is present (<span class="math inline">\(A_i = 1\)</span>). One way around this is to create two separate intercepts:</p>
+<p><span class="math display">\[\mu_i = \alpha_{\text{CID}[i]} + \beta (r_i - \bar{r})\]</span></p>
+<p>Where <span class="math inline">\(\text{CID}\)</span> is the continent index.</p>
+<p>Not sure I totally understand what he is saying here since the uncertainty should be the same as the models are equivalent. It makes sense for a continent with less data to be hard to predict and thus have a larger interval.</p>
+<p>I kinda see what he is saying since the <span class="math inline">\(\gamma\)</span> term is bascially the additional uncertainty from knowning that we are in Africa, but because there is correlation in the intercept and <span class="math inline">\(\gamma\)</span> paramter, the actual predictions don’t have any differences in uncertainty intervals. But I could see how it would be harder to reason about priors.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>dd<span class="sc">$</span>cid <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(dd<span class="sc">$</span>cont_africa <span class="sc">==</span> <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>) <span class="co"># 1 if Africa</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Lower unct for when af</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(log_gdp_std <span class="sc">~</span> rugged_std <span class="sc">+</span> cont_africa, <span class="at">data=</span>dd) </span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>fit <span class="sc">|&gt;</span> <span class="fu">predict</span>(<span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">rugged_std =</span> <span class="fu">rep</span>(<span class="fl">0.2</span>,<span class="dv">2</span>), <span class="at">cont_africa=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">0</span>)), <span class="at">interval=</span><span class="st">'conf'</span>) <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diff =</span> upr <span class="sc">-</span> lwr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>        fit       lwr       upr       diff
+1 0.8779832 0.8459359 0.9100306 0.06409473
+2 1.0504352 1.0298976 1.0709727 0.04107506</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>fit1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(log_gdp_std <span class="sc">~</span> rugged_std <span class="sc">+</span> <span class="fu">as.factor</span>(cid) <span class="sc">-</span> <span class="dv">1</span>, <span class="at">data=</span>dd)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>fit1 <span class="sc">|&gt;</span> <span class="fu">predict</span>(<span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">rugged_std =</span> <span class="fu">rep</span>(<span class="fl">0.2</span>,<span class="dv">2</span>), <span class="at">cid=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>)), <span class="at">interval=</span><span class="st">'conf'</span>) <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diff =</span> upr <span class="sc">-</span> lwr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>        fit       lwr       upr       diff
+1 0.8779832 0.8459359 0.9100306 0.06409473
+2 1.0504352 1.0298976 1.0709727 0.04107506</code></pre>
+</div>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">vcov</span>(fit) <span class="sc">|&gt;</span> <span class="fu">cov2cor</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            (Intercept) rugged_std cont_africa
+(Intercept)   1.0000000 -0.7204085  -0.4574937
+rugged_std   -0.7204085  1.0000000   0.1220522
+cont_africa  -0.4574937  0.1220522   1.0000000</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">vcov</span>(fit1) <span class="sc">|&gt;</span> <span class="fu">cov2cor</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                rugged_std as.factor(cid)1 as.factor(cid)2
+rugged_std       1.0000000      -0.4580244      -0.7204085
+as.factor(cid)1 -0.4580244       1.0000000       0.3299647
+as.factor(cid)2 -0.7204085       0.3299647       1.0000000</code></pre>
+</div>
+</div>
+<p>Now that we have that little soap box put away, let’s fit the model using indexes:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>m8<span class="fl">.2</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  log_gdp_std <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a[cid] <span class="sc">+</span> b <span class="sc">*</span> (rugged_std <span class="sc">-</span> <span class="fl">0.215</span>),</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  a[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>, <span class="fl">0.1</span>),</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  b <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dd)</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m8<span class="fl">.1</span>, m8<span class="fl">.2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>          WAIC       SE    dWAIC      dSE    pWAIC       weight
+m8.2 -252.2694 15.30363  0.00000       NA 4.258180 1.000000e+00
+m8.1 -188.7489 13.29716 63.52044 15.14767 2.693351 1.609579e-14</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m8<span class="fl">.2</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>             mean          sd       5.5%     94.5%
+a[1]   0.88041699 0.015937691  0.8549455 0.9058885
+a[2]   1.04915863 0.010185998  1.0328794 1.0654378
+b     -0.04651242 0.045688674 -0.1195318 0.0265069
+sigma  0.11239229 0.006091743  0.1026565 0.1221281</code></pre>
+</div>
+</div>
+<p>Nice, looks like that helped. Let’s see what the posterior difference is between the two intercepts:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m8<span class="fl">.2</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">PI</span>(post<span class="sc">$</span>a[,<span class="dv">1</span>] <span class="sc">-</span> post<span class="sc">$</span>a[,<span class="dv">2</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>        5%        94% 
+-0.1990056 -0.1378378 </code></pre>
+</div>
+</div>
+<p>Okay, let’s now build a model that accounts for the interaction in the slope too. Essentially allowing for the slope to vary for African and Non-African nations:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>m8<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  log_gdp_std <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a[cid] <span class="sc">+</span> b[cid] <span class="sc">*</span> (rugged_std <span class="sc">-</span> <span class="fl">0.215</span>),</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  a[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>, <span class="fl">0.1</span>),</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  b[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dd)</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m8<span class="fl">.3</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            mean          sd        5.5%      94.5%
+a[1]   0.8865638 0.015674871  0.86151229  0.9116152
+a[2]   1.0505700 0.009936076  1.03469020  1.0664497
+b[1]   0.1325053 0.074200688  0.01391832  0.2510924
+b[2]  -0.1425764 0.054746548 -0.23007191 -0.0550808
+sigma  0.1094882 0.005934499  0.10000374  0.1189727</code></pre>
+</div>
+</div>
+<p>Let’s see if model comparison got any better:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m8<span class="fl">.3</span>, m8<span class="fl">.2</span>, m8<span class="fl">.1</span>, <span class="at">func=</span>PSIS)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>          PSIS       SE     dPSIS       dSE    pPSIS       weight
+m8.3 -259.0953 15.18028  0.000000        NA 5.160457 9.729596e-01
+m8.2 -251.9293 15.31455  7.166018  6.637029 4.381704 2.704045e-02
+m8.1 -188.6208 13.42930 70.474472 15.511919 2.754712 4.839021e-16</code></pre>
+</div>
+</div>
+<p>So a bit better, but we see that the standard error of the difference is almost the same as the difference itself. Let’s plot the <span class="math inline">\(\hat{k}\)</span> values from PSIS:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">PSIS</span>(m8<span class="fl">.3</span>, <span class="at">pointwise=</span>T)<span class="sc">$</span>k)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Some Pareto k values are high (&gt;0.5). Set pointwise=TRUE to inspect individual points.</code></pre>
+</div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Some influential points, but honestly probs not that bad if they are less than 0.7.</p>
+<p>Let’s go ahead and plot the interaction:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>d.A1 <span class="ot">&lt;-</span> dd[dd<span class="sc">$</span>cid<span class="sc">==</span><span class="dv">1</span>, ]</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(d.A1<span class="sc">$</span>rugged_std, d.A1<span class="sc">$</span>log_gdp_std, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>rangi2,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>), <span class="at">main=</span><span class="st">'Afrcian Nations'</span>)</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m8<span class="fl">.3</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">cid=</span><span class="dv">1</span>, <span class="at">rugged_std=</span>rugged_seq))</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>mu_mean <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(mu)</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>mu_ci <span class="ot">&lt;-</span> mu <span class="sc">|&gt;</span> <span class="fu">apply</span>(<span class="dv">2</span>, PI, <span class="at">prob=</span><span class="fl">0.97</span>)</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(rugged_seq, mu_mean, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="fu">shade</span>(mu_ci, rugged_seq, <span class="at">col=</span><span class="fu">col.alpha</span>(rangi2, <span class="fl">0.3</span>))</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>d.A0 <span class="ot">&lt;-</span> dd[dd<span class="sc">$</span>cid<span class="sc">==</span><span class="dv">2</span>, ]</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(d.A0<span class="sc">$</span>rugged_std, d.A0<span class="sc">$</span>log_gdp_std, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>rangi2,</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>), <span class="at">main=</span><span class="st">'Non-African Nations'</span>)</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m8<span class="fl">.3</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">cid=</span><span class="dv">2</span>, <span class="at">rugged_std=</span>rugged_seq))</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>mu_mean <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(mu)</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>mu_ci <span class="ot">&lt;-</span> mu <span class="sc">|&gt;</span> <span class="fu">apply</span>(<span class="dv">2</span>, PI, <span class="at">prob=</span><span class="fl">0.97</span>)</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(rugged_seq, mu_mean, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a><span class="fu">shade</span>(mu_ci, rugged_seq, <span class="at">col=</span><span class="fu">col.alpha</span>(rangi2, <span class="fl">0.3</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="symmetry-of-interactions" class="level2">
+<h2 class="anchored" data-anchor-id="symmetry-of-interactions">8.2 Symmetry of interactions</h2>
+<p>Notice that it is equivalent to write the following for our interaction model that allows intercept and slope to vary with Africa:</p>
+<p><span class="math display">\[\mu_i = (2-\text{CID})(\alpha_1 + \beta_1(r_i - \bar{r})) + (\text{CID} - 1)(\alpha_2 + \beta_2(r_i - \bar{r}))\]</span></p>
+<p>Let’s think about a question we might pose: Given some ruggedness value, what is the difference in log GDP (positive or negative) if we are in Africa:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>rugged_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fl">0.2</span>, <span class="fl">1.3</span>, <span class="at">length.out=</span><span class="dv">300</span>)</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>muA <span class="ot">&lt;-</span> <span class="fu">link</span>(m8<span class="fl">.3</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">cid=</span><span class="dv">1</span>, <span class="at">rugged_std=</span>rugged_seq))</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>muN <span class="ot">&lt;-</span> <span class="fu">link</span>(m8<span class="fl">.3</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">cid=</span><span class="dv">2</span>, <span class="at">rugged_std=</span>rugged_seq))</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>delta <span class="ot">&lt;-</span> muA <span class="sc">-</span> muN</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(rugged_seq, <span class="fu">colMeans</span>(delta), <span class="at">type=</span><span class="st">'l'</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">ylab=</span><span class="st">'Effect of being in Africa on Log GDP'</span>)</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>delta <span class="sc">|&gt;</span> <span class="fu">apply</span>(<span class="dv">2</span>,PI) <span class="sc">|&gt;</span> <span class="fu">shade</span>(rugged_seq)</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="dv">0</span>, <span class="at">lty=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This is interesting, it is showing that for rugged values greater than 0.8, being in Africa actually means that we would expect to have a higher log GDP than if we were in a non-African country.</p>
+<p>Notice the dichotomy here. It is simultaneously true that: - The influence of ruggedness depends upon continent (different slopes for each continent) - The influence of continent depends on ruggedness (graph above)</p>
+</section>
+<section id="continuous-interactions" class="level2">
+<h2 class="anchored" data-anchor-id="continuous-interactions">8.3 Continuous Interactions</h2>
+<p>For this we are going to be looking at tulips:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(tulips)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> tulips</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>We are going to be predicting <code>blooms</code> based on <code>water</code> and <code>shade</code>. The first model will consist of only main effects. Let’s standardize the variables:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>blooms_std <span class="ot">&lt;-</span> d<span class="sc">$</span>blooms <span class="sc">/</span> <span class="fu">max</span>(d<span class="sc">$</span>blooms)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>water_cent <span class="ot">&lt;-</span> d<span class="sc">$</span>water <span class="sc">-</span> <span class="fu">mean</span>(d<span class="sc">$</span>water)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>shade_cent <span class="ot">&lt;-</span> d<span class="sc">$</span>shade <span class="sc">-</span> <span class="fu">mean</span>(d<span class="sc">$</span>shade)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Refer to the text for a more thorough walkthrough of how we got to the priors. But we basically want to make sure that the intercept can’t really exceed 0 and 1, and that the slopes could theoretically span the full range of the data if they need to. That is, since <code>water_cent</code> varies from -1 to 1 (2 unit diff), a slope of 0.5 would let us go the full 0 to 1 range if we need to (and the intercept was appropriate).</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>m8<span class="fl">.4</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  blooms_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bw<span class="sc">*</span>water_cent <span class="sc">+</span> bs<span class="sc">*</span>shade_cent,</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="fl">0.5</span>,<span class="fl">0.25</span>),</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  bw <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.25</span>),</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  bs <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.25</span>),</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Now, let’s talk about interaction effects. We may write the model as:</p>
+<p><span class="math display">\[\begin{align}
+\mu_i &amp;= \alpha + \gamma_{W,i}W_i + \beta_S S_i\\
+\gamma_{W,i} &amp;= \beta_W + \beta_{WS}S_i
+\end{align}\]</span></p>
+<p>The reason we do this is we want the effect of water to depend on itself, but also the level of shade. If we distribute we of course get the usual two-way interaction:</p>
+<p><span class="math display">\[\mu_i = \alpha + \beta_W W_i + \beta_S S_i + \beta_{WS} S_i W_i\]</span></p>
+<p>How do we set priors on the interaction? Consider the case where the interaction sets the effect of Water to zero when shade is at its max:</p>
+<p><span class="math display">\[\gamma_{W,i} = \beta_W + \beta_{WS}S_i = 0\]</span></p>
+<p>This implies that <span class="math inline">\(\beta_{WS} = -\beta_W\)</span>. That would be the largest concievable interaction. Thus we are probably okay using the same prior:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>m8<span class="fl">.5</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  blooms_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bw<span class="sc">*</span>water_cent <span class="sc">+</span> bs<span class="sc">*</span>shade_cent <span class="sc">+</span> bws<span class="sc">*</span>shade_cent<span class="sc">*</span>water_cent,</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="fl">0.5</span>,<span class="fl">0.25</span>),</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  bw <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.25</span>),</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>  bs <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.25</span>),</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  bws <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.25</span>),</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>We are going to make a <strong>triptych</strong>. Basically a plot that show the bivariate relationship between two params, but varies a third by keeping it constant within a given plot, but varying it when showing all plots.</p>
 </section>
 
 </main>
