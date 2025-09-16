@@ -287,3 +287,204 @@ m8.5 <- quap(alist(
 ```
 
 We are going to make a **triptych**. Basically a plot that show the bivariate relationship between two params, but varies a third by keeping it constant within a given plot, but varying it when showing all plots.
+
+## Exercises
+
+### M.2
+Let's make a regression equation where the bloom size would be restricted to zero when the temperature is to hot.
+
+We can make the bayesian model bend to our whim where. Let $\mu_i$ be the simple linear model that we might have built previously. Now, let $\mu_i^\prime=\mu_i(1-H_i)$ where $H_i$ is an indicator variable if it is too hot or not. That is, if $H_i$, we have effectively forced $\mu_i^\prime$ to be 0.
+
+
+### M.4
+Let's redo the tulip analysis, but this time assume that the effect of water is positive and the effect of shade is negative.
+
+I'm sure there is a more clever way to do this, but I am just going to use a uniform distribution that imposes positive and negative constraints.
+
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+m8.5_2 <- quap(alist(
+  blooms_std ~ dnorm(mu, sigma),
+  mu <- a + bw*water_cent + bs*shade_cent + bws*shade_cent*water_cent,
+  a ~ dnorm(0.5,0.25),
+  bw ~ dunif(0, 0.3),
+  bs ~ dunif(-0.3, 0),
+  bws ~ dnorm(0, 0.25),
+  sigma ~ dexp(1)
+), data=d)
+
+prior_1 <- extract.prior(m8.5)
+prior_2 <- extract.prior(m8.5_2)
+
+par(mfrow=c(1,3))
+for (s in -1:1){
+  idx <- which(d$shade_cent==s)
+  plot(d$water_cent[idx], d$blooms_std[idx], xlim=c(-1,1), ylim=c(0,1),
+       xlab='Water', ylab='Blooms', pch=16, col=rangi2, main=paste0('Shade: ', s))
+  mu <- link(m8.5, data=data.frame(shade_cent=s, water_cent=-1:1), post=prior_1)
+  for (i in 1:20) lines(-1:1, mu[i,], col=col.alpha('black', 0.3))
+}
+```
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+par(mfrow=c(1,3))
+for (s in -1:1){
+  idx <- which(d$shade_cent==s)
+  plot(d$water_cent[idx], d$blooms_std[idx], xlim=c(-1,1), ylim=c(0,1),
+       xlab='Water', ylab='Blooms', pch=16, col=rangi2, main=paste0('Shade: ', s))
+  mu <- link(m8.5_2, data=data.frame(shade_cent=s, water_cent=-1:1), post=prior_2)
+  for (i in 1:20) lines(-1:1, mu[i,], col=col.alpha('black', 0.3))
+}
+```
+
+
+### H.3
+Let's look back again at `m8.3` which predicted log GDP from ruggedness. 
+
+#### a
+
+Looking at the WAIC and PSIS, let's see which observations are quite influential. Recall that we will be using the penalty from WAIC which is the "effective number of parameters" or "overfitting penalty". We hope to see it quite low as the sum of all points penalties equals to effective number of parameters.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+WAIC_m8.3 <- WAIC(m8.3, pointwise=T)
+PSIS_m8.3 <- PSIS(m8.3, pointwise=T)
+
+plot(PSIS_m8.3$k, WAIC_m8.3$penalty, xlab='PSIS K hat', ylab='WAIC penalty', col=rangi2, pch=16)
+```
+Looks like there are a couple of outliers:
+
+```{r}
+dd_pen <- dd %>% mutate(WAIC_pen=WAIC_m8.3$penalty, PSIS_k = PSIS_m8.3$k)
+  
+dd_pen %>% filter(PSIS_k > 0.3) %>% select(country, cont_africa, WAIC_pen, PSIS_k)
+```
+
+Let's plot the points in black on the model graph:
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+par(mfrow=c(1,2))
+d.A1 <- dd[dd$cid==1, ]
+plot(d.A1$rugged_std, d.A1$log_gdp_std, pch=16, col=ifelse(dd_pen[dd$cid==1,]$PSIS_k > 0.3, 'black', 'lightgrey'),
+     xlim=c(0,1), main='Afrcian Nations')
+mu <- link(m8.3, data=data.frame(cid=1, rugged_std=rugged_seq))
+mu_mean <- colMeans(mu)
+mu_ci <- mu |> apply(2, PI, prob=0.97)
+lines(rugged_seq, mu_mean, lwd=2)
+shade(mu_ci, rugged_seq, col=col.alpha(rangi2, 0.3))
+
+d.A0 <- dd[dd$cid==2, ]
+plot(d.A0$rugged_std, d.A0$log_gdp_std, pch=16, col=ifelse(dd_pen[dd$cid==2,]$PSIS_k > 0.3, 'black', 'lightgrey'),
+     xlim=c(0,1), main='Non-African Nations')
+mu <- link(m8.3, data=data.frame(cid=2, rugged_std=rugged_seq))
+mu_mean <- colMeans(mu)
+mu_ci <- mu |> apply(2, PI, prob=0.97)
+lines(rugged_seq, mu_mean, lwd=2)
+shade(mu_ci, rugged_seq, col=col.alpha(rangi2, 0.3))
+```
+
+It is clear that these points are quite far from the usual cluster and therefore the model is unsure about their real influence and weights them accordingly.
+
+#### b
+
+Let's now use a student-t instead to model the noise around the mean.
+
+
+```{r}
+m8.3_2 <- quap(alist(
+  log_gdp_std <- dstudent(2, mu, sigma),
+  mu <- a[cid] + b[cid] * (rugged_std - 0.215),
+  a[cid] ~ dnorm(1, 0.1),
+  b[cid] ~ dnorm(0, 0.3),
+  sigma ~ dexp(1)
+), data=dd)
+
+compare(m8.3_2, m8.3, func=PSIS)
+```
+It looks like model `m8.3` might have actually performed better, but let's see if we got rid of those pesky $\hat{k}$ warnings:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+WAIC_m8.3_2 <- WAIC(m8.3_2, pointwise=T)
+PSIS_m8.3_2 <- PSIS(m8.3_2, pointwise=T)
+
+plot(PSIS_m8.3_2$k, WAIC_m8.3_2$penalty, xlab='PSIS K hat', ylab='WAIC penalty', col=rangi2, pch=16)
+```
+
+Yup! Looks much better... although 0.5 really isn't that bad. Guidance now says that we should raise the alarm bells when we are more than 0.7 away.
+
+### H.5
+
+Let's look at a dataset of wine ratings, but judge and Wine type. We are going to construct some indexes for jude and wine, as well as standardize the score from 0 to 1.
+
+```{r}
+data("Wines2012")
+
+dw <- Wines2012
+dw$j_idx <- dw$judge |> as.factor() |> as.integer()
+dw$wine_idx <- dw$wine |> as.factor() |> as.integer()
+dw$score_std <- dw$score / max(dw$score)
+```
+
+For priors, If we assume that the average rating is a 0.5, a judge should be able to be quite picking (usually rating of 0, therefore param = -0.5), to quite relaxed (param 0.5). The same for the wine as well:
+
+
+```{r}
+m8.w <- quap(alist(
+  score_std ~ dnorm(mu, sigma),
+  mu <- j[j_idx] + w[wine_idx],
+  j[j_idx] ~ dnorm(0,0.5),
+  w[wine_idx] ~ dnorm(0.5),
+  sigma ~ dexp(1)
+), data=dw)
+```
+
+```{r}
+plot(coeftab(m8.w), pars=paste0('j[', 1:8, ']'))
+```
+
+```{r}
+plot(coeftab(m8.w), pars=paste0('w[', 1:20, ']'))
+```
+
+Lets see what wine as the lowest rating based on score alone:
+
+```{r}
+dw %>% group_by(wine) %>% summarise(m=mean(score)) %>% arrange(m) %>% head()
+```
+Looks like I2 has the lowest rating, but what if we account for judges:
+
+```{r}
+dw$wine[(dw$wine_idx == 18) |> which()] |> head(1)
+```
+Still the lowest.
+
+Let's do the same for judges:
+
+```{r}
+dw %>% group_by(judge) %>% summarise(m=mean(score)) %>% arrange(m) %>% head()
+```
+
+```{r}
+dw$judge[(dw$j_idx == 8) |> which()] |> head(1)
+```
+Yeah, its about the same as what we get with the raw data. Shame, would have been cool if there was some confounding effect.
+
+

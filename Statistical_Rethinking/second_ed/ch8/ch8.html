@@ -112,6 +112,13 @@ window.Quarto = {
   <li><a href="#building-an-interaction" id="toc-building-an-interaction" class="nav-link" data-scroll-target="#building-an-interaction">8.1 Building an Interaction</a></li>
   <li><a href="#symmetry-of-interactions" id="toc-symmetry-of-interactions" class="nav-link" data-scroll-target="#symmetry-of-interactions">8.2 Symmetry of interactions</a></li>
   <li><a href="#continuous-interactions" id="toc-continuous-interactions" class="nav-link" data-scroll-target="#continuous-interactions">8.3 Continuous Interactions</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises">Exercises</a>
+  <ul class="collapse">
+  <li><a href="#m.2" id="toc-m.2" class="nav-link" data-scroll-target="#m.2">M.2</a></li>
+  <li><a href="#m.4" id="toc-m.4" class="nav-link" data-scroll-target="#m.4">M.4</a></li>
+  <li><a href="#h.3" id="toc-h.3" class="nav-link" data-scroll-target="#h.3">H.3</a></li>
+  <li><a href="#h.5" id="toc-h.5" class="nav-link" data-scroll-target="#h.5">H.5</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -512,6 +519,305 @@ m8.1 -188.6208 13.42930 70.474472 15.511919 2.754712 4.839021e-16</code></pre>
 </details>
 </div>
 <p>We are going to make a <strong>triptych</strong>. Basically a plot that show the bivariate relationship between two params, but varies a third by keeping it constant within a given plot, but varying it when showing all plots.</p>
+</section>
+<section id="exercises" class="level2">
+<h2 class="anchored" data-anchor-id="exercises">Exercises</h2>
+<section id="m.2" class="level3">
+<h3 class="anchored" data-anchor-id="m.2">M.2</h3>
+<p>Let’s make a regression equation where the bloom size would be restricted to zero when the temperature is to hot.</p>
+<p>We can make the bayesian model bend to our whim where. Let <span class="math inline">\(\mu_i\)</span> be the simple linear model that we might have built previously. Now, let <span class="math inline">\(\mu_i^\prime=\mu_i(1-H_i)\)</span> where <span class="math inline">\(H_i\)</span> is an indicator variable if it is too hot or not. That is, if <span class="math inline">\(H_i\)</span>, we have effectively forced <span class="math inline">\(\mu_i^\prime\)</span> to be 0.</p>
+</section>
+<section id="m.4" class="level3">
+<h3 class="anchored" data-anchor-id="m.4">M.4</h3>
+<p>Let’s redo the tulip analysis, but this time assume that the effect of water is positive and the effect of shade is negative.</p>
+<p>I’m sure there is a more clever way to do this, but I am just going to use a uniform distribution that imposes positive and negative constraints.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>m8<span class="fl">.5</span>_2 <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  blooms_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bw<span class="sc">*</span>water_cent <span class="sc">+</span> bs<span class="sc">*</span>shade_cent <span class="sc">+</span> bws<span class="sc">*</span>shade_cent<span class="sc">*</span>water_cent,</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="fl">0.5</span>,<span class="fl">0.25</span>),</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  bw <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  bs <span class="sc">~</span> <span class="fu">dunif</span>(<span class="sc">-</span><span class="fl">0.3</span>, <span class="dv">0</span>),</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>  bws <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.25</span>),</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d)</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>prior_1 <span class="ot">&lt;-</span> <span class="fu">extract.prior</span>(m8<span class="fl">.5</span>)</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>prior_2 <span class="ot">&lt;-</span> <span class="fu">extract.prior</span>(m8<span class="fl">.5</span>_2)</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>))</span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (s <span class="cf">in</span> <span class="sc">-</span><span class="dv">1</span><span class="sc">:</span><span class="dv">1</span>){</span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>  idx <span class="ot">&lt;-</span> <span class="fu">which</span>(d<span class="sc">$</span>shade_cent<span class="sc">==</span>s)</span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(d<span class="sc">$</span>water_cent[idx], d<span class="sc">$</span>blooms_std[idx], <span class="at">xlim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a>       <span class="at">xlab=</span><span class="st">'Water'</span>, <span class="at">ylab=</span><span class="st">'Blooms'</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>rangi2, <span class="at">main=</span><span class="fu">paste0</span>(<span class="st">'Shade: '</span>, s))</span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m8<span class="fl">.5</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">shade_cent=</span>s, <span class="at">water_cent=</span><span class="sc">-</span><span class="dv">1</span><span class="sc">:</span><span class="dv">1</span>), <span class="at">post=</span>prior_1)</span>
+<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>) <span class="fu">lines</span>(<span class="sc">-</span><span class="dv">1</span><span class="sc">:</span><span class="dv">1</span>, mu[i,], <span class="at">col=</span><span class="fu">col.alpha</span>(<span class="st">'black'</span>, <span class="fl">0.3</span>))</span>
+<span id="cb33-21"><a href="#cb33-21" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>))</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (s <span class="cf">in</span> <span class="sc">-</span><span class="dv">1</span><span class="sc">:</span><span class="dv">1</span>){</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  idx <span class="ot">&lt;-</span> <span class="fu">which</span>(d<span class="sc">$</span>shade_cent<span class="sc">==</span>s)</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(d<span class="sc">$</span>water_cent[idx], d<span class="sc">$</span>blooms_std[idx], <span class="at">xlim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">xlab=</span><span class="st">'Water'</span>, <span class="at">ylab=</span><span class="st">'Blooms'</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>rangi2, <span class="at">main=</span><span class="fu">paste0</span>(<span class="st">'Shade: '</span>, s))</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m8<span class="fl">.5</span>_2, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">shade_cent=</span>s, <span class="at">water_cent=</span><span class="sc">-</span><span class="dv">1</span><span class="sc">:</span><span class="dv">1</span>), <span class="at">post=</span>prior_2)</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>) <span class="fu">lines</span>(<span class="sc">-</span><span class="dv">1</span><span class="sc">:</span><span class="dv">1</span>, mu[i,], <span class="at">col=</span><span class="fu">col.alpha</span>(<span class="st">'black'</span>, <span class="fl">0.3</span>))</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="h.3" class="level3">
+<h3 class="anchored" data-anchor-id="h.3">H.3</h3>
+<p>Let’s look back again at <code>m8.3</code> which predicted log GDP from ruggedness.</p>
+<section id="a" class="level4">
+<h4 class="anchored" data-anchor-id="a">a</h4>
+<p>Looking at the WAIC and PSIS, let’s see which observations are quite influential. Recall that we will be using the penalty from WAIC which is the “effective number of parameters” or “overfitting penalty”. We hope to see it quite low as the sum of all points penalties equals to effective number of parameters.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>WAIC_m8<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">WAIC</span>(m8<span class="fl">.3</span>, <span class="at">pointwise=</span>T)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>PSIS_m8<span class="fl">.3</span> <span class="ot">&lt;-</span> <span class="fu">PSIS</span>(m8<span class="fl">.3</span>, <span class="at">pointwise=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Some Pareto k values are high (&gt;0.5). Set pointwise=TRUE to inspect individual points.</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(PSIS_m8<span class="fl">.3</span><span class="sc">$</span>k, WAIC_m8<span class="fl">.3</span><span class="sc">$</span>penalty, <span class="at">xlab=</span><span class="st">'PSIS K hat'</span>, <span class="at">ylab=</span><span class="st">'WAIC penalty'</span>, <span class="at">col=</span>rangi2, <span class="at">pch=</span><span class="dv">16</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Looks like there are a couple of outliers:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>dd_pen <span class="ot">&lt;-</span> dd <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">WAIC_pen=</span>WAIC_m8<span class="fl">.3</span><span class="sc">$</span>penalty, <span class="at">PSIS_k =</span> PSIS_m8<span class="fl">.3</span><span class="sc">$</span>k)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>dd_pen <span class="sc">%&gt;%</span> <span class="fu">filter</span>(PSIS_k <span class="sc">&gt;</span> <span class="fl">0.3</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(country, cont_africa, WAIC_pen, PSIS_k)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            country cont_africa  WAIC_pen    PSIS_k
+1 Equatorial Guinea           1 0.2075328 0.3195809
+2           Lesotho           1 0.2855842 0.5082205
+3        Seychelles           1 0.5857502 0.3163836</code></pre>
+</div>
+</div>
+<p>Let’s plot the points in black on the model graph:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>d.A1 <span class="ot">&lt;-</span> dd[dd<span class="sc">$</span>cid<span class="sc">==</span><span class="dv">1</span>, ]</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(d.A1<span class="sc">$</span>rugged_std, d.A1<span class="sc">$</span>log_gdp_std, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">ifelse</span>(dd_pen[dd<span class="sc">$</span>cid<span class="sc">==</span><span class="dv">1</span>,]<span class="sc">$</span>PSIS_k <span class="sc">&gt;</span> <span class="fl">0.3</span>, <span class="st">'black'</span>, <span class="st">'lightgrey'</span>),</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>), <span class="at">main=</span><span class="st">'Afrcian Nations'</span>)</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m8<span class="fl">.3</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">cid=</span><span class="dv">1</span>, <span class="at">rugged_std=</span>rugged_seq))</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>mu_mean <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(mu)</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>mu_ci <span class="ot">&lt;-</span> mu <span class="sc">|&gt;</span> <span class="fu">apply</span>(<span class="dv">2</span>, PI, <span class="at">prob=</span><span class="fl">0.97</span>)</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(rugged_seq, mu_mean, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a><span class="fu">shade</span>(mu_ci, rugged_seq, <span class="at">col=</span><span class="fu">col.alpha</span>(rangi2, <span class="fl">0.3</span>))</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>d.A0 <span class="ot">&lt;-</span> dd[dd<span class="sc">$</span>cid<span class="sc">==</span><span class="dv">2</span>, ]</span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(d.A0<span class="sc">$</span>rugged_std, d.A0<span class="sc">$</span>log_gdp_std, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">ifelse</span>(dd_pen[dd<span class="sc">$</span>cid<span class="sc">==</span><span class="dv">2</span>,]<span class="sc">$</span>PSIS_k <span class="sc">&gt;</span> <span class="fl">0.3</span>, <span class="st">'black'</span>, <span class="st">'lightgrey'</span>),</span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>), <span class="at">main=</span><span class="st">'Non-African Nations'</span>)</span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">link</span>(m8<span class="fl">.3</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">cid=</span><span class="dv">2</span>, <span class="at">rugged_std=</span>rugged_seq))</span>
+<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a>mu_mean <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(mu)</span>
+<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a>mu_ci <span class="ot">&lt;-</span> mu <span class="sc">|&gt;</span> <span class="fu">apply</span>(<span class="dv">2</span>, PI, <span class="at">prob=</span><span class="fl">0.97</span>)</span>
+<span id="cb40-17"><a href="#cb40-17" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(rugged_seq, mu_mean, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb40-18"><a href="#cb40-18" aria-hidden="true" tabindex="-1"></a><span class="fu">shade</span>(mu_ci, rugged_seq, <span class="at">col=</span><span class="fu">col.alpha</span>(rangi2, <span class="fl">0.3</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>It is clear that these points are quite far from the usual cluster and therefore the model is unsure about their real influence and weights them accordingly.</p>
+</section>
+<section id="b" class="level4">
+<h4 class="anchored" data-anchor-id="b">b</h4>
+<p>Let’s now use a student-t instead to model the noise around the mean.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>m8<span class="fl">.3</span>_2 <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  log_gdp_std <span class="ot">&lt;-</span> <span class="fu">dstudent</span>(<span class="dv">2</span>, mu, sigma),</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a[cid] <span class="sc">+</span> b[cid] <span class="sc">*</span> (rugged_std <span class="sc">-</span> <span class="fl">0.215</span>),</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  a[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>, <span class="fl">0.1</span>),</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  b[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dd)</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m8<span class="fl">.3</span>_2, m8<span class="fl">.3</span>, <span class="at">func=</span>PSIS)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Some Pareto k values are high (&gt;0.5). Set pointwise=TRUE to inspect individual points.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>            PSIS       SE    dPSIS      dSE    pPSIS       weight
+m8.3   -258.9829 15.17987  0.00000       NA 5.230575 1.000000e+00
+m8.3_2 -221.9239 17.98613 37.05896 5.835448 5.665405 8.969125e-09</code></pre>
+</div>
+</div>
+<p>It looks like model <code>m8.3</code> might have actually performed better, but let’s see if we got rid of those pesky <span class="math inline">\(\hat{k}\)</span> warnings:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>WAIC_m8<span class="fl">.3</span>_2 <span class="ot">&lt;-</span> <span class="fu">WAIC</span>(m8<span class="fl">.3</span>_2, <span class="at">pointwise=</span>T)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>PSIS_m8<span class="fl">.3</span>_2 <span class="ot">&lt;-</span> <span class="fu">PSIS</span>(m8<span class="fl">.3</span>_2, <span class="at">pointwise=</span>T)</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(PSIS_m8<span class="fl">.3</span>_2<span class="sc">$</span>k, WAIC_m8<span class="fl">.3</span>_2<span class="sc">$</span>penalty, <span class="at">xlab=</span><span class="st">'PSIS K hat'</span>, <span class="at">ylab=</span><span class="st">'WAIC penalty'</span>, <span class="at">col=</span>rangi2, <span class="at">pch=</span><span class="dv">16</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Yup! Looks much better… although 0.5 really isn’t that bad. Guidance now says that we should raise the alarm bells when we are more than 0.7 away.</p>
+</section>
+</section>
+<section id="h.5" class="level3">
+<h3 class="anchored" data-anchor-id="h.5">H.5</h3>
+<p>Let’s look at a dataset of wine ratings, but judge and Wine type. We are going to construct some indexes for jude and wine, as well as standardize the score from 0 to 1.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"Wines2012"</span>)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>dw <span class="ot">&lt;-</span> Wines2012</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>dw<span class="sc">$</span>j_idx <span class="ot">&lt;-</span> dw<span class="sc">$</span>judge <span class="sc">|&gt;</span> <span class="fu">as.factor</span>() <span class="sc">|&gt;</span> <span class="fu">as.integer</span>()</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>dw<span class="sc">$</span>wine_idx <span class="ot">&lt;-</span> dw<span class="sc">$</span>wine <span class="sc">|&gt;</span> <span class="fu">as.factor</span>() <span class="sc">|&gt;</span> <span class="fu">as.integer</span>()</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>dw<span class="sc">$</span>score_std <span class="ot">&lt;-</span> dw<span class="sc">$</span>score <span class="sc">/</span> <span class="fu">max</span>(dw<span class="sc">$</span>score)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>For priors, If we assume that the average rating is a 0.5, a judge should be able to be quite picking (usually rating of 0, therefore param = -0.5), to quite relaxed (param 0.5). The same for the wine as well:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>m8.w <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>  score_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> j[j_idx] <span class="sc">+</span> w[wine_idx],</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  j[j_idx] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  w[wine_idx] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="fl">0.5</span>),</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dw)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">coeftab</span>(m8.w), <span class="at">pars=</span><span class="fu">paste0</span>(<span class="st">'j['</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>, <span class="st">']'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">coeftab</span>(m8.w), <span class="at">pars=</span><span class="fu">paste0</span>(<span class="st">'w['</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>, <span class="st">']'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch8_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Lets see what wine as the lowest rating based on score alone:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>dw <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(wine) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">m=</span><span class="fu">mean</span>(score)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(m) <span class="sc">%&gt;%</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 2
+  wine      m
+  &lt;fct&gt; &lt;dbl&gt;
+1 I2     11.7
+2 C2     13.1
+3 H1     13.6
+4 H2     13.6
+5 J1     13.7
+6 I1     13.8</code></pre>
+</div>
+</div>
+<p>Looks like I2 has the lowest rating, but what if we account for judges:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>dw<span class="sc">$</span>wine[(dw<span class="sc">$</span>wine_idx <span class="sc">==</span> <span class="dv">18</span>) <span class="sc">|&gt;</span> <span class="fu">which</span>()] <span class="sc">|&gt;</span> <span class="fu">head</span>(<span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] I2
+Levels: A1 A2 B1 B2 C1 C2 D1 D2 E1 E2 F1 F2 G1 G2 H1 H2 I1 I2 J1 J2</code></pre>
+</div>
+</div>
+<p>Still the lowest.</p>
+<p>Let’s do the same for judges:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>dw <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(judge) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">m=</span><span class="fu">mean</span>(score)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(m) <span class="sc">%&gt;%</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 2
+  judge               m
+  &lt;fct&gt;           &lt;dbl&gt;
+1 Robert Hodgson   12.2
+2 Jean-M Cardebat  12.6
+3 Tyler Colman     13.2
+4 Daniele Meulder  13.4
+5 Olivier Gergaud  14.6
+6 Jamal Rayyis     14.8</code></pre>
+</div>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>dw<span class="sc">$</span>judge[(dw<span class="sc">$</span>j_idx <span class="sc">==</span> <span class="dv">8</span>) <span class="sc">|&gt;</span> <span class="fu">which</span>()] <span class="sc">|&gt;</span> <span class="fu">head</span>(<span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] Robert Hodgson
+9 Levels: Daniele Meulder Francis Schott Jamal Rayyis ... Tyler Colman</code></pre>
+</div>
+</div>
+<p>Yeah, its about the same as what we get with the raw data. Shame, would have been cool if there was some confounding effect.</p>
+</section>
 </section>
 
 </main>
