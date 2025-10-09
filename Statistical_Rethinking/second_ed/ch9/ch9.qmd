@@ -228,3 +228,144 @@ HMC2_copy <- function(U, U_grad, epsilon, L, current_q){
 Notice how we check if we should accept or reject at the end. This is to see if the energy at the end of the trajectory is significantly different than where it was at the beginning. If this is the case, we have a *divergent transition* and must reject.
 
 Remember that HMC is not magic - we can't sample discrete parameter spaces. But, we can get around that by marginalizing out the discrete parameters when we sample.
+
+## 9.4 - Easy HMC: `ulam`
+
+To use `ulam` we:
+
+- need to preprocess all variable transforms
+  - For example, if the outcome variable is log transformed, do that before writing the forumula
+  - If not, this will be done every step of the MCMC sampler
+- construct a clean variable list with only the variables we will use
+  - Stan won't sample if we have any `NA` values
+
+Let's go back to the terrain ruggedness from ch. 8.
+
+```{r}
+data(rugged)
+d <- rugged
+d$log_gdp <- log(d$rgdppc_2000)
+dd <- d[complete.cases(d$rgdppc_2000), ]
+dd$log_gdp_std <- dd$log_gdp / mean(dd$log_gdp)
+dd$rugged_std <- dd$rugged / max(dd$rugged)
+dd$cid <- ifelse(dd$cont_africa == 1, 1, 2)
+```
+
+Recall the way we fit the interaction model with `quap`
+
+```{r}
+m8.3 <- quap(alist(
+  log_gdp_std ~ dnorm(mu, sigma),
+  mu <- a[cid] + b[cid] * (rugged_std - 0.215),
+  a[cid] ~ dnorm(1, 0.1),
+  b[cid] ~ dnorm(0, 0.3),
+  sigma ~ dexp(1)
+), data=dd)
+precis(m8.3, dept=2)
+```
+We've already pre-transformed our variables, so now we just need a slimmed down list:
+
+```{r}
+dat_slim <- list(
+  log_gdp_std = dd$log_gdp_std,
+  rugged_std = dd$rugged_std,
+  cid = as.integer(dd$cid)
+)
+str(dat_slim)
+```
+
+It is better to use a list since a list can have data of varying lengths. This will come in handy when we have multilevel models in later chapters.
+
+```{r}
+m9.1 <- ulam(alist(
+  log_gdp_std ~ dnorm(mu, sigma),
+  mu <- a[cid] + b[cid] * (rugged_std - 0.215),
+  a[cid] ~ dnorm(1, 0.1),
+  b[cid] ~ dnorm(0, 0.3),
+  sigma ~ dexp(1)
+), chains=1, data=dat_slim)
+```
+
+```{r}
+precis(m9.1, depth=2)
+```
+
+
+Here we see $N_{\text{eff}}$ and $\hat{R}$. The first is a crude metric to determine the number of independent samples. The latter is a measure of convergence. For the effective sample size, it has been shown that as little as 200 is good enough to do summary quantities.
+
+Let's now go up to 4 cores:
+
+
+```{r}
+#| output: false
+
+m9.1 <- ulam(alist(
+  log_gdp_std ~ dnorm(mu, sigma),
+  mu <- a[cid] + b[cid] * (rugged_std - 0.215),
+  a[cid] ~ dnorm(1, 0.1),
+  b[cid] ~ dnorm(0, 0.3),
+  sigma ~ dexp(1)
+), chains=4, cores=4, data=dat_slim)
+```
+
+We can also use the `show` function if we forget the model specification:
+
+```{r}
+show(m9.1)
+```
+
+Okay, let's look at the output with the multiple chains:
+
+```{r}
+precis(m9.1, depth=2)
+```
+
+Notice that the number of effective samples is actually greater than the number of samples themselves ($S = \frac{1000}{2}\cdot 4 =2000$). This is becauase HMC does so well we actually have anti-correlation.
+
+Let's take a look at the pairs plot:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+pairs(m9.1)
+```
+
+The upper right is the scatter of the two parameters in question. The lower left is the respective correlations.
+
+For more checks, let's look at the trace plots:
+
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+traceplot(m9.1)
+```
+
+This is cool because the warmup is included. You can see how `sigma` started off high, but eventually found its place. This is also called the *adaptation phase*. These samples are automatically discarded when we run `extract.samples`.
+
+Let's look at another view of this: the trank plot:
+
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+trankplot(m9.1)
+```
+
+Above is a histogram showing the rank of each samples amongst each chain. It is a little cleaner and shows that our chains have mixed well. The x-axis is rank, from 1 to the number of samples across all chains (2,000). Notice that this means we are ranking across chains. The y-axis is the frequency of ranks in each bin. 
+
+Also, you can always inspect the stan code by using:
+
+```{r}
+stancode(m9.1)
+```
+
+## 9.5 - Care and feeding of your Markov Chains
+
+
