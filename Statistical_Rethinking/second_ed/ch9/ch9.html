@@ -113,6 +113,15 @@ window.Quarto = {
   <li><a href="#metropolis-algorithms" id="toc-metropolis-algorithms" class="nav-link" data-scroll-target="#metropolis-algorithms">9.2 - Metropolis algorithms</a></li>
   <li><a href="#hamiltonian-monte-carlo" id="toc-hamiltonian-monte-carlo" class="nav-link" data-scroll-target="#hamiltonian-monte-carlo">9.3 - Hamiltonian Monte Carlo</a></li>
   <li><a href="#easy-hmc-ulam" id="toc-easy-hmc-ulam" class="nav-link" data-scroll-target="#easy-hmc-ulam">9.4 - Easy HMC: <code>ulam</code></a></li>
+  <li><a href="#care-and-feeding-of-your-markov-chains" id="toc-care-and-feeding-of-your-markov-chains" class="nav-link" data-scroll-target="#care-and-feeding-of-your-markov-chains">9.5 - Care and feeding of your Markov Chains</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises">Exercises</a>
+  <ul class="collapse">
+  <li><a href="#m1" id="toc-m1" class="nav-link" data-scroll-target="#m1">M1</a></li>
+  <li><a href="#m2" id="toc-m2" class="nav-link" data-scroll-target="#m2">M2</a></li>
+  <li><a href="#m3-use-9.1-on-bottom-of-page-281" id="toc-m3-use-9.1-on-bottom-of-page-281" class="nav-link" data-scroll-target="#m3-use-9.1-on-bottom-of-page-281">M3 (Use 9.1 on bottom of page 281)</a></li>
+  <li><a href="#h3" id="toc-h3" class="nav-link" data-scroll-target="#h3">H3</a></li>
+  <li><a href="#h4" id="toc-h4" class="nav-link" data-scroll-target="#h4">H4</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -408,12 +417,12 @@ y_i &amp;\sim \text{Normal}(\mu_y, 1) \\
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m8<span class="fl">.3</span>, <span class="at">dept=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>            mean          sd        5.5%       94.5%
-a[1]   0.8865640 0.015675768  0.86151107  0.91161688
-a[2]   1.0505686 0.009936654  1.03468793  1.06644932
-b[1]   0.1325220 0.074204759  0.01392843  0.25111550
-b[2]  -0.1425706 0.054749660 -0.23007116 -0.05507009
-sigma  0.1094946 0.005935369  0.10000877  0.11898050</code></pre>
+<pre><code>            mean          sd       5.5%       94.5%
+a[1]   0.8865639 0.015675758  0.8615110  0.91161676
+a[2]   1.0505698 0.009936647  1.0346891  1.06645045
+b[1]   0.1325055 0.074204728  0.0139120  0.25109897
+b[2]  -0.1425763 0.054749620 -0.2300768 -0.05507584
+sigma  0.1094946 0.005935360  0.1000087  0.11898042</code></pre>
 </div>
 </div>
 <p>We’ve already pre-transformed our variables, so now we just need a slimmed down list:</p>
@@ -446,53 +455,19 @@ sigma  0.1094946 0.005935369  0.10000877  0.11898050</code></pre>
 <span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
 <span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">chains=</span><span class="dv">1</span>, <span class="at">data=</span>dat_slim)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Running MCMC with 1 chain, with 1 thread(s) per chain...
-
-Chain 1 Iteration:   1 / 1000 [  0%]  (Warmup) 
-Chain 1 Iteration: 100 / 1000 [ 10%]  (Warmup) 
-Chain 1 Iteration: 200 / 1000 [ 20%]  (Warmup) 
-Chain 1 Iteration: 300 / 1000 [ 30%]  (Warmup) 
-Chain 1 Iteration: 400 / 1000 [ 40%]  (Warmup) </code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Chain 1 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'C:/Users/rayia/AppData/Local/Temp/RtmpMRALew/model-15507ac6b40.stan', line 19, column 4 to column 39)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Chain 1 </code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Chain 1 Iteration: 500 / 1000 [ 50%]  (Warmup) 
-Chain 1 Iteration: 501 / 1000 [ 50%]  (Sampling) 
-Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
-Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
-Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
-Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
-Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
-Chain 1 finished in 0.1 seconds.</code></pre>
-</div>
 </div>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m9<span class="fl">.1</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m9<span class="fl">.1</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>            mean          sd         5.5%       94.5%      rhat ess_bulk
-a[1]   0.8861216 0.016752206  0.858842790  0.91378640 1.0061353 718.2104
-a[2]   1.0505574 0.010000631  1.032977000  1.06602110 1.0058741 772.8271
-b[1]   0.1305079 0.076237651  0.008528199  0.25534271 1.0006456 762.7124
-b[2]  -0.1428189 0.055124353 -0.232811685 -0.05714162 0.9987726 813.0942
-sigma  0.1116273 0.005966989  0.103057645  0.12196399 0.9997286 803.3167</code></pre>
+a[1]   0.8869305 0.015821807  0.863154470  0.91265386 0.9980497 736.3154
+a[2]   1.0509814 0.011240191  1.032581250  1.06879000 0.9990606 972.8048
+b[1]   0.1285194 0.076866270  0.005953359  0.25177378 0.9990321 469.1099
+b[2]  -0.1391887 0.055557208 -0.220957530 -0.05519755 1.0089361 634.2776
+sigma  0.1115160 0.006014099  0.102024940  0.12214899 0.9998106 619.9797</code></pre>
 </div>
 </div>
 <p>Here we see <span class="math inline">\(N_{\text{eff}}\)</span> and <span class="math inline">\(\hat{R}\)</span>. The first is a crude metric to determine the number of independent samples. The latter is a measure of convergence. For the effective sample size, it has been shown that as little as 200 is good enough to do summary quantities.</p>
@@ -500,20 +475,20 @@ sigma  0.1116273 0.005966989  0.103057645  0.12196399 0.9997286 803.3167</code><
 <div class="cell">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>m9<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  log_gdp_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a[cid] <span class="sc">+</span> b[cid] <span class="sc">*</span> (rugged_std <span class="sc">-</span> <span class="fl">0.215</span>),</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  a[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>, <span class="fl">0.1</span>),</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  b[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">data=</span>dat_slim)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>m9<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  log_gdp_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a[cid] <span class="sc">+</span> b[cid] <span class="sc">*</span> (rugged_std <span class="sc">-</span> <span class="fl">0.215</span>),</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  a[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>, <span class="fl">0.1</span>),</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  b[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">data=</span>dat_slim)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>We can also use the <code>show</code> function if we forget the model specification:</p>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(m9<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(m9<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Hamiltonian Monte Carlo approximation
@@ -521,9 +496,9 @@ sigma  0.1116273 0.005966989  0.103057645  0.12196399 0.9997286 803.3167</code><
 
 Sampling durations (seconds):
   chain_id warmup sampling total
-1        1   0.12     0.09  0.21
-2        2   0.11     0.08  0.19
-3        3   0.08     0.07  0.15
+1        1   0.10     0.06  0.16
+2        2   0.10     0.06  0.17
+3        3   0.11     0.07  0.18
 4        4   0.10     0.07  0.17
 
 Formula:
@@ -538,15 +513,15 @@ sigma ~ dexp(1)</code></pre>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m9<span class="fl">.1</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m9<span class="fl">.1</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>            mean          sd       5.5%       94.5%     rhat ess_bulk
-a[1]   0.8864602 0.016005825  0.8599605  0.91272160 1.000684 2700.566
-a[2]   1.0507278 0.010118742  1.0349800  1.06702110 1.002414 2321.531
-b[1]   0.1328455 0.074670731  0.0158649  0.25278250 1.004246 2148.588
-b[2]  -0.1427021 0.057359891 -0.2345684 -0.04957545 1.001256 2168.717
-sigma  0.1116004 0.006177724  0.1023823  0.12199725 1.002897 2174.152</code></pre>
+<pre><code>            mean          sd         5.5%      94.5%      rhat ess_bulk
+a[1]   0.8868795 0.016224628  0.861227200  0.9136673 1.0021669 2923.797
+a[2]   1.0503946 0.010642392  1.032938350  1.0679411 1.0031325 3354.117
+b[1]   0.1303528 0.077437194  0.005898846  0.2549452 1.0043591 2750.605
+b[2]  -0.1431989 0.055848190 -0.232155420 -0.0572485 0.9990274 3104.424
+sigma  0.1116886 0.006127738  0.102435800  0.1220620 1.0026086 2623.015</code></pre>
 </div>
 </div>
 <p>Notice that the number of effective samples is actually greater than the number of samples themselves (<span class="math inline">\(S = \frac{1000}{2}\cdot 4 =2000\)</span>). This is becauase HMC does so well we actually have anti-correlation.</p>
@@ -554,7 +529,7 @@ sigma  0.1116004 0.006177724  0.1023823  0.12199725 1.002897 2174.152</code></pr
 <div class="cell" data-layout-align="center">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pairs</span>(m9<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pairs</span>(m9<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning in par(usr): argument 1 does not name a graphical parameter
@@ -576,7 +551,7 @@ Warning in par(usr): argument 1 does not name a graphical parameter</code></pre>
 <div class="cell" data-layout-align="center">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traceplot</span>(m9<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traceplot</span>(m9<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
@@ -591,7 +566,7 @@ Warning in par(usr): argument 1 does not name a graphical parameter</code></pre>
 <div class="cell" data-layout-align="center">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">trankplot</span>(m9<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">trankplot</span>(m9<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
@@ -606,7 +581,7 @@ Warning in par(usr): argument 1 does not name a graphical parameter</code></pre>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stancode</span>(m9<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stancode</span>(m9<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>data{
@@ -631,6 +606,273 @@ model{
 }</code></pre>
 </div>
 </div>
+</section>
+<section id="care-and-feeding-of-your-markov-chains" class="level2">
+<h2 class="anchored" data-anchor-id="care-and-feeding-of-your-markov-chains">9.5 - Care and feeding of your Markov Chains</h2>
+</section>
+<section id="exercises" class="level2">
+<h2 class="anchored" data-anchor-id="exercises">Exercises</h2>
+<section id="m1" class="level3">
+<h3 class="anchored" data-anchor-id="m1">M1</h3>
+<p>Recall the ruggedness model from the last chapter. We will now estimate it with <code>ulam</code> and a uniform prior on <code>sigma</code>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>m9.<span class="fl">1.1</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  log_gdp_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a[cid] <span class="sc">+</span> b[cid] <span class="sc">*</span> (rugged_std <span class="sc">-</span> <span class="fl">0.215</span>),</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  a[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>, <span class="fl">0.1</span>),</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  b[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">data=</span>dat_slim)</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>m9.<span class="fl">1.2</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>  log_gdp_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a[cid] <span class="sc">+</span> b[cid] <span class="sc">*</span> (rugged_std <span class="sc">-</span> <span class="fl">0.215</span>),</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>  a[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>, <span class="fl">0.1</span>),</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>  b[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>), <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">data=</span>dat_slim)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Let’s see if the posterior is heavily effected:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m9.<span class="fl">1.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>4 vector or matrix parameters hidden. Use depth=2 to show them.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           mean          sd      5.5%     94.5%     rhat ess_bulk
+sigma 0.1118234 0.006317902 0.1022901 0.1226496 1.004715 2611.579</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m9.<span class="fl">1.2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>4 vector or matrix parameters hidden. Use depth=2 to show them.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           mean          sd      5.5%     94.5%     rhat ess_bulk
+sigma 0.1115889 0.006138417 0.1026217 0.1218577 1.000658 2294.582</code></pre>
+</div>
+</div>
+<p>Let’s take a quick look at the histogram as well:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>sigma_m9.<span class="fl">1.1</span> <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m9.<span class="fl">1.1</span>)<span class="sc">$</span>sigma</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>sigma_m9.<span class="fl">1.2</span> <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m9.<span class="fl">1.2</span>)<span class="sc">$</span>sigma</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>sigma_m9.<span class="fl">1.1</span> <span class="sc">|&gt;</span> <span class="fu">hist</span>(<span class="at">breaks=</span><span class="fu">seq</span>(<span class="fl">0.05</span>,<span class="fl">0.2</span>,<span class="fl">0.005</span>), <span class="at">xlim=</span><span class="fu">range</span>(sigma_m9.<span class="fl">1.1</span>, sigma_m9.<span class="fl">1.2</span>), </span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">'darkred'</span>,<span class="fl">0.3</span>), <span class="at">prob=</span>T, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">80</span>))</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>sigma_m9.<span class="fl">1.2</span> <span class="sc">|&gt;</span> <span class="fu">hist</span>(<span class="at">breaks=</span><span class="fu">seq</span>(<span class="fl">0.05</span>,<span class="fl">0.2</span>,<span class="fl">0.005</span>), </span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">'darkblue'</span>,<span class="fl">0.3</span>), <span class="at">add=</span>T, <span class="at">prob=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch9_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Both models have a very strong overlap for <code>sigma</code>. This is mostly because the likelihood overwhelms the prior. And, because the true parameter is much less than one so there isn’t any issue with sampling with running into zero likelihoods.</p>
+</section>
+<section id="m2" class="level3">
+<h3 class="anchored" data-anchor-id="m2">M2</h3>
+<p>Let’s now try a <code>dexp(0.3)</code> for <code>b[cid]</code>. This should cause some issues as there is mass for that posterior below zero that will now be censored.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>m9.<span class="fl">1.3</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  log_gdp_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a[cid] <span class="sc">+</span> b[cid] <span class="sc">*</span> (rugged_std <span class="sc">-</span> <span class="fl">0.215</span>),</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  a[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>, <span class="fl">0.1</span>),</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  b[cid] <span class="sc">~</span> <span class="fu">dexp</span>(<span class="fl">0.3</span>),</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">data=</span>dat_slim)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m9.<span class="fl">1.2</span>, <span class="at">pars=</span><span class="st">'b'</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>           mean         sd        5.5%       94.5%      rhat ess_bulk
+b[1]  0.1337004 0.07549198  0.01416574  0.25345827 1.0018607 2682.237
+b[2] -0.1432293 0.05581340 -0.23457706 -0.05344239 0.9994548 2582.826</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m9.<span class="fl">1.3</span>, <span class="at">pars=</span><span class="st">'b'</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>           mean         sd         5.5%      94.5%     rhat ess_bulk
+b[1] 0.14793024 0.07283619 0.0312191800 0.26465413 1.003619 789.1509
+b[2] 0.01848535 0.01784022 0.0009690839 0.05184092 1.006749 874.1017</code></pre>
+</div>
+</div>
+<p>There are clearly some large differences, especially for <code>b[2]</code> which has a negative posterior mean for <code>m.9.1.2</code>. Let’s look at a quick plot of the two distributions:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>b_m9.<span class="fl">1.2</span> <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m9.<span class="fl">1.2</span>)<span class="sc">$</span>b</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>b_m9.<span class="fl">1.3</span> <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m9.<span class="fl">1.3</span>)<span class="sc">$</span>b</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>){</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  A <span class="ot">&lt;-</span> <span class="fu">density</span>(b_m9.<span class="fl">1.2</span>[,i])</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>  B <span class="ot">&lt;-</span> <span class="fu">density</span>(b_m9.<span class="fl">1.3</span>[,i])</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(A, <span class="at">ylim=</span><span class="fu">range</span>(A<span class="sc">$</span>y, B<span class="sc">$</span>y), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">main=</span><span class="fu">paste</span>(<span class="st">'Beta['</span>, i, <span class="st">']'</span>))</span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(B, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch9_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Clearly, because of the zero likelihood being placed on <span class="math inline">\(\beta &lt; 0\)</span>, we have a left censored distribution for <code>b[2]</code>.</p>
+</section>
+<section id="m3-use-9.1-on-bottom-of-page-281" class="level3">
+<h3 class="anchored" data-anchor-id="m3-use-9.1-on-bottom-of-page-281">M3 (Use 9.1 on bottom of page 281)</h3>
+<p>Let’s fit model 9.1, using 200 sampling iterations and a varying number of warmup iterations. We’ll use four cores for each.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>fit_func <span class="ot">&lt;-</span> <span class="cf">function</span>(n_warm, <span class="at">n_samp=</span><span class="dv">200</span>){</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    log_gdp_std <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    mu <span class="ot">&lt;-</span> a[cid] <span class="sc">+</span> b[cid] <span class="sc">*</span> (rugged_std <span class="sc">-</span> <span class="fl">0.215</span>),</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    a[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">1</span>, <span class="fl">0.1</span>),</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    b[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>    sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>), <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">data=</span>dat_slim, <span class="at">warmup=</span>n_warm, <span class="at">iter=</span>n_warm<span class="sc">+</span>n_samp)</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>warm_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">10</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">200</span>)</span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>model_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(warm_vec, fit_func)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>n_eff_vec <span class="ot">&lt;-</span> <span class="fu">lapply</span>(model_list, \(x) <span class="fu">precis</span>(x)<span class="sc">@</span>.Data[[<span class="dv">6</span>]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>4 vector or matrix parameters hidden. Use depth=2 to show them.
+4 vector or matrix parameters hidden. Use depth=2 to show them.
+4 vector or matrix parameters hidden. Use depth=2 to show them.
+4 vector or matrix parameters hidden. Use depth=2 to show them.
+4 vector or matrix parameters hidden. Use depth=2 to show them.</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(warm_vec, n_eff_vec)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch9_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>So it looks like we didn’t actually need more than 50 warmup samples in each chain to reach some sort of convergence.</p>
+</section>
+<section id="h3" class="level3">
+<h3 class="anchored" data-anchor-id="h3">H3</h3>
+<p>Recall the leg length model from chapter 6. We are going to fit the original model and then a second model where we constrain the loading for the right leg to be positive.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>height <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="dv">10</span>,<span class="dv">2</span>)</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>leg_prop <span class="ot">&lt;-</span> <span class="fu">runif</span>(N,<span class="fl">0.4</span>,<span class="fl">0.5</span>)</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>leg_left <span class="ot">&lt;-</span> leg_prop<span class="sc">*</span>height <span class="sc">+</span> <span class="fu">rnorm</span>(N,<span class="dv">0</span>,<span class="fl">0.02</span>)</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>leg_right <span class="ot">&lt;-</span> leg_prop<span class="sc">*</span>height <span class="sc">+</span> <span class="fu">rnorm</span>(N,<span class="dv">0</span>,<span class="fl">0.02</span>)</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(height, leg_left, leg_right)</span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.8</span>s <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>  height <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bl<span class="sc">*</span>leg_left <span class="sc">+</span> br<span class="sc">*</span>leg_right,</span>
+<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">10</span>,<span class="dv">100</span>),</span>
+<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a>  bl <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">2</span>, <span class="dv">10</span>),</span>
+<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a>  br <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">2</span>, <span class="dv">10</span>),</span>
+<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">start=</span><span class="fu">list</span>(<span class="at">a=</span><span class="dv">10</span>, <span class="at">bl=</span><span class="dv">0</span>, <span class="at">br=</span><span class="fl">0.1</span>, <span class="at">sigma=</span><span class="dv">1</span>), <span class="at">log_lik =</span> T)</span>
+<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a>m5<span class="fl">.8</span>s2 <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>  height <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb45-20"><a href="#cb45-20" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> a <span class="sc">+</span> bl<span class="sc">*</span>leg_left <span class="sc">+</span> br<span class="sc">*</span>leg_right,</span>
+<span id="cb45-21"><a href="#cb45-21" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">10</span>,<span class="dv">100</span>),</span>
+<span id="cb45-22"><a href="#cb45-22" aria-hidden="true" tabindex="-1"></a>  bl <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">2</span>, <span class="dv">10</span>),</span>
+<span id="cb45-23"><a href="#cb45-23" aria-hidden="true" tabindex="-1"></a>  br <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">2</span>, <span class="dv">10</span>),</span>
+<span id="cb45-24"><a href="#cb45-24" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb45-25"><a href="#cb45-25" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">start=</span><span class="fu">list</span>(<span class="at">a=</span><span class="dv">10</span>, <span class="at">bl=</span><span class="dv">0</span>, <span class="at">br=</span><span class="fl">0.1</span>, <span class="at">sigma=</span><span class="dv">1</span>),</span>
+<span id="cb45-26"><a href="#cb45-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">constraints =</span> <span class="fu">list</span>(<span class="at">br=</span><span class="st">'lower=0'</span>), <span class="at">log_lik =</span> T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Let’s take a look at the posterior for both models and both beta params.</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>samps <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">m5.8s =</span> <span class="fu">extract.samples</span>(m5<span class="fl">.8</span>s),</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">m5.8s2 =</span> <span class="fu">extract.samples</span>(m5<span class="fl">.8</span>s2))</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">c</span>(<span class="st">'bl'</span>, <span class="st">'br'</span>)){</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>  A <span class="ot">&lt;-</span> <span class="fu">density</span>(samps[[<span class="dv">1</span>]][[i]])</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>  B <span class="ot">&lt;-</span> <span class="fu">density</span>(samps[[<span class="dv">2</span>]][[i]])</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(A, <span class="at">ylim=</span><span class="fu">range</span>(A<span class="sc">$</span>y, B<span class="sc">$</span>y), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">main=</span>i)</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(B, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch9_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Due to the high degree of correlation between the parameters, specifying a constraint on <span class="math inline">\(\beta_{\text{Right}}\)</span> also imposes one on <span class="math inline">\(\beta_{\text{Left}}\)</span>. That is, constraining <span class="math inline">\(\beta_{\text{Right}}\)</span> to be positive, caused it to concentrate on higher values, forcing <span class="math inline">\(\beta_{\text{Left}}\)</span> to concentrate on lower values.</p>
+</section>
+<section id="h4" class="level3">
+<h3 class="anchored" data-anchor-id="h4">H4</h3>
+<p>Let’s look at the WAIC and PSIS for both models above:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m5<span class="fl">.8</span>s, m5<span class="fl">.8</span>s2, <span class="at">log_lik=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>           WAIC SE    dWAIC dSE    pWAIC    weight
+m5.8s  5.707567  0 0.000000  NA 1.938955 0.6995206
+m5.8s2 7.397599  0 1.690032  NA 2.135333 0.3004794</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m5<span class="fl">.8</span>s, m5<span class="fl">.8</span>s2, <span class="at">func=</span>PSIS, <span class="at">log_lik=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>           PSIS       SE     dPSIS      dSE    pPSIS    weight
+m5.8s  187.4332 10.70676 0.0000000       NA 2.980229 0.5839785
+m5.8s2 188.1114 10.70121 0.6782541 2.251608 2.554623 0.4160215</code></pre>
+</div>
+</div>
+<p>Both WAIC and PSIS give the edge to the second model that constrained <span class="math inline">\(\beta_{\text{Right}}\)</span>. Interestingly, it looks like WAIC gives a higher effective params to <code>m5.8s2</code> and vice versa for PSIS. I would assume that <code>m5.8s2</code> would have a lower number of effective parameters since we practically removed a whole portion of the posterior parameter space. So, as per usual, we give the win to PSIS for most accurately representing what should be happening.</p>
+</section>
 </section>
 
 </main>
