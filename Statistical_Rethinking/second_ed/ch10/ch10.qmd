@@ -114,6 +114,67 @@ A
 ```
 Practically identical to A! Something else to notice, A is as close as we can get to even while also maintaining the required expected value.
 
- 
+## 10.2 - Generalized Linear Models
 
+To implement the GLM strategy we simply replace the parameter describing the shape of the likelihood with a linear model. 
 
+For count data this looks like:
+
+\begin{align}
+y &\sim \text{Binomial}(n, p_i)\\
+f(p_i) &= \alpha + \beta(x_i - \bar{x})
+\end{align}
+
+Our $f$ here is some **link function** that takes our parameter of interest and turns it into a linear function of the data.
+
+It has long been a technique where people look at histograms and try to decide the likelihood. But again, the likelihood is that of the residuals distribution. That is why we need to employ principles when choosing likelihood functions.
+
+The exponential family is a common family of distributions. Every distribution in the family is the maximum entropy distribution for different sets of constraints. Let's talk about a couple
+
+- Exponential Distribution
+  - Fundamental distribution of distance and duration
+  - Measures that represent distance from some point of reference 
+  - Has maximum entropy when we assume non-negative continuous outcomes with the same average displacement
+- Gamma Distribution
+  - If an event can only happen after two or more exponential distributed events occur
+  - Maximum entropy among all distributions with the same mean and same average logarithm
+- Poisson Distribution
+  - Special case of binomial when trials $n$ is very small and probability of success $p$ is very small
+  - Maximum entropy under the same constraints as binomial
+  
+
+Let's introduce some link functions.
+
+The logit:
+
+\begin{align}
+y &\sim \text{Binomial}(n, p_i)\\
+\text{logit}(p_i) &= \alpha + \beta(x_i - \bar{x})
+\end{align}
+
+The logit maps a parameter that is defined as a probability mass onto a linear model than can take any real value. The logit is defined as:
+
+$$\text{logit}(p_i) = \log \frac{p_i}{1-p_i}$$
+
+This is of course the log-odds. 
+
+We can also define the inverse function:
+
+$$p_i=\frac{\exp(\alpha + \beta x_i)}{1 + \exp(\alpha + \beta x_i)}$$
+
+which is known as the logistic.
+
+Note, now when we have a one unit change in $x$, this does not correspond to a constant change in $y$. This is because we have squished the space of $x$ to fall in the new boundaries of 0 and 1. This might mean that a 1 unit change of $x$ effects the output $y$ relative to the current position of $x$. 
+
+Let's now look at the log link. One common application would be if we want to model the standard deviation $\sigma$ of a Gaussian which is constrained to be positive.
+
+\begin{align}
+y &\sim \text{Normal}(\mu, \sigma_i)\\
+\log(\sigma_i) &= \alpha + \beta(x_i - \bar{x})
+\end{align}
+
+While this is nice to use to constrain the output to be positive, it can be an issue when we ask the model to predict outside of the range of training data. This is because the output grows exponentially.
+
+We can have omitted variable bias in GLMs too, and it can be worse. The main reason is that the boundary distortion can suppress causal influence.
+
+The book calls out that we shouldn't be using WAIC/PSIS to compare models that have different likelihood functions. I get where he is coming from since we are ELPD usually, but I think it should be fine if we use different utility functions

@@ -110,6 +110,7 @@ window.Quarto = {
   <ul>
   <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">10.0</a></li>
   <li><a href="#maximum-entropy" id="toc-maximum-entropy" class="nav-link" data-scroll-target="#maximum-entropy">10.1 - Maximum Entropy</a></li>
+  <li><a href="#generalized-linear-models" id="toc-generalized-linear-models" class="nav-link" data-scroll-target="#generalized-linear-models">10.2 - Generalized Linear Models</a></li>
   </ul>
 </nav>
 </div>
@@ -243,10 +244,10 @@ window.Quarto = {
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>$H
-[1] 1.081223
+[1] 1.165466
 
 $p
-[1] 0.03845528 0.10016109 0.42292835 0.43845528</code></pre>
+[1] 0.1539271 0.1048772 0.1872687 0.5539271</code></pre>
 </div>
 <details open="" class="code-fold">
 <summary>Code</summary>
@@ -281,7 +282,7 @@ $p
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>[[1]]
-[1] 0.09034625 0.20917669 0.21013080 0.49034625</code></pre>
+[1] 0.09023528 0.20995111 0.20957833 0.49023528</code></pre>
 </div>
 <details open="" class="code-fold">
 <summary>Code</summary>
@@ -292,6 +293,57 @@ $p
 </div>
 </div>
 <p>Practically identical to A! Something else to notice, A is as close as we can get to even while also maintaining the required expected value.</p>
+</section>
+<section id="generalized-linear-models" class="level2">
+<h2 class="anchored" data-anchor-id="generalized-linear-models">10.2 - Generalized Linear Models</h2>
+<p>To implement the GLM strategy we simply replace the parameter describing the shape of the likelihood with a linear model.</p>
+<p>For count data this looks like:</p>
+<p><span class="math display">\[\begin{align}
+y &amp;\sim \text{Binomial}(n, p_i)\\
+f(p_i) &amp;= \alpha + \beta(x_i - \bar{x})
+\end{align}\]</span></p>
+<p>Our <span class="math inline">\(f\)</span> here is some <strong>link function</strong> that takes our parameter of interest and turns it into a linear function of the data.</p>
+<p>It has long been a technique where people look at histograms and try to decide the likelihood. But again, the likelihood is that of the residuals distribution. That is why we need to employ principles when choosing likelihood functions.</p>
+<p>The exponential family is a common family of distributions. Every distribution in the family is the maximum entropy distribution for different sets of constraints. Let’s talk about a couple</p>
+<ul>
+<li>Exponential Distribution
+<ul>
+<li>Fundamental distribution of distance and duration</li>
+<li>Measures that represent distance from some point of reference</li>
+<li>Has maximum entropy when we assume non-negative continuous outcomes with the same average displacement</li>
+</ul></li>
+<li>Gamma Distribution
+<ul>
+<li>If an event can only happen after two or more exponential distributed events occur</li>
+<li>Maximum entropy among all distributions with the same mean and same average logarithm</li>
+</ul></li>
+<li>Poisson Distribution
+<ul>
+<li>Special case of binomial when trials <span class="math inline">\(n\)</span> is very small and probability of success <span class="math inline">\(p\)</span> is very small</li>
+<li>Maximum entropy under the same constraints as binomial</li>
+</ul></li>
+</ul>
+<p>Let’s introduce some link functions.</p>
+<p>The logit:</p>
+<p><span class="math display">\[\begin{align}
+y &amp;\sim \text{Binomial}(n, p_i)\\
+\text{logit}(p_i) &amp;= \alpha + \beta(x_i - \bar{x})
+\end{align}\]</span></p>
+<p>The logit maps a parameter that is defined as a probability mass onto a linear model than can take any real value. The logit is defined as:</p>
+<p><span class="math display">\[\text{logit}(p_i) = \log \frac{p_i}{1-p_i}\]</span></p>
+<p>This is of course the log-odds.</p>
+<p>We can also define the inverse function:</p>
+<p><span class="math display">\[p_i=\frac{\exp(\alpha + \beta x_i)}{1 + \exp(\alpha + \beta x_i)}\]</span></p>
+<p>which is known as the logistic.</p>
+<p>Note, now when we have a one unit change in <span class="math inline">\(x\)</span>, this does not correspond to a constant change in <span class="math inline">\(y\)</span>. This is because we have squished the space of <span class="math inline">\(x\)</span> to fall in the new boundaries of 0 and 1. This might mean that a 1 unit change of <span class="math inline">\(x\)</span> effects the output <span class="math inline">\(y\)</span> relative to the current position of <span class="math inline">\(x\)</span>.</p>
+<p>Let’s now look at the log link. One common application would be if we want to model the standard deviation <span class="math inline">\(\sigma\)</span> of a Gaussian which is constrained to be positive.</p>
+<p><span class="math display">\[\begin{align}
+y &amp;\sim \text{Normal}(\mu, \sigma_i)\\
+\log(\sigma_i) &amp;= \alpha + \beta(x_i - \bar{x})
+\end{align}\]</span></p>
+<p>While this is nice to use to constrain the output to be positive, it can be an issue when we ask the model to predict outside of the range of training data. This is because the output grows exponentially.</p>
+<p>We can have omitted variable bias in GLMs too, and it can be worse. The main reason is that the boundary distortion can suppress causal influence.</p>
+<p>The book calls out that we shouldn’t be using WAIC/PSIS to compare models that have different likelihood functions. I get where he is coming from since we are ELPD usually, but I think it should be fine if we use different utility functions</p>
 </section>
 
 </main>
