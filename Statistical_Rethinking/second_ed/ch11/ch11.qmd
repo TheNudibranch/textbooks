@@ -1,0 +1,262 @@
+---
+title: "Rethinking - Chapter 11"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+```{r}
+#| output: false
+#| code-fold: true
+library(rethinking)
+library(dagitty)
+library(tidyverse)
+```
+
+## 11.0
+
+- We'll spend our time on Binomial and Poisson regression in this chapter
+
+## 11.1 - Binomial Regression
+
+- Binomial distribution has maximum entropy when the result must be one of two events and the expected value is constant across trials
+- Two common flavors of GLM that use binomial probability:
+  - Logistic Regression: single trial 0/1
+  - Aggregated Binomial Regression
+- Both use logistic link and can be convereted between one another
+
+Let's look at some chimp data. There are four plates on a rectangular table. There is a right and a left lever. If one of the levers is pulled, the two plates on that side of the table are sent to their respective ends. One side of the table might have food only on the plate that will be delivered to the chimp pulling the lever. The other side might have both plates filled, delivering food to both the chimp pulling the lever as well as the one seated across the table. This would be the *prosocial* option. Let's see what we can find as the interaction between condition (presence or absence of another animal) and option (which side would be the prosocial option).
+
+```{r}
+data(chimpanzees)
+d <- chimpanzees
+```
+
+We are interested in estimating the interaction between `prosoc_left`, meaning that the prosocial option is the left lever, and `conidition`, a 1 if there is another chimp seated across the table.
+
+The conventional way to do this would be to construct a linear interaction between the two variables, but that makes it hard to determine different priors. Instead, let's build an index variable from 1 to 4. We can visualize it with the `xtabs` function:
+
+```{r}
+d$treatment <- 1 + d$prosoc_left + 2*d$condition
+xtabs(~ treatment + prosoc_left + condition, d)
+```
+The model is of the form:
+
+\begin{align}
+L &\sim \text{Binomial}(1,p_i)\\
+\text{logit}(p_i) &= \alpha_{\text{ACTOR}[i]} + \beta_{\text{TREATMENT}[i]}\\
+\alpha_j &\sim \text{to be determined}\\
+\beta_k &\sim \text{to be determined}\\
+\end{align}
+
+We could of course defined $L$ to be a simple Bernoulli since it only has one trial.
+
+Before we actually dive into the full model, let's try something simple to warm up our prior predictive juices:
+
+\begin{align}
+L &\sim \text{Binomial}(1,p_i)\\
+\text{logit}(p_i) &= \alpha\\
+\alpha &\sim \text{Normal}(0,\omega)\\
+\end{align}
+
+Let's choose $\omega=10$ for our value:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+m11.1 <- quap(alist(
+  pulled_left ~ dbinom(1, p),
+  logit(p) <- a,
+  a ~ dnorm(0,10)
+), data=d)
+
+prior <- extract.prior(m11.1, n=1e4)
+p <- inv_logit(prior$a)
+dens(p, adj=0.1)
+```
+
+The model here is telling us that the chimp will almost never, or always pull the lever. There is no grey area. This implies that a flat prior in the logit space is not a flat prior in the outcome space. Let's stick with $\omega=1.5$ which will give us a much better behaved shape. Now, we could probably just use 1.5 again for $\beta$, but let's see what happens if we don't:
+
+```{r}
+m11.2 <- quap(alist(
+  pulled_left ~ dbinom(1, p),
+  logit(p) <- a + b[treatment],
+  a ~ dnorm(0,1.5),
+  b[treatment] ~ dnorm(0,10)
+), data=d)
+
+prior <- extract.prior(m11.2)
+p <- lapply(1:4, \(x) inv_logit(prior$a + prior$b[,x])) |> as.data.frame()
+```
+
+Let's see what the priors imply about the prior *differences* between the treatments, since that is what we are really after.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+dens(abs(p[,1] - p[,2]), adj=0.1)
+```
+
+Here the model thinks that the treatments are either completely alike, or completely different. Let's try a 0.5 scale:
+
+```{r}
+m11.3 <- quap(alist(
+  pulled_left ~ dbinom(1, p),
+  logit(p) <- a + b[treatment],
+  a ~ dnorm(0,1.5),
+  b[treatment] ~ dnorm(0,0.5)
+), data=d)
+
+prior <- extract.prior(m11.3)
+p <- lapply(1:4, \(x) inv_logit(prior$a + prior$b[,x])) |> as.data.frame()
+(p[,1] - p[,2]) |> abs() |> mean()
+```
+
+Now the average prior difference is about 10%. Extremely large differences are very unlikely now - this will help reduce overfitting.
+
+Let's go ahead and fit the model using HMC:
+
+```{r}
+#| output: false
+dat_list <- list(
+  pulled_left = d$pulled_left,
+  actor = d$actor,
+  treatment = d$treatment
+)
+
+m11.4 <- ulam(alist(
+  pulled_left ~ dbinom(1, p),
+  logit(p) <- a[actor] + b[treatment],
+  a[actor] ~ dnorm(0,1.5),
+  b[treatment] ~ dnorm(0, 0.5)
+), data=dat_list, chains=4, log_lik=T)
+```
+```{r}
+precis(m11.4, depth=2)
+```
+
+Let's look at the chimps behavior on the outcome scale:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+post <- extract.samples(m11.4)
+p_left <- inv_logit(post$a)
+plot(precis(as.data.frame(p_left)), xlim=c(0,1))
+```
+
+Now, let's see how the treatments look:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+labs <- c('R/N', 'L/N', 'R/P', 'L/P')
+plot(precis(m11.4, depth=2, pars='b'), labels=labs)
+```
+
+Here "R/N" means prosocial on right and no partner. What we want to see is if the chimp chose the prosocial option in the presence of a partner or not. For this we want to compare the difference between the first and third (top down), and second and fourth:
+
+```{r}
+diffs <- list(
+  db13 = post$b[,1] - post$b[,3],
+  db24 = post$b[,2] - post$b[,4]
+)
+plot(precis(diffs))
+```
+These are **contrasts** between no-partner/partner treatments on the log-odds scale. Clearly there isn't any compelling evidence of prosocial choice in this experiment.
+
+For our next inspection, let's see how our posterior predictions faired against the actual data on the actor/treatment level:
+
+```{r}
+pl <- by(d$pulled_left, list(d$actor, d$treatment), mean)
+pl[,1] # average pulls by treatment for chimp 1
+```
+
+I won't write out the whole code for visualizing, but you'll see that we are pretty consistent with what the actual data shows. The big factor is handedness of the chimps.
+
+Let's try a simpler model where we don't include an interaction - just the two separate variables that made up the interaction:
+
+```{r}
+d$side <- d$prosoc_left + 1 # right 1, left 2
+d$cond <- d$condition + 1 # no partner 1, partner 2
+```
+
+```{r}
+#| output: false
+dat_list2 <- list(
+  pulled_left=d$pulled_left,
+  actor = d$actor,
+  side = d$side,
+  cond = d$cond
+)
+m11.5 <- ulam(alist(
+  pulled_left ~ dbinom(1, p),
+  logit(p) <- a[actor] + bs[side] + bc[cond],
+  a[actor] ~ dnorm(0,1.5),
+  bs[side] ~ dnorm(0, 0.5),
+  bc[cond] ~ dnorm(0, 0.5)
+), data=dat_list2, chains=4, log_lik=T, cores=4)
+```
+
+```{r}
+compare(m11.5, m11.4, func=PSIS)
+```
+Just as we thought - the simpler model is actually better. This is because the model actually has more data and can better estimate the parameters separately instead of trying to force them together.
+
+So far we have been talking about **absolute effects**: the difference a counter-factual change in a variable makes on the measurement scale. i.e. if we change the condition to be prosocial, we see the probability increase by 10 points. Now we are going to talk about the **relative effects**: the multiplier a change in effect has on the outcome. i.e. if we change the condition to be prosocial we double the outcome of an event. For example, the proportional odds of switching from treatment 2 to treatment 4 (adding a partner):
+
+```{r}
+post <- extract.samples(m11.4)
+mean(exp(post$b[,4] - post$b[,2]))
+```
+This means that the switch multiples the odds of pulling the left lever by 0.92. A 8% reduction in odds (this is **proportional odds**). Clearly, this is not enough though. If the other variables in the model make the outcome unlikely, ten a large proportional odds like 5x would not make the outcome likely. 
+
+### Aggregate Binomial
+
+There is nothing stopping us from doing a aggregated count model instead sice there is no need to preserve order. This can actually make things much faster since there is less data:
+
+```{r}
+d_aggregated <- aggregate(
+  d$pulled_left,
+  list(treatment=d$treatment, 
+       actor=d$actor,
+       side=d$side,
+       cond=d$cond),
+  sum
+)
+colnames(d_aggregated)[5] <- 'left_pulls'
+d_aggregated |> head()
+```
+
+```{r}
+library(tidyverse)
+d %>% group_by(treatment, actor, side, cond) %>% summarise(left_pulls=sum(pulled_left), cnt=n())
+```
+Something that is very important to note is that there were exactly 18 trials for each chimp and set of conditions. If they were different, we would have to change $N$ for each point (not hard to do though).
+
+Let's fit the full model:
+
+```{r}
+#| output: false
+m11.6 <- ulam(alist(
+  left_pulls ~ dbinom(18, p),
+  logit(p) <- a[actor] + b[treatment],
+  a[actor] ~ dnorm(0, 1.5),
+  b[treatment] ~ dnorm(0,1.5)
+), data=as.list(d_aggregated), chains=4, cores=4, log_lik=T)
+```
+
+And compare to the identical model `m11.4`:
+```{r}
+compare(m11.4, m11.6, func=PSIS)
+```
+
+The PSIS scores are very different. The main reason is that the probabilities are a lot higher for the aggregate model. This makes sense, the binomial probability takes into account all the different ways that x out of 18 trials can occur. That is taken into account by the binomial coefficient. 
+
+You'll also notice that we got $\hat{k}$ warnings. This is because we really aren't doing LOO-CV anymore. We can be leaving up to 18 points out since the weights are calculated at the $(\text{treatment}, \text{actor})$ level. So leaving one out is really like leaving 18 points out. Much more likely for things to be influential in the total model. 
