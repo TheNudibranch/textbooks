@@ -113,6 +113,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#aggregate-binomial" id="toc-aggregate-binomial" class="nav-link" data-scroll-target="#aggregate-binomial">Aggregate Binomial</a></li>
   </ul></li>
+  <li><a href="#poisson-regression" id="toc-poisson-regression" class="nav-link" data-scroll-target="#poisson-regression">11.2 - Poisson Regression</a></li>
   </ul>
 </nav>
 </div>
@@ -279,7 +280,7 @@ L &amp;\sim \text{Binomial}(1,p_i)\\
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>(p[,<span class="dv">1</span>] <span class="sc">-</span> p[,<span class="dv">2</span>]) <span class="sc">|&gt;</span> <span class="fu">abs</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.08942396</code></pre>
+<pre><code>[1] 0.09646539</code></pre>
 </div>
 </div>
 <p>Now the average prior difference is about 10%. Extremely large differences are very unlikely now - this will help reduce overfitting.</p>
@@ -308,17 +309,17 @@ L &amp;\sim \text{Binomial}(1,p_i)\\
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>            mean        sd        5.5%       94.5%     rhat  ess_bulk
-a[1] -0.43998013 0.3296567 -0.95558474  0.09229285 1.004647  713.7243
-a[2]  3.89582389 0.7324172  2.77225040  5.21140705 1.002662 1254.8029
-a[3] -0.73511164 0.3340467 -1.25785465 -0.20913765 1.005145  679.8098
-a[4] -0.74717463 0.3272565 -1.26666920 -0.20903899 1.004639  679.5356
-a[5] -0.44244038 0.3246805 -0.95801517  0.06210965 1.007753  648.5415
-a[6]  0.49124748 0.3362096 -0.06187708  1.02291685 1.002476  666.4062
-a[7]  1.96473686 0.4366709  1.26631370  2.69853785 1.001148  894.7721
-b[1] -0.04963995 0.2821059 -0.51489376  0.40263189 1.007876  566.7073
-b[2]  0.47402825 0.2903954  0.01371041  0.93449481 1.007557  533.8826
-b[3] -0.39041747 0.2888219 -0.84421548  0.05979052 1.006673  613.9652
-b[4]  0.36552517 0.2839698 -0.10230261  0.80595116 1.003628  622.7412</code></pre>
+a[1] -0.44682351 0.3349967 -0.98104146  0.07488677 1.000232  799.8825
+a[2]  3.90666849 0.7359042  2.79330005  5.17195230 1.000224 1162.0955
+a[3] -0.73844742 0.3388133 -1.28726200 -0.19421730 1.001236  683.2956
+a[4] -0.73939787 0.3427784 -1.29242400 -0.21611238 1.001719  871.7336
+a[5] -0.43981728 0.3323378 -0.98054664  0.09509089 1.001254  756.5384
+a[6]  0.48700095 0.3405031 -0.06459970  1.05026105 1.000966  729.3884
+a[7]  1.95093880 0.4260952  1.28509555  2.65203520 1.002329 1122.0914
+b[1] -0.04669426 0.2838182 -0.50537073  0.39308136 1.002450  625.8301
+b[2]  0.48019061 0.2894743  0.01336166  0.94319781 1.000987  721.5546
+b[3] -0.39200352 0.2878307 -0.86248500  0.07330092 1.000878  719.4547
+b[4]  0.36288515 0.2852219 -0.09559928  0.82281379 1.000696  708.9506</code></pre>
 </div>
 </div>
 <p>Let’s look at the chimps behavior on the outcome scale:</p>
@@ -417,8 +418,8 @@ b[4]  0.36552517 0.2839698 -0.10230261  0.80595116 1.003628  622.7412</code></pr
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>          PSIS       SE    dPSIS      dSE    pPSIS    weight
-m11.5 530.7456 19.12635 0.000000       NA 7.747793 0.6438738
-m11.4 531.9301 18.96188 1.184435 1.278208 8.350692 0.3561262</code></pre>
+m11.5 530.9700 19.15114 0.000000       NA 7.831942 0.6049353
+m11.4 531.8222 18.91089 0.852144 1.255554 8.310102 0.3950647</code></pre>
 </div>
 </div>
 <p>Just as we thought - the simpler model is actually better. This is because the model actually has more data and can better estimate the parameters separately instead of trying to force them together.</p>
@@ -430,7 +431,7 @@ m11.4 531.9301 18.96188 1.184435 1.278208 8.350692 0.3561262</code></pre>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">exp</span>(post<span class="sc">$</span>b[,<span class="dv">4</span>] <span class="sc">-</span> post<span class="sc">$</span>b[,<span class="dv">2</span>]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.9302335</code></pre>
+<pre><code>[1] 0.9219162</code></pre>
 </div>
 </div>
 <p>This means that the switch multiples the odds of pulling the left lever by 0.92. A 8% reduction in odds (this is <strong>proportional odds</strong>). Clearly, this is not enough though. If the other variables in the model make the outcome unlikely, ten a large proportional odds like 5x would not make the outcome likely.</p>
@@ -519,14 +520,455 @@ m11.6 28 </code></pre>
 <pre><code>Some Pareto k values are high (&gt;0.5). Set pointwise=TRUE to inspect individual points.</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>          PSIS       SE    dPSIS      dSE    pPSIS       weight
-m11.6 114.9742  8.94667   0.0000       NA 9.029006 1.000000e+00
-m11.4 531.9301 18.96188 416.9558 42.30237 8.350692 2.878682e-91</code></pre>
+<pre><code>          PSIS        SE    dPSIS      dSE    pPSIS       weight
+m11.6 115.0726  8.786095   0.0000       NA 9.018007 1.000000e+00
+m11.4 531.8222 18.910889 416.7496 41.67109 8.310102 3.191284e-91</code></pre>
 </div>
 </div>
 <p>The PSIS scores are very different. The main reason is that the probabilities are a lot higher for the aggregate model. This makes sense, the binomial probability takes into account all the different ways that x out of 18 trials can occur. That is taken into account by the binomial coefficient.</p>
 <p>You’ll also notice that we got <span class="math inline">\(\hat{k}\)</span> warnings. This is because we really aren’t doing LOO-CV anymore. We can be leaving up to 18 points out since the weights are calculated at the <span class="math inline">\((\text{treatment}, \text{actor})\)</span> level. So leaving one out is really like leaving 18 points out. Much more likely for things to be influential in the total model.</p>
+<p>Let’s now switch to a instance where we don’t have the same number of trials per data point:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(UCBadmit)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> UCBadmit</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>We want to model the probability of acceptance given an applicants gender:</p>
+<p><span class="math display">\[\begin{align}
+A &amp;\sim \text{Binomial}(N_i,p_i)\\
+\text{logit}(p_i) &amp;= \alpha_{\text{GID[i]}}\\
+\alpha_j &amp;\sim \text{Normal}(0,1.5)\\
+\end{align}\]</span></p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>dat_list <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">admit =</span> d<span class="sc">$</span>admit,</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">applications =</span> d<span class="sc">$</span>applications,</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">gid =</span> <span class="fu">ifelse</span>(d<span class="sc">$</span>applicant.gender <span class="sc">==</span> <span class="st">'male'</span>, <span class="dv">1</span>, <span class="dv">2</span>)</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>m11<span class="fl">.7</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>  admit <span class="sc">~</span> <span class="fu">dbinom</span>(applications, p),</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logit</span>(p) <span class="ot">&lt;-</span> a[gid],</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>  a[gid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">1.5</span>)</span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat_list, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m11<span class="fl">.7</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>           mean         sd       5.5%      94.5%     rhat ess_bulk
+a[1] -0.2186611 0.03882639 -0.2813481 -0.1583086 1.006330 1431.727
+a[2] -0.8287579 0.05065239 -0.9089767 -0.7481992 1.003794 1621.328</code></pre>
+</div>
+</div>
+<p>Let’s now calculate the contrast between male and female applicants. We will calculate it on the relative and absolute scale:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m11<span class="fl">.7</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>diff_a <span class="ot">&lt;-</span> post<span class="sc">$</span>a[,<span class="dv">1</span>] <span class="sc">-</span> post<span class="sc">$</span>a[,<span class="dv">2</span>] </span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>diff_p <span class="ot">&lt;-</span> <span class="fu">inv_logit</span>(post<span class="sc">$</span>a[,<span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">inv_logit</span>(post<span class="sc">$</span>a[,<span class="dv">2</span>])</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(<span class="fu">list</span>(<span class="at">diff_a=</span>diff_a, <span class="at">diff_p=</span>diff_p))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            mean         sd      5.5%     94.5%  histogram
+diff_a 0.6100968 0.06403917 0.5070949 0.7129623  ▁▁▃▇▇▅▂▁▁
+diff_p 0.1415578 0.01442477 0.1181792 0.1649221 ▁▁▂▃▇▇▅▂▁▁</code></pre>
+</div>
+</div>
+<p>Recall that <code>diff_a</code> is giving us the difference on the log-odds scale, while <code>diff_p</code> is on the absolute scale. So it looks like that being male gives students a 14% higher on average acceptance rate.</p>
+<p>Let’s plot some posterior predictive checks:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">postcheck</span>(m11<span class="fl">.7</span>)</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>){</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">2</span><span class="sc">*</span>(i<span class="dv">-1</span>)</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  y1 <span class="ot">&lt;-</span> d<span class="sc">$</span>admit[x]<span class="sc">/</span>d<span class="sc">$</span>applications[x]</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>  y2 <span class="ot">&lt;-</span> d<span class="sc">$</span>admit[x<span class="sc">+</span><span class="dv">1</span>]<span class="sc">/</span>d<span class="sc">$</span>applications[x<span class="sc">+</span><span class="dv">1</span>]</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(<span class="fu">c</span>(x, x<span class="sc">+</span><span class="dv">1</span>), <span class="fu">c</span>(y1,y2), <span class="at">col=</span>rangi2, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">text</span>(x <span class="sc">+</span> <span class="fl">0.5</span>, (y1 <span class="sc">+</span> y2)<span class="sc">/</span><span class="dv">2</span> <span class="sc">+</span> <span class="fl">0.05</span>, d<span class="sc">$</span>dept[x], <span class="at">cex=</span><span class="fl">0.8</span>, <span class="at">col=</span>rangi2)</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch11_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The vertical <em>lines</em> are the 89% CI for the expected value. The crosses are the 89% simulated samples, and the open points are the posterior mean.</p>
+<p>You’ll notice that it isn’t actually the case that male acceptance is higher than female. That is only the case for departments C and E. This is of course a case of Simpson’s Paradox. Women are more likely to apply to departments with lower admission rates like department F:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>d <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(dept) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">overall_acceptance =</span> <span class="fu">sum</span>(admit) <span class="sc">/</span> <span class="fu">sum</span>(applications), </span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">perc_female =</span> <span class="fu">sum</span>(<span class="fu">ifelse</span>(applicant.gender<span class="sc">==</span><span class="st">'female'</span>, applications,<span class="dv">0</span>))<span class="sc">/</span><span class="fu">sum</span>(applications))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 3
+  dept  overall_acceptance perc_female
+  &lt;fct&gt;              &lt;dbl&gt;       &lt;dbl&gt;
+1 A                 0.644       0.116 
+2 B                 0.632       0.0427
+3 C                 0.351       0.646 
+4 D                 0.340       0.473 
+5 E                 0.252       0.673 
+6 F                 0.0644      0.478 </code></pre>
+</div>
+</div>
+<p>Let’s now fit a model that models the variation between male and female within departments.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>dat_list<span class="sc">$</span>dept_id <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="at">each=</span><span class="dv">2</span>)</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>m11<span class="fl">.8</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  admit <span class="sc">~</span> <span class="fu">dbinom</span>(applications, p),</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logit</span>(p) <span class="ot">&lt;-</span> a[gid] <span class="sc">+</span> delta[dept_id],</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>  a[gid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">1.5</span>),</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>  delta[dept_id] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">1.5</span>)</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat_list, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m11<span class="fl">.8</span>, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                mean        sd       5.5%      94.5%     rhat ess_bulk
+a[1]     -0.58376240 0.5280398 -1.4617447  0.2457751 1.029595 143.0854
+a[2]     -0.48598515 0.5291751 -1.3694154  0.3421138 1.029681 143.7505
+delta[1]  1.16332694 0.5280935  0.3557409  2.0299255 1.029667 146.8588
+delta[2]  1.12005383 0.5325690  0.2799885  2.0019661 1.028865 146.6686
+delta[3] -0.09488552 0.5315608 -0.9228699  0.7866804 1.030275 143.8727
+delta[4] -0.12920979 0.5307613 -0.9515192  0.7327730 1.029353 144.9492
+delta[5] -0.57321206 0.5339922 -1.3895735  0.3131626 1.030582 147.0785
+delta[6] -2.12636732 0.5403543 -2.9704031 -1.2142124 1.029516 146.2497</code></pre>
+</div>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m11<span class="fl">.8</span>)</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>diff_a <span class="ot">&lt;-</span> post<span class="sc">$</span>a[,<span class="dv">1</span>] <span class="sc">-</span> post<span class="sc">$</span>a[,<span class="dv">2</span>] </span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>diff_p <span class="ot">&lt;-</span> <span class="fu">inv_logit</span>(post<span class="sc">$</span>a[,<span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">inv_logit</span>(post<span class="sc">$</span>a[,<span class="dv">2</span>])</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(<span class="fu">list</span>(<span class="at">diff_a=</span>diff_a, <span class="at">diff_p=</span>diff_p))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>              mean         sd        5.5%       94.5%     histogram
+diff_a -0.09777725 0.07592929 -0.21847236 0.021973665    ▁▁▂▅▇▇▅▂▁▁
+diff_p -0.02165878 0.01720834 -0.04976031 0.004525912 ▁▁▁▁▃▅▇▇▅▂▁▁▁</code></pre>
+</div>
+</div>
+<p>We now see that male applicants might have it <em>worse</em>. But this of course is not a significant effect.</p>
+<p>Let’s make a DAG showing our causal graph:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dagitty)</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>dag_m8<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a><span class="st">  G -&gt; D -&gt; A</span></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a><span class="st">  G -&gt; A</span></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a><span class="st">}"</span>)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a><span class="fu">coordinates</span>(dag_m8<span class="fl">.1</span>) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x=</span><span class="fu">c</span>(<span class="st">'A'</span><span class="ot">=</span><span class="dv">1</span>, <span class="st">'G'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'D'</span><span class="ot">=</span><span class="fl">0.5</span>),</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>                              <span class="at">y=</span><span class="fu">c</span>(<span class="st">'A'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'G'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'D'</span><span class="ot">=</span><span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a><span class="fu">drawdag</span>(dag_m8<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch11_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Notice there is an indirect causal path <span class="math inline">\(G \rightarrow D \rightarrow A\)</span>, from gender to acceptance. So we need to condition on <span class="math inline">\(D\)</span> and close the path, which is what model <code>m11.8</code> did.</p>
+<p>Recall though, there might be a confounder <span class="math inline">\(U\)</span>:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>dag_m8<span class="fl">.1</span> <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="st">  U [unobserved]</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a><span class="st">  G -&gt; D -&gt; A</span></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a><span class="st">  G -&gt; A</span></span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a><span class="st">  D &lt;- U -&gt; A</span></span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a><span class="st">}"</span>)</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a><span class="fu">coordinates</span>(dag_m8<span class="fl">.1</span>) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x=</span><span class="fu">c</span>(<span class="st">'A'</span><span class="ot">=</span><span class="dv">1</span>, <span class="st">'G'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'D'</span><span class="ot">=</span><span class="fl">0.5</span>, <span class="st">'U'</span><span class="ot">=</span><span class="dv">1</span>),</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>                              <span class="at">y=</span><span class="fu">c</span>(<span class="st">'A'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'G'</span><span class="ot">=</span><span class="dv">0</span>, <span class="st">'D'</span><span class="ot">=</span><span class="sc">-</span><span class="dv">1</span>, <span class="st">'U'</span> <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a><span class="fu">drawdag</span>(dag_m8<span class="fl">.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch11_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>If we condition on <span class="math inline">\(D\)</span>, we actually would have <span class="math inline">\(D\)</span> as a collider and open up the non-causal path <span class="math inline">\(G \rightarrow D \leftarrow U \rightarrow A\)</span>.</p>
+<p>Going back to model <code>m11.8</code>, it is technically overparameterized. This of course is not a big issue for Bayesian models, so long as we have an adequate sampler that can handle the high correlations. It might be more efficient to instead to use a single parameter that represents the difference between male and female. Richard argues though that this will make one group more uncertain than the other. This of course works itself out on the outcome scale though.</p>
 </section>
+</section>
+<section id="poisson-regression" class="level2">
+<h2 class="anchored" data-anchor-id="poisson-regression">11.2 - Poisson Regression</h2>
+<p>Let’s look at the skeleton of a Poisson model:</p>
+<p><span class="math display">\[\begin{align}
+y_i &amp;\sim \text{Poisson}(\lambda_i)\\
+\log(\lambda_i) &amp;= \alpha + \beta (x_i - \bar{x})\\
+\end{align}\]</span></p>
+<p>The data we will start with is that of Oceanic societies and their number of distinct tools:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"Kline"</span>)</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> Kline</span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>d</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>      culture population contact total_tools mean_TU
+1    Malekula       1100     low          13     3.2
+2     Tikopia       1500     low          22     4.7
+3  Santa Cruz       3600     low          24     4.0
+4         Yap       4791    high          43     5.0
+5    Lau Fiji       7400    high          33     5.0
+6   Trobriand       8000    high          19     4.0
+7       Chuuk       9200    high          40     3.8
+8       Manus      13000     low          28     6.6
+9       Tonga      17500    high          55     5.4
+10     Hawaii     275000     low          71     6.6</code></pre>
+</div>
+</div>
+<p>Let’s look at some the assumptions we would like to bake into our model that predicts <code>total_tools</code>:</p>
+<ul>
+<li>Number of tools should increase with log population</li>
+<li>Islands with more contact will have more tools</li>
+<li>We expect the impact of population to be moderated by contact (interactions)</li>
+</ul>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>P <span class="ot">&lt;-</span> d<span class="sc">$</span>population <span class="sc">|&gt;</span> <span class="fu">log</span>() <span class="sc">|&gt;</span> <span class="fu">scale</span>()</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>contact_id <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(d<span class="sc">$</span>contact <span class="sc">==</span> <span class="st">'high'</span>, <span class="dv">2</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p><span class="math display">\[\begin{align}
+T_i &amp;\sim \text{Poisson}(\lambda_i)\\
+\log(\lambda_i) &amp;= \alpha_{\text{CID[i]}} + \beta_{\text{CID[i]}} \log P_i\\
+\alpha_j &amp;\sim \text{To be determined} \\
+\beta_j &amp;\sim \text{To be determined} \\
+\end{align}\]</span></p>
+<p>Let’s first try to sniff out the correct priors. We know that <span class="math inline">\(\lambda\)</span> has to be positive, so any prior we put on <span class="math inline">\(\alpha\)</span> will be exponentiated. So if we choose a normal prior with <span class="math inline">\(\sigma=10\)</span>, then <span class="math inline">\(\lambda\)</span> we have a lognormal outcome.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(<span class="fu">dlnorm</span>(x, <span class="dv">0</span>, <span class="dv">10</span>), <span class="dv">0</span>, <span class="dv">100</span>, <span class="at">n=</span><span class="dv">200</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch11_files/figure-html/unnamed-chunk-35-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Now, this tail is <em>very</em> long. So long in fact that the mean of the distribution above is:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">rlnorm</span>(<span class="fl">1e4</span>, <span class="dv">0</span>,<span class="dv">10</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 540102935907</code></pre>
+</div>
+</div>
+<p>Something to keep in mind is that the log link puts all the negative between 0 and 1 on the outcome scale. That means that if half of our prior mass is below 0, then half of the outcome will be between 0 and 1.</p>
+<p>Let’s instead try something a bit more sensible:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(<span class="fu">dlnorm</span>(x, <span class="dv">3</span>, <span class="fl">0.5</span>), <span class="dv">0</span>, <span class="dv">100</span>, <span class="at">n=</span><span class="dv">200</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch11_files/figure-html/unnamed-chunk-37-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">rlnorm</span>(<span class="fl">1e5</span>, <span class="dv">3</span>, <span class="fl">0.5</span>)) <span class="sc">|&gt;</span> <span class="fu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 22.78439</code></pre>
+</div>
+</div>
+<p>We now need to come up with something sensible for <span class="math inline">\(\beta\)</span>. Let’s again try <span class="math inline">\(N(0,10)\)</span> and see what happens to the outcome:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="dv">3</span>, <span class="fl">0.5</span>)</span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="dv">10</span>)</span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">2</span>,<span class="dv">2</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">100</span>))</span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) <span class="fu">curve</span>(<span class="fu">exp</span>(a[i] <span class="sc">+</span> b[i]<span class="sc">*</span>x), <span class="at">add=</span>T, <span class="at">col=</span><span class="fu">grau</span>(), <span class="at">xlab=</span><span class="st">'x'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch11_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The pivoting around 0 is just the mean outcome for the average log population (approx. 22). What’s interesting is that model thinks that just above or below the mean the outcome variable either goes to zero or blows up! Nothing in-between.</p>
+<p>Something better might be:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="dv">3</span>, <span class="fl">0.5</span>)</span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="fl">0.2</span>)</span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">2</span>,<span class="dv">2</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">100</span>))</span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) <span class="fu">curve</span>(<span class="fu">exp</span>(a[i] <span class="sc">+</span> b[i]<span class="sc">*</span>x), <span class="at">add=</span>T, <span class="at">col=</span><span class="fu">grau</span>(), <span class="at">xlab=</span><span class="st">'x'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch11_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Hmm, a little too tight. Almost on relationship now between log population and tools.</p>
+<p>Let’s look at this a different way - instead of the z-score, let’s keep population unstandardized:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>x_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">log</span>(<span class="dv">100</span>), <span class="fu">log</span>(<span class="fl">2e5</span>), <span class="at">length.out=</span><span class="dv">105</span>)</span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">&lt;-</span> <span class="fu">vapply</span>(x_seq, \(x) <span class="fu">exp</span>(a <span class="sc">+</span> b<span class="sc">*</span>x), <span class="fu">numeric</span>(N))</span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim=</span><span class="fu">range</span>(x_seq), <span class="at">ylim=</span><span class="fu">range</span>(lambda), <span class="at">xlab=</span><span class="st">'log pop'</span>, <span class="at">ylab=</span><span class="st">'total tools'</span>)</span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) <span class="fu">lines</span>(x_seq, lambda[i,], <span class="at">col=</span><span class="fu">grau</span>(), <span class="at">lwd=</span><span class="fl">1.5</span>)</span>
+<span id="cb61-7"><a href="#cb61-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-8"><a href="#cb61-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim=</span><span class="fu">range</span>(<span class="fu">exp</span>(x_seq)), <span class="at">ylim=</span><span class="fu">range</span>(lambda), <span class="at">xlab=</span><span class="st">'Population'</span>, <span class="at">ylab=</span><span class="st">'total tools'</span>)</span>
+<span id="cb61-9"><a href="#cb61-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) <span class="fu">lines</span>(<span class="fu">exp</span>(x_seq), lambda[i,], <span class="at">col=</span><span class="fu">grau</span>(), <span class="at">lwd=</span><span class="fl">1.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch11_files/figure-html/unnamed-chunk-40-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Notice that the left plot we be linear if we logged it. This also shows why it is usually better to log the covariate. We want to imply that there are diminishing returns for adding population at higher values. It means more to add a couple people when the population is very low than compared to when it is high.</p>
+<p>We can now go ahead and build our models. We will fit an intercept only model as well as the full model:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">T =</span> d<span class="sc">$</span>total_tools,</span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">P =</span> d<span class="sc">$</span>P,</span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">cid =</span> d<span class="sc">$</span>contact_id</span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a><span class="co"># intercept only</span></span>
+<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>m11<span class="fl">.9</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a>  T <span class="sc">~</span> <span class="fu">dpois</span>(lambda),</span>
+<span id="cb62-10"><a href="#cb62-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log</span>(lambda) <span class="ot">&lt;-</span> a,</span>
+<span id="cb62-11"><a href="#cb62-11" aria-hidden="true" tabindex="-1"></a>  a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">3</span>, <span class="fl">0.5</span>)</span>
+<span id="cb62-12"><a href="#cb62-12" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">log_lik =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb62-13"><a href="#cb62-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-14"><a href="#cb62-14" aria-hidden="true" tabindex="-1"></a><span class="co"># full model</span></span>
+<span id="cb62-15"><a href="#cb62-15" aria-hidden="true" tabindex="-1"></a>m11<span class="fl">.10</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb62-16"><a href="#cb62-16" aria-hidden="true" tabindex="-1"></a>  T <span class="sc">~</span> <span class="fu">dpois</span>(lambda),</span>
+<span id="cb62-17"><a href="#cb62-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log</span>(lambda) <span class="ot">&lt;-</span> a[cid] <span class="sc">+</span> b[cid]<span class="sc">*</span>P,</span>
+<span id="cb62-18"><a href="#cb62-18" aria-hidden="true" tabindex="-1"></a>  a[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">3</span>, <span class="fl">0.5</span>),</span>
+<span id="cb62-19"><a href="#cb62-19" aria-hidden="true" tabindex="-1"></a>  b[cid] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.2</span>)</span>
+<span id="cb62-20"><a href="#cb62-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-21"><a href="#cb62-21" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">log_lik=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m11<span class="fl">.9</span>, m11<span class="fl">.10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            WAIC       SE    dWAIC      dSE    pWAIC       weight
+m11.10  83.56823 12.20901  0.00000       NA 6.132175 1.000000e+00
+m11.9  141.65789 32.09301 58.08966 33.90358 8.322645 2.432153e-13</code></pre>
+</div>
+</div>
+<p>Notice that model <code>m11.10</code> actually has fewer number of effective parameters. This is surprising since we actually have 3 net new parameters in model <code>m11.10</code>. But, recall that we can really only think about effective parameters and parameter count relationship in simple linear models. We know that parameter values near boundaries produce less overfitting and therefore contribute less to effective number of parameters. This is true about bounded data too. See that a large amount of the bounds are bounded by population not able to be negative, so introducing this covariate actually reduces the number of effective parameters since it limits the parameter space inadvertently.</p>
+<p>Let’s go ahead and plot the posterior predictive space:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="fu">PSIS</span>(m11<span class="fl">.10</span>, <span class="at">pointwise =</span> T)<span class="sc">$</span>k</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Some Pareto k values are high (&gt;0.5). Set pointwise=TRUE to inspect individual points.</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(dat<span class="sc">$</span>P, dat<span class="sc">$</span>T, <span class="at">xlab=</span><span class="st">'log pop (std.)'</span>, <span class="at">ylab=</span><span class="st">'tools'</span>, <span class="at">col=</span>rangi2, </span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">pch=</span><span class="fu">ifelse</span>(dat<span class="sc">$</span>cid <span class="sc">==</span> <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">16</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">cex=</span><span class="dv">1</span><span class="sc">+</span><span class="fu">normalize</span>(K))</span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>ns <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>p_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">1.4</span>, <span class="fu">max</span>(dat<span class="sc">$</span>P), <span class="at">length.out=</span>ns)</span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>){</span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a>  lambda <span class="ot">&lt;-</span> <span class="fu">link</span>(m11<span class="fl">.10</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">P=</span>p_seq, <span class="at">cid=</span>i))</span>
+<span id="cb67-9"><a href="#cb67-9" aria-hidden="true" tabindex="-1"></a>  lmu <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(lambda)</span>
+<span id="cb67-10"><a href="#cb67-10" aria-hidden="true" tabindex="-1"></a>  lci <span class="ot">&lt;-</span> <span class="fu">apply</span>(lambda, <span class="dv">2</span>, PI)</span>
+<span id="cb67-11"><a href="#cb67-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(p_seq, lmu, <span class="at">lty=</span><span class="fu">ifelse</span>(i<span class="sc">==</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="at">lwd=</span><span class="fl">1.5</span>)</span>
+<span id="cb67-12"><a href="#cb67-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">shade</span>(lci, p_seq, <span class="at">xpd=</span>T)</span>
+<span id="cb67-13"><a href="#cb67-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb67-14"><a href="#cb67-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-15"><a href="#cb67-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(d<span class="sc">$</span>population, d<span class="sc">$</span>total_tools, <span class="at">xlab=</span><span class="st">'pop'</span>, <span class="at">ylab=</span><span class="st">'tools'</span>,</span>
+<span id="cb67-16"><a href="#cb67-16" aria-hidden="true" tabindex="-1"></a>     <span class="at">col=</span>rangi2, <span class="at">pch=</span><span class="fu">ifelse</span>(dat<span class="sc">$</span>cid <span class="sc">==</span> <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">16</span>), <span class="at">lwd=</span><span class="dv">2</span>,</span>
+<span id="cb67-17"><a href="#cb67-17" aria-hidden="true" tabindex="-1"></a>     <span class="at">cex=</span><span class="dv">1</span> <span class="sc">+</span> <span class="fu">normalize</span>(K))</span>
+<span id="cb67-18"><a href="#cb67-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-19"><a href="#cb67-19" aria-hidden="true" tabindex="-1"></a>ns <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb67-20"><a href="#cb67-20" aria-hidden="true" tabindex="-1"></a>p_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">1.4</span>, <span class="fu">max</span>(dat<span class="sc">$</span>P), <span class="at">length.out=</span>ns)</span>
+<span id="cb67-21"><a href="#cb67-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Need to convert back to non standard (add mean and multilpy by sd of log pop)</span></span>
+<span id="cb67-22"><a href="#cb67-22" aria-hidden="true" tabindex="-1"></a>pop_seq <span class="ot">&lt;-</span> <span class="fu">exp</span>(p_seq<span class="sc">*</span><span class="fl">1.53</span> <span class="sc">+</span> <span class="dv">9</span>)</span>
+<span id="cb67-23"><a href="#cb67-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-24"><a href="#cb67-24" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>){</span>
+<span id="cb67-25"><a href="#cb67-25" aria-hidden="true" tabindex="-1"></a>  lambda <span class="ot">&lt;-</span> <span class="fu">link</span>(m11<span class="fl">.10</span>, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">P=</span>p_seq, <span class="at">cid=</span>i))</span>
+<span id="cb67-26"><a href="#cb67-26" aria-hidden="true" tabindex="-1"></a>  lmu <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(lambda)</span>
+<span id="cb67-27"><a href="#cb67-27" aria-hidden="true" tabindex="-1"></a>  lci <span class="ot">&lt;-</span> <span class="fu">apply</span>(lambda, <span class="dv">2</span>, PI)</span>
+<span id="cb67-28"><a href="#cb67-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(pop_seq, lmu, <span class="at">lty=</span><span class="fu">ifelse</span>(i<span class="sc">==</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="at">lwd=</span><span class="fl">1.5</span>)</span>
+<span id="cb67-29"><a href="#cb67-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">shade</span>(lci, pop_seq, <span class="at">xpd=</span>T)</span>
+<span id="cb67-30"><a href="#cb67-30" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch11_files/figure-html/unnamed-chunk-43-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Hawaii is the point in the top right of the right graph. Clearly, because of its very large population, it is highly influential and is therefore contributing to the high <span class="math inline">\(\hat{k}\)</span>.</p>
+<p>Now, notice that the trend for high contact societies (solid) is higher than that of low contact societies (dashed). But, notice that the model is allowing that past a certain population size, the relationship flips and low contact becomes higher expected than high contact. Of course, a counterfactual of Hawaii with low contact shouldn’t be higher than current Hawaii.</p>
+<p>Also, notice that sine we have given the model the intercept as a free parameter, it can be the case where will will have a non-zero number of expected tools when the population is zero. This can never be possible!</p>
 </section>
 
 </main>

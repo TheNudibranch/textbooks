@@ -260,3 +260,305 @@ compare(m11.4, m11.6, func=PSIS)
 The PSIS scores are very different. The main reason is that the probabilities are a lot higher for the aggregate model. This makes sense, the binomial probability takes into account all the different ways that x out of 18 trials can occur. That is taken into account by the binomial coefficient. 
 
 You'll also notice that we got $\hat{k}$ warnings. This is because we really aren't doing LOO-CV anymore. We can be leaving up to 18 points out since the weights are calculated at the $(\text{treatment}, \text{actor})$ level. So leaving one out is really like leaving 18 points out. Much more likely for things to be influential in the total model. 
+
+Let's now switch to a instance where we don't have the same number of trials per data point:
+
+```{r}
+data(UCBadmit)
+d <- UCBadmit
+```
+
+We want to model the probability of acceptance given an applicants gender:
+
+\begin{align}
+A &\sim \text{Binomial}(N_i,p_i)\\
+\text{logit}(p_i) &= \alpha_{\text{GID[i]}}\\
+\alpha_j &\sim \text{Normal}(0,1.5)\\
+\end{align}
+
+```{r}
+#| output: false
+dat_list <- list(
+  admit = d$admit,
+  applications = d$applications,
+  gid = ifelse(d$applicant.gender == 'male', 1, 2)
+)
+
+m11.7 <- ulam(alist(
+  admit ~ dbinom(applications, p),
+  logit(p) <- a[gid],
+  a[gid] ~ dnorm(0,1.5)
+), data=dat_list, chains=4, cores=4)
+```
+
+```{r}
+precis(m11.7, depth=2)
+```
+
+Let's now calculate the contrast between male and female applicants. We will calculate it on the relative and absolute scale:
+
+```{r}
+post <- extract.samples(m11.7)
+diff_a <- post$a[,1] - post$a[,2] 
+diff_p <- inv_logit(post$a[,1]) - inv_logit(post$a[,2])
+precis(list(diff_a=diff_a, diff_p=diff_p))
+```
+Recall that `diff_a` is giving us the difference on the log-odds scale, while `diff_p` is on the absolute scale. So it looks like that being male gives students a 14% higher on average acceptance rate.
+
+Let's plot some posterior predictive checks:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+postcheck(m11.7)
+for (i in 1:6){
+  x <- 1 + 2*(i-1)
+  y1 <- d$admit[x]/d$applications[x]
+  y2 <- d$admit[x+1]/d$applications[x+1]
+  lines(c(x, x+1), c(y1,y2), col=rangi2, lwd=2)
+  text(x + 0.5, (y1 + y2)/2 + 0.05, d$dept[x], cex=0.8, col=rangi2)
+}
+```
+
+The vertical *lines* are the 89% CI for the expected value. The crosses are the 89% simulated samples, and the open points are the posterior mean.
+
+You'll notice that it isn't actually the case that male acceptance is higher than female. That is only the case for departments C and E. This is of course a case of Simpson's Paradox. Women are more likely to apply to departments with lower admission rates like department F:
+
+```{r}
+d %>% group_by(dept) %>% summarise(
+  overall_acceptance = sum(admit) / sum(applications), 
+  perc_female = sum(ifelse(applicant.gender=='female', applications,0))/sum(applications))
+```
+
+Let's now fit a model that models the variation between male and female within departments.
+
+```{r}
+#| output: false
+dat_list$dept_id <- rep(1:6, each=2)
+
+m11.8 <- ulam(alist(
+  admit ~ dbinom(applications, p),
+  logit(p) <- a[gid] + delta[dept_id],
+  a[gid] ~ dnorm(0,1.5),
+  delta[dept_id] ~ dnorm(0,1.5)
+), data=dat_list, chains=4, cores=4)
+```
+```{r}
+precis(m11.8, depth=2)
+```
+
+```{r}
+post <- extract.samples(m11.8)
+diff_a <- post$a[,1] - post$a[,2] 
+diff_p <- inv_logit(post$a[,1]) - inv_logit(post$a[,2])
+precis(list(diff_a=diff_a, diff_p=diff_p))
+```
+
+We now see that male applicants might have it *worse*. But this of course is not a significant effect.
+
+Let's make a DAG showing our causal graph:
+
+```{r}
+library(dagitty)
+dag_m8.1 <- dagitty("dag{
+  G -> D -> A
+  G -> A
+}")
+coordinates(dag_m8.1) <- list(x=c('A'=1, 'G'=0, 'D'=0.5),
+                              y=c('A'=0, 'G'=0, 'D'=-1))
+drawdag(dag_m8.1)
+```
+Notice there is an indirect causal path $G \rightarrow D \rightarrow A$, from gender to acceptance. So we need to condition on $D$ and close the path, which is what model `m11.8` did.
+
+Recall though, there might be a confounder $U$:
+
+```{r}
+dag_m8.1 <- dagitty("dag{
+  U [unobserved]
+  G -> D -> A
+  G -> A
+  D <- U -> A
+}")
+coordinates(dag_m8.1) <- list(x=c('A'=1, 'G'=0, 'D'=0.5, 'U'=1),
+                              y=c('A'=0, 'G'=0, 'D'=-1, 'U' = -1))
+drawdag(dag_m8.1)
+```
+If we condition on $D$, we actually would have $D$ as a collider and open up the non-causal path $G \rightarrow D \leftarrow U \rightarrow A$.
+
+Going back to model `m11.8`, it is technically overparameterized. This of course is not a big issue for Bayesian models, so long as we have an adequate sampler that can handle the high correlations. It might be more efficient to instead to use a single parameter that represents the difference between male and female. Richard argues though that this will make one group more uncertain than the other. This of course works itself out on the outcome scale though.
+
+## 11.2 - Poisson Regression
+
+Let's look at the skeleton of a Poisson model:
+
+\begin{align}
+y_i &\sim \text{Poisson}(\lambda_i)\\
+\log(\lambda_i) &= \alpha + \beta (x_i - \bar{x})\\
+\end{align}
+
+The data we will start with is that of Oceanic societies and their number of distinct tools:
+
+```{r}
+data("Kline")
+d <- Kline
+d
+```
+
+Let's look at some the assumptions we would like to bake into our model that predicts `total_tools`:
+
+- Number of tools should increase with log population
+- Islands with more contact will have more tools
+- We expect the impact of population to be moderated by contact (interactions)
+
+```{r}
+d$P <- d$population |> log() |> scale()
+d$contact_id <- ifelse(d$contact == 'high', 2, 1)
+```
+
+\begin{align}
+T_i &\sim \text{Poisson}(\lambda_i)\\
+\log(\lambda_i) &= \alpha_{\text{CID[i]}} + \beta_{\text{CID[i]}} \log P_i\\
+\alpha_j &\sim \text{To be determined} \\ 
+\beta_j &\sim \text{To be determined} \\ 
+\end{align}
+
+Let's first try to sniff out the correct priors. We know that $\lambda$ has to be positive, so any prior we put on $\alpha$ will be exponentiated. So if we choose a normal prior with $\sigma=10$, then $\lambda$ we have a lognormal outcome.
+
+```{r}
+curve(dlnorm(x, 0, 10), 0, 100, n=200)
+```
+Now, this tail is *very* long. So long in fact that the mean of the distribution above is:
+```{r}
+mean(rlnorm(1e4, 0,10))
+```
+Something to keep in mind is that the log link puts all the negative between 0 and 1 on the outcome scale. That means that if half of our prior mass is below 0, then half of the outcome will be between 0 and 1.
+
+Let's instead try something a bit more sensible:
+
+```{r}
+curve(dlnorm(x, 3, 0.5), 0, 100, n=200)
+mean(rlnorm(1e5, 3, 0.5)) |> print()
+```
+
+We now need to come up with something sensible for $\beta$. Let's again try $N(0,10)$ and see what happens to the outcome:
+
+```{r}
+N <- 100
+a <- rnorm(N, 3, 0.5)
+b <- rnorm(N, 0, 10)
+plot(NULL, xlim=c(-2,2), ylim=c(0,100))
+for (i in 1:N) curve(exp(a[i] + b[i]*x), add=T, col=grau(), xlab='x')
+```
+The pivoting around 0 is just the mean outcome for the average log population (approx. 22). What's interesting is that model thinks that just above or below the mean the outcome variable either goes to zero or blows up! Nothing in-between.
+
+Something better might be:
+
+```{r}
+N <- 100
+a <- rnorm(N, 3, 0.5)
+b <- rnorm(N, 0, 0.2)
+plot(NULL, xlim=c(-2,2), ylim=c(0,100))
+for (i in 1:N) curve(exp(a[i] + b[i]*x), add=T, col=grau(), xlab='x')
+```
+Hmm, a little too tight. Almost on relationship now between log population and tools. 
+
+Let's look at this a different way - instead of the z-score, let's keep population unstandardized:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+par(mfrow=c(1,2))
+
+x_seq <- seq(log(100), log(2e5), length.out=105)
+lambda <- vapply(x_seq, \(x) exp(a + b*x), numeric(N))
+plot(NULL, xlim=range(x_seq), ylim=range(lambda), xlab='log pop', ylab='total tools')
+for (i in 1:N) lines(x_seq, lambda[i,], col=grau(), lwd=1.5)
+
+plot(NULL, xlim=range(exp(x_seq)), ylim=range(lambda), xlab='Population', ylab='total tools')
+for (i in 1:N) lines(exp(x_seq), lambda[i,], col=grau(), lwd=1.5)
+```
+
+Notice that the left plot we be linear if we logged it. This also shows why it is usually better to log the covariate. We want to imply that there are diminishing returns for adding population at higher values. It means more to add a couple people when the population is very low than compared to when it is high.
+
+We can now go ahead and build our models. We will fit an intercept only model as well as the full model:
+
+```{r}
+#| output: false
+dat <- list(
+  T = d$total_tools,
+  P = d$P,
+  cid = d$contact_id
+)
+
+# intercept only
+m11.9 <- ulam(alist(
+  T ~ dpois(lambda),
+  log(lambda) <- a,
+  a ~ dnorm(3, 0.5)
+), data=dat, chains=4, cores=4, log_lik = TRUE)
+
+# full model
+m11.10 <- ulam(alist(
+  T ~ dpois(lambda),
+  log(lambda) <- a[cid] + b[cid]*P,
+  a[cid] ~ dnorm(3, 0.5),
+  b[cid] ~ dnorm(0, 0.2)
+
+), data=dat, chains=4, cores=4, log_lik=TRUE)
+```
+
+```{r}
+compare(m11.9, m11.10)
+```
+
+Notice that model `m11.10` actually has fewer number of effective parameters. This is surprising since we actually have 3 net new parameters in model `m11.10`. But, recall that we can really only think about effective parameters and parameter count relationship in simple linear models. We know that parameter values near boundaries produce less overfitting and therefore contribute less to effective number of parameters. This is true about bounded data too. See that a large amount of the bounds are bounded by population not able to be negative, so introducing this covariate actually reduces the number of effective parameters since it limits the parameter space inadvertently.
+
+Let's go ahead and plot the posterior predictive space:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+par(mfrow=c(1,2))
+
+K <- PSIS(m11.10, pointwise = T)$k
+plot(dat$P, dat$T, xlab='log pop (std.)', ylab='tools', col=rangi2, 
+     pch=ifelse(dat$cid == 1, 1, 16), lwd=2, cex=1+normalize(K))
+
+ns <- 100
+p_seq <- seq(-1.4, max(dat$P), length.out=ns)
+
+for (i in 1:2){
+  lambda <- link(m11.10, data=data.frame(P=p_seq, cid=i))
+  lmu <- colMeans(lambda)
+  lci <- apply(lambda, 2, PI)
+  lines(p_seq, lmu, lty=ifelse(i==1,2,1), lwd=1.5)
+  shade(lci, p_seq, xpd=T)
+}
+
+plot(d$population, d$total_tools, xlab='pop', ylab='tools',
+     col=rangi2, pch=ifelse(dat$cid == 1, 1, 16), lwd=2,
+     cex=1 + normalize(K))
+
+ns <- 100
+p_seq <- seq(-1.4, max(dat$P), length.out=ns)
+# Need to convert back to non standard (add mean and multilpy by sd of log pop)
+pop_seq <- exp(p_seq*1.53 + 9)
+
+for (i in 1:2){
+  lambda <- link(m11.10, data=data.frame(P=p_seq, cid=i))
+  lmu <- colMeans(lambda)
+  lci <- apply(lambda, 2, PI)
+  lines(pop_seq, lmu, lty=ifelse(i==1,2,1), lwd=1.5)
+  shade(lci, pop_seq, xpd=T)
+}
+```
+
+Hawaii is the point in the top right of the right graph. Clearly, because of its very large population, it is highly influential and is therefore contributing to the high $\hat{k}$.
+
+Now, notice that the trend for high contact societies (solid) is higher than that of low contact societies (dashed). But, notice that the model is allowing that past a certain population size, the relationship flips and low contact becomes higher expected than high contact. Of course, a counterfactual of Hawaii with low contact shouldn't be higher than current Hawaii. 
+
+Also, notice that sine we have given the model the intercept as a free parameter, it can be the case where will will have a non-zero number of expected tools when the population is zero. This can never be possible!
+
