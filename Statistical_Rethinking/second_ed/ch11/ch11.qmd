@@ -562,3 +562,244 @@ Now, notice that the trend for high contact societies (solid) is higher than tha
 
 Also, notice that sine we have given the model the intercept as a free parameter, it can be the case where will will have a non-zero number of expected tools when the population is zero. This can never be possible!
 
+We could combat this by coming up with an ecology informed formula. The implementation is at the top of page 356.
+
+### 11.2.2 Negative Binomial
+
+It is sometimes important to allow for extra variation beyond just assuming the variance is equal to $\lambda$. This would lead us to the Negative Binomial, or sometimes called the Gamma-Poisson. It is really just a Poisson in disguise since it is a mixture of many Poisson distributions (gamma is the mixing distribution and $\lambda$ is Gamma distributed). It is analagous to the student-t distribution which is a mixture of normals where $\sigma^2$ follows an inverse gamma.
+
+### 11.2.3 Exposure and Offset
+
+The parameter $\lambda$ is the expected number of events, but it can also be thought of as a rate. Implicitly, $\lambda = \mu/\tau$, the expected number of events $\mu$ per unit time or distance $\tau$. We can then redefine our model as:
+
+
+\begin{align}
+y_i &\sim \text{Poisson}(\lambda_i)\\
+\log \lambda_i &= \log \frac{\mu_i}{\tau_i} = \alpha + \beta x_i\\
+\end{align}
+
+We can then use some log math to show $\log \lambda_i = \log \mu_i = \log \tau_i + \alpha + \beta x_i$.
+
+Notice when $\tau_i = 1$ then we are left with the same equation we've been using the whole time. But, if $\tau_i$ does change we are effectively just adding another covariate ($\log \tau_i$) to our linear equation. BUT, there is no coefficient for this covariate - it is just a raw addition value.
+
+Our model then effectively becomes:
+
+\begin{align}
+y_i &\sim \text{Poisson}(\mu_i)\\
+\log \mu_i &= \log \tau_i + \alpha + \beta x_i\\
+\end{align}
+
+
+This $\log \tau_i$ column is also called the **offset**.
+
+Let's simulate some data:
+
+```{r}
+# monastery 1
+num_days <- 30
+y <- rpois(num_days, 1.5)
+
+# monastery 2 - measured on a weekly basis but lower daily rate
+num_weeks <- 4
+y_new <- rpois(num_weeks, 0.5*7)
+
+y_all <- c(y, y_new)
+exposure <- c(rep(1,30), rep(7,4))
+monastery <- c(rep(0,30), rep(1,4))
+d <- data.frame(y=y_all, days=exposure, monastery=monastery)
+d$log_days <- log(d$days)
+
+m11.12 <- quap(alist(
+  y ~ dpois(lambda),
+  log(lambda) <- log_days + a + b*monastery,
+  a ~ dnorm(0, 1),
+  b ~ dnorm(0, 1)
+), data=d)
+```
+
+When we extract the predictions, everything is already on the daily scale so we don't need to make any adjustments.
+
+```{r}
+post <- extract.samples(m11.12)
+lambda_old <- exp(post$a)
+lambda_new <- exp(post$a + post$b)
+
+precis(data.frame(lambda_old, lambda_new))
+```
+
+The parameters are about right with what we simulated.
+
+## 11.3 - Multinomial and categorical models
+
+When more than two types of events are possible, and the probability of each type of event is constant and unordered, then the maximum entropy distribution is a multinomial distribution. The pdf is defined as:
+
+$$P(y_1, \dots. y_K|n, p_1, \dots, p_K) = \frac{n!}{\prod_i y_i!} \prod^K_{i=1}p_i^{y_i}$$
+
+Where $K$ is the unique number of events, and $y_i$ is the number of events of type $i$ out of $n$ trials. A model with this likelihood is sometimes referred to as **categorical regression**. There are two approachs we are going to use to specify the model. The *explicit* approach uses the multinomial logit, aka the softmax as  the link:
+
+$$P(k|s_1, \dots, s_K) = \frac{\exp(s_k)}{\sum_{i=1}^K\exp(s_i)}$$
+The scores here are of course continuous. For multinomial logistic regression we need $K-1$ models. One of the outcome variables will be our pivot variable. This of course keeps us from having an overdetermined system of equations.
+
+### 11.3.1 Predictors matched to outcomes
+
+Let's simulate career choices for young adults:
+
+```{r}
+N <- 500
+income <- c(1,2,5)
+score <- 0.5*income
+p <- softmax(score)
+
+career <- rep(NA, N)
+set.seed(34302)
+for (i in 1:N) career[i] <- sample(1:3, size=1, prob=p)
+```
+
+
+Let's now fit the model with stan code:
+
+```{r}
+#| output: false
+code_m11.13 <- "
+data{
+   int N;
+   int K;
+   array[N] int career;
+   vector[K] career_income;
+}
+parameters{
+  vector[K-1] a; // intercepts
+  real<lower=0> b; // association of income with choice
+}
+model{
+  vector[K] p;
+  vector[K] s;
+  a ~ normal(0, 1);
+  b ~ normal(0, 0.5);
+  s[1] = a[1] + b*career_income[1];
+  s[2] = a[2] + b*career_income[2];
+  s[3] = 0; // pivot 
+  p = softmax(s);
+  career ~ categorical(p);
+}
+
+"
+
+dat_list <- list(N=N, K=3, career=career, career_income=income)
+m11.13 <- stan(model_code=code_m11.13, data=dat_list, chains=4, cores=4)
+```
+
+```{r}
+precis(m11.13, depth=2)
+```
+
+It is clear that `b` is positive, but we don't know how it actually effects the outcome. This is why we always need to convert to the outcome scale.
+
+Let's make a counterfactual - what would happen if we double the income of a career, specifically career 2:
+
+```{r}
+post <- extract.samples(m11.13)
+
+s1 <- with(post, a[,1] + b*income[1])
+s2_orig <- with(post, a[,2] + b*income[2])
+s2_new <- with(post, a[,2] + b*income[2]*2)
+
+p_orig <- vapply(1:length(post$b), \(x) softmax(s1[x], s2_orig[x], 0), numeric(3)) |> t()
+p_new <- vapply(1:length(post$b), \(x) softmax(s1[x], s2_new[x], 0), numeric(3)) |> t()
+precis(p_new[,2] - p_orig[,2])
+```
+So about a 5 point increase for doubling the income. Notice, that value is conditional on comparing to the other careers. 
+
+### 11.3.1 Predictors matched to observations
+
+Suppose now that we want to incorporate family income into the model. The difference here is that the predictor variable  (family income), must have the same value for each linear model.
+
+```{r}
+N <- 500
+family_income <- runif(N)
+b <- c(-2,0,2)
+
+career <- rep(NA, N)
+for (i in 1:N){
+  score <- 0.5*(1:3) + b*family_income[i]
+  p <- softmax(score)
+  career[i] <- sample(1:3, size=1, prob=p)
+}
+```
+
+Now the stan code:
+
+```{r}
+#| output: false
+code_m11.14 <- "
+data{
+   int N;
+   int K;
+   array[N] int career;
+   vector[N] family_income;
+}
+parameters{
+  vector[K-1] a; // intercepts
+  vector[K-1] b; // coeff for family income
+}
+model{
+  vector[K] p;
+  vector[K] s;
+  a ~ normal(0, 1.5);
+  b ~ normal(0, 1);
+  for (i in 1:N){
+    for (j in 1:(K-1)) s[j] = a[j] + b[j] * family_income[i];
+    s[K] = 0; // pivot
+    p = softmax(s);
+    career[i] ~ categorical(p);
+  }
+}
+
+"
+dat_list <- list(N=N, K=3, career=career, family_income=family_income)
+m11.14 <- stan(model_code=code_m11.14, data=dat_list, chains=4, cores=4)
+```
+```{r}
+precis(m11.14, depth=2)
+```
+
+Again, we can't look at those coefficients in a vacuum. We need to convert to the outcome scale.
+
+### 11.3.2 Multinomial in disguise as Poisson
+
+Let's start with a simple binomial problem, since a binomial is a special case of the multinomial:
+
+```{r}
+#| output: false
+data("UCBadmit")
+d <- UCBadmit
+
+m_binom <- quap(alist(
+  admit ~ dbinom(applications, p),
+  logit(p) <- a,
+  a ~ dnorm(0, 1.5)
+), data=d)
+
+# Poisson model of overall admission rate and rejection rate
+dat <- list(admit=d$admit, rej=d$reject)
+m_pois <- ulam(alist(
+  admit ~ dpois(lambda1),
+  rej ~ dpois(lambda2),
+  log(lambda1) <- a1,
+  log(lambda2) <- a2,
+  c(a1, a2) ~ dnorm(0, 1.5)
+), data=dat, chains=4, cores=4)
+```
+
+Let's look at the posterior means for simplicity:
+
+```{r}
+inv_logit(coef(m_binom))
+```
+
+```{r}
+k <- coef(m_pois)
+a1 <- k['a1']; a2 <- k['a2']
+exp(a1)/(exp(a2) + exp(a1)) # softmax
+```
+
