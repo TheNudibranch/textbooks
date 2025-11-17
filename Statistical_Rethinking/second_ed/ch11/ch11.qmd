@@ -803,3 +803,124 @@ a1 <- k['a1']; a2 <- k['a2']
 exp(a1)/(exp(a2) + exp(a1)) # softmax
 ```
 
+## Excersises
+
+### M5
+
+If we use the logit link for the mean of a Poisson, that would imply that we want the mean of the Poisson, $\lambda$, to be between 0 and 1. We might use this for any process that we have prior knowledge that on average produces less than 1 unit per time period. Could be some high half life decaying element where we only see emissions at very low rates. 
+
+
+### H2
+
+#### a
+For this question we will look at Bald Eagles and their attempts to steal other eagle's food sources. We want to model the probability of a successful stealing attempt from a "victim" eagle.
+
+```{r}
+library(MASS)
+data("eagles")
+d <- eagles
+d$P_ind <- (as.character(d$P) == 'L') |> as.integer()
+d$A_ind <- (as.character(d$A) == 'A') |> as.integer()
+d$V_ind <- (as.character(d$V) == 'L') |> as.integer()
+str(d)
+```
+Here $y$ is the number of successful attempts out of $n$ trials. $P$ is a dummy variable indicating if the thief eagle has a large body size. $V$ is the same, but for the victim eagle. $A$ is an indicator for if the thief eagle is an adult.
+
+Let's fit a simply Binomial GLM using the `ulam` and `quap` inference methods.
+
+```{r}
+#| output: false
+mod_list <- alist(
+  y ~ dbinom(n, p),
+  logit(p) <- alpha + b_P*P_ind + b_A*A_ind + b_V*V_ind,
+  alpha ~ dnorm(0,1.5),
+  c(b_P, b_A, b_V) ~ dnorm(0,0.5)
+)
+
+mh5_q <- quap(mod_list, data=d)
+mh5_u <- ulam(mod_list, data=d |> as.list(), cores=4, chains=4)
+```
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+mh5_q_samps <- extract.samples(mh5_q) |> as.data.frame()
+mh5_u_samps <- extract.samples(mh5_u) |> as.data.frame()
+
+par(mfrow=c(2,2))
+for (i in colnames(mh5_q_samps)){
+  dens(mh5_q_samps[[i]], main=paste0('Coef ', i), 
+       col='darkblue', lwd=2)
+  dens(mh5_u_samps[[i]], add=T, col='darkred', lwd=2)
+}
+```
+
+It looks like they are actually the same. We are okay to use `quap` for this problem.
+
+#### b
+
+Let's look at the output from `quap`:
+
+```{r}
+precis(mh5_q)
+```
+
+It looks like $P$ and $V$ have about the same effect as each other, but negate each other. $A$ is a positive effect - which makes sense since we would expect the thief being an adult to increase the success rate. 
+
+Let's look at the posterior predictive, we'll first look at the rate:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+postcheck(mh5_q)
+```
+
+Instead of the rates, let's look at the simulated counts:
+
+```{r}
+a <- sim(mh5_q)
+a_pi <- apply(a, 2, PI)
+
+plot(colMeans(a), ylim=range(a_pi, d$y), ylab='Expected Counts')
+points(d$y, col=rangi2, pch=16)
+rep(1:8) |> arrows(x0=_, y0=a_pi[2,], y1=a_pi[1,], code=0, lwd=2)
+```
+The proportion plot and the counts plot tell a similar story. In fact, if the pluses overlap with the actual value in the first plot, they are almost guaranteed to in the second. This is becuase they are the same quantities just with different normalizations. What the second plot helps to show is that we get worse predictions as the sample size increases, which is something you wouldn't immediately see in the first plot.
+
+#### c
+
+Let's add an interaction to the model between the thief's size and age:
+
+```{r}
+mod_list <- alist(
+  y ~ dbinom(n, p),
+  logit(p) <- alpha + b_P*P_ind + b_A*A_ind + b_V*V_ind + b_PA*P_ind*A_ind,
+  alpha ~ dnorm(0,1.5),
+  c(b_P, b_A, b_V, b_PA) ~ dnorm(0,0.5)
+)
+
+mh5_q2 <- quap(mod_list, data=d)
+precis(mh5_q2)
+```
+Let's see how much it helps:
+
+```{r}
+compare(mh5_q, mh5_q2, func=PSIS)
+```
+```{r}
+compare(mh5_q, mh5_q2, func=WAIC)
+```
+
+Looks like the non-interaction model is *slightly* better, but the difference between the two models is not significant.
+
+### H3
+### H6
+
+```{r}
+
+```
+
