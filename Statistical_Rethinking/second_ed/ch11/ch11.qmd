@@ -918,9 +918,177 @@ compare(mh5_q, mh5_q2, func=WAIC)
 Looks like the non-interaction model is *slightly* better, but the difference between the two models is not significant.
 
 ### H3
-### H6
+
+#### a
+
+Let's look at some salamander data:
 
 ```{r}
+data(salamanders)
+d <- salamanders
+str(d)
+```
+Here SALAMANDER is the number of salamanders in one of the 47 49-sq meter plots. PCTCOVER is the percent ground cover and FORESTAGE is the age of the forest.
+
+Let's model the relationship between forest cover and salamander density. We'll check if `quap` or `ulam` are much different.
+
+```{r}
+#| output: false
+mod_list <- alist(
+  SALAMAN ~ dpois(lam),
+  log(lam) <- alpha + b_P*PCTCOVER,
+  alpha ~ dnorm(0,0.5),
+  b_P ~ dnorm(0,0.5)
+)
+
+mh3_q <- quap(mod_list, data=d)
+mh3_u <- ulam(mod_list, data=d |> as.list(), cores=4, chains=4)
+```
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+mh3_q_samps <- extract.samples(mh3_q) |> as.data.frame()
+mh3_u_samps <- extract.samples(mh3_u) |> as.data.frame()
+
+par(mfrow=c(1,2))
+for (i in names(mh3_q_samps)){
+  dens(mh3_q_samps[[i]], lwd=2, main=paste0('Coef: ', i))
+  dens(mh3_u_samps[[i]], lwd=2, col=2, add=T)
+}
 
 ```
 
+As we saw with the previous problem, they sit right on top of each other so we are good to use `quap`.
+
+Let's look at the expected counts:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+a <- link(mh3_q)
+a_pi <- apply(a, 2, PI)
+
+plot(NULL, xlim=range(d$PCTCOVER), ylim=range(0,6, a_pi), xlab='% Cover', ylab='Expected Salamanders')
+abline(v=d$PCTCOVER, col='lightgrey')
+points(d$PCTCOVER, colMeans(a), pch=16, col=rangi2, )
+points(d$PCTCOVER, d$SALAMAN, pch=16)
+arrows(x0=d$PCTCOVER, y0=a_pi[1,], y1=a_pi[2,], code=0)
+
+```
+
+The model seems to do a good job for low percent cover, but not so well when we get to the upper end.
+
+#### b
+
+Let's try a model with FORESTAGE:
+
+```{r}
+#| output: false
+
+d$FORESTAGE_std <- (d$FORESTAGE - mean(d$FORESTAGE)) / sd(d$FORESTAGE)
+
+mod_list <- alist(
+  SALAMAN ~ dpois(lam),
+  log(lam) <- alpha + b_P*PCTCOVER + b_F*FORESTAGE_std,
+  alpha ~ dnorm(0,0.5),
+  c(b_P, b_F) ~ dnorm(0,1)
+)
+
+mh3_q2 <- quap(mod_list, data=d)
+
+mod_list <- alist(
+  SALAMAN ~ dpois(lam),
+  log(lam) <- alpha + b_P*PCTCOVER + b_F*FORESTAGE_std + b_FP*PCTCOVER*FORESTAGE_std,
+  alpha ~ dnorm(0,0.5),
+  c(b_P, b_F, b_FP) ~ dnorm(0,0.5)
+)
+mh3_q3 <- ulam(mod_list, data=d |> as.list(), cores=4, chains=4, log_lik=T)
+```
+```{r}
+precis(mh3_q2)
+```
+
+```{r}
+precis(mh3_q3)
+```
+
+
+From looking at the coefficients, we see that FORESTAGE doesn't add much as all.
+
+```{r}
+cor(d$PCTCOVER, d$FORESTAGE)
+```
+It looks like they are pretty highly correlated.
+
+```{r}
+compare(mh3_q, mh3_q2, mh3_q3, func=PSIS)
+```
+Looks like the second and third model does not add much at all. This probably has to do with FORESTAGE containing much of the same information that PCTCOVER has.
+
+
+### H6
+
+#### a
+
+Let's look at how brain size is associated with social learning:
+
+```{r}
+data("Primates301")
+d <- Primates301
+d <- d[, c('social_learning', 'brain', 'research_effort')]
+d <- na.omit(d)
+d$l_brain <- log(d$brain)
+d$l_research <- log(d$research_effort)
+```
+
+We'll use a poisson to model `social_learning` from `log(brain size)`:
+
+
+```{r}
+mh6_q <- quap(alist(
+  social_learning ~ dpois(lambda),
+  log(lambda) <- alpha + b_b*l_brain,
+  alpha ~ dnorm(0,1),
+  b_b ~ dnorm(0,0.5)
+), data=d)
+
+precis(mh6_q)
+```
+Makes sense - looks like a larger brain is associated with more social learning.
+
+#### b
+
+Now bring research effort into the mix:
+
+```{r}
+mh6_q2 <- quap(alist(
+  social_learning ~ dpois(lambda),
+  log(lambda) <- alpha + b_b*l_brain + b_r*l_research,
+  alpha ~ dnorm(0,1),
+  c(b_b, b_r) ~ dnorm(0,0.5)
+), data=d)
+
+precis(mh6_q2)
+```
+
+Wow, it looks like in the presence of research effort, the effect of brain size decreases.
+
+#### c
+
+Let's think about this causally. It makes sense that there might be more research effort, especially in the context of social learning, if the primate species in question has a larger brain size. This is what I expect the DAG to look like:
+
+
+```{r}
+dag_m8.1 <- dagitty("dag{
+  B -> R -> S
+  B -> S
+}")
+coordinates(dag_m8.1) <- list(x=c('S'=1, 'B'=0, 'R'=0.5),
+                              y=c('S'=0, 'B'=0, 'R'=-1))
+drawdag(dag_m8.1)
+```
+where B is brain size, R is research effort, and S is social learning. Notice that in the DAG their is a direct effect of brain size on social learning, but there is also a mediation pathway where brain size is mediated through research effort.
