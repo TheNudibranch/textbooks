@@ -1,0 +1,147 @@
+---
+title: "Fluent Python - Chapter 1"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+
+The Python Data Model - API we use to make objects play well with idiomatic language features. Formalizes the interface of the building block of the language itself such as sequences, functions, iterators, coroutines, classes, context managers, and so on.
+
+There are a couple of special methods that are always written with double underscores. For instance, `obj[key]` is supported by `__getitem__` special method. The interpreter actually calls `obj.__getitem__(key)`. This is sometimes referred to as *dunder methods*. Or "double under" methods.
+
+Let's look at an example of `__getitem` and `__len__`:
+
+```{python}
+import collections
+
+Card = collections.namedtuple('Card', ['rank', 'suit'])
+
+class FrenchDeck:
+  ranks = [str(n) for n in range(2, 11)] + list('JQKA')
+  suits = 'spades diamonds clubs hearts'.split()
+  
+  def __init__(self):
+    self._cards = [Card(rank, suit) for suit in self.suits 
+                                    for rank in self.ranks]
+
+  def __len__(self):
+    return len(self._cards)
+  
+  def __getitem__(self, position):
+    return self._cards[position]
+
+deck = FrenchDeck()
+```
+
+The use of `collections.namedtuple` is nothing special here. We are using it for a nice representation of a card. 
+
+
+```{python}
+beer_card = Card('7', 'diamons')
+beer_card
+```
+Let's inspect our new object:
+
+```{python}
+len(deck)
+deck[0]
+deck[-1] # Comes for free since we are indexing a list
+```
+What if we wanted to implement a method to draw a random card? We can use the `random.choice` function since it uses the `__getitem__` and `__len__` method:
+
+```{python}
+from random import choice
+
+choice(deck)
+```
+
+Now look at this: because `__getiem__` delegates to the `[]` operator, we get indexing for free:
+
+```{python}
+deck[:3]
+```
+
+We also get the `deck` object as a free iterable from the `__getitem__` method:
+
+```{python}
+for i, card in enumerate(deck):
+  print(card)
+  if i > 3: break
+
+print('next')
+cnt = 0
+for card in reversed(deck):
+  print(card)
+  cnt += 1
+  if cnt > 3: break
+```
+If a collection has no `__contains__` method, the `in` operator does a sequential scan:
+
+```{python}
+Card('Q', 'hearts') in deck
+```
+We can also write a ranking method for sorting:
+
+```{python}
+suit_values = dict(spades=3, hearts=2, diamonds=1, clubs=0)
+
+def spades_high(card):
+  # Get the ranks attribute from the `FrenchDeck` class
+  # Gets the rank (str) attribute from `card` and finds its position in
+  # `FrenchDeck.ranks`
+  rank_value = FrenchDeck.ranks.index(card.rank)
+  return rank_value * len(suit_values) + suit_values[card.suit]
+
+for i, card in enumerate(sorted(deck, key=spades_high)):
+  print(card)
+  if i > 3: break
+```
+Notice how we were able to call `FrenchDeck.ranks` above. That is because `ranks` is a class attribute and is defined when we created the class. This is good practice if we are defining classes that contain constants that won't change for different objects. If I were to run `FrenchDeck.ranks.append("Joker")` that would change the `ranks` attribute for all future object creations, but `decks.ranks.append("Joker")` will only change the `decks` attribute.
+
+We would not able to implement a shuffle method since the cards and their position cannot be changed. We will solve this in ch 13.
+
+### How special methods are used
+
+If `my_class` is a user defined class then the interpreter will go find the `my_class.__len__` method. But it is best to use the `len` function. This is because, for simpler class like `list`, `str`, etc., those values are stored in a C structure and are must faster to retrieve then if we were to call `my_class.__len__()`.
+
+The special method call is usually implicit too. For instance `for i in x:` actually invokes `iter(x)` which in turn class `x.__iter__()`. If that method is available, it is used, otherwise `__getitem__` is used, as in the `FrenchDeck` example.
+
+All that to say, you don't need to call these special methods directly.
+
+### Numeric Types
+
+Let's create a simple `Vector` class:
+
+```{python}
+import math
+
+class Vector:
+  def __init__(self, x=0, y=0):
+    self.x = x
+    self.y = y
+  
+  def __repr__(self):
+    return f'Vector({self.x!r}, {self.y!r})'
+  
+  def __abs__(self):
+    return math.hypot(self.x, self.y)
+  
+  def __bool__(self):
+    return(bool(abs(self)))
+  
+  def __add__(self, other):
+    x = self.x + other.x
+    y = self.y + other.y
+    return Vector(x, y)
+
+v1 = Vector(2, 4)
+v2 = Vector(2, 1)
+
+v1 + v2
+```
+
+
+
+
+
