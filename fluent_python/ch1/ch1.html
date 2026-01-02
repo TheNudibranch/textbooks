@@ -81,6 +81,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#how-special-methods-are-used" id="toc-how-special-methods-are-used" class="nav-link active" data-scroll-target="#how-special-methods-are-used">How special methods are used</a></li>
   <li><a href="#numeric-types" id="toc-numeric-types" class="nav-link" data-scroll-target="#numeric-types">Numeric Types</a></li>
+  <li><a href="#string-representation" id="toc-string-representation" class="nav-link" data-scroll-target="#string-representation">String Representation</a></li>
+  <li><a href="#boolean-value-of-a-customer-type" id="toc-boolean-value-of-a-customer-type" class="nav-link" data-scroll-target="#boolean-value-of-a-customer-type">Boolean Value of a Customer Type</a></li>
+  <li><a href="#collection-api" id="toc-collection-api" class="nav-link" data-scroll-target="#collection-api">Collection API</a></li>
+  <li><a href="#overview-of-special-methods" id="toc-overview-of-special-methods" class="nav-link" data-scroll-target="#overview-of-special-methods">Overview of Special Methods</a></li>
+  <li><a href="#why-len-is-not-a-method" id="toc-why-len-is-not-a-method" class="nav-link" data-scroll-target="#why-len-is-not-a-method">Why len is not a method</a></li>
   </ul>
 </nav>
 </div>
@@ -108,7 +113,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The Python Data Model - API we use to make objects play well with idiomatic language features. Formalizes the interface of the building block of the language itself such as sequences, functions, iterators, coroutines, classes, context managers, and so on.</p>
 <p>There are a couple of special methods that are always written with double underscores. For instance, <code>obj[key]</code> is supported by <code>__getitem__</code> special method. The interpreter actually calls <code>obj.__getitem__(key)</code>. This is sometimes referred to as <em>dunder methods</em>. Or “double under” methods.</p>
 <p>Let’s look at an example of <code>__getitem</code> and <code>__len__</code>:</p>
-<div id="2b83f760" class="cell" data-execution_count="1">
+<div id="fd801c7e" class="cell" data-execution_count="1">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> collections</span>
@@ -133,7 +138,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </details>
 </div>
 <p>The use of <code>collections.namedtuple</code> is nothing special here. We are using it for a nice representation of a card.</p>
-<div id="829848b4" class="cell" data-execution_count="2">
+<div id="24be366a" class="cell" data-execution_count="2">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>beer_card <span class="op">=</span> Card(<span class="st">'7'</span>, <span class="st">'diamons'</span>)</span>
@@ -144,7 +149,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Let’s inspect our new object:</p>
-<div id="a6fccf3f" class="cell" data-execution_count="3">
+<div id="456ac3bf" class="cell" data-execution_count="3">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">len</span>(deck)</span>
@@ -156,7 +161,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>What if we wanted to implement a method to draw a random card? We can use the <code>random.choice</code> function since it uses the <code>__getitem__</code> and <code>__len__</code> method:</p>
-<div id="04147141" class="cell" data-execution_count="4">
+<div id="ec6d8d72" class="cell" data-execution_count="4">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> random <span class="im">import</span> choice</span>
@@ -164,11 +169,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>choice(deck)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-display" data-execution_count="4">
-<pre><code>Card(rank='4', suit='spades')</code></pre>
+<pre><code>Card(rank='Q', suit='clubs')</code></pre>
 </div>
 </div>
 <p>Now look at this: because <code>__getiem__</code> delegates to the <code>[]</code> operator, we get indexing for free:</p>
-<div id="6377940d" class="cell" data-execution_count="5">
+<div id="96091be0" class="cell" data-execution_count="5">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>deck[:<span class="dv">3</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -180,7 +185,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>We also get the <code>deck</code> object as a free iterable from the <code>__getitem__</code> method:</p>
-<div id="7b137a4b" class="cell" data-execution_count="6">
+<div id="2a9f1587" class="cell" data-execution_count="6">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, card <span class="kw">in</span> <span class="bu">enumerate</span>(deck):</span>
@@ -208,7 +213,7 @@ Card(rank='J', suit='hearts')</code></pre>
 </div>
 </div>
 <p>If a collection has no <code>__contains__</code> method, the <code>in</code> operator does a sequential scan:</p>
-<div id="875df7b5" class="cell" data-execution_count="7">
+<div id="fcaaf995" class="cell" data-execution_count="7">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>Card(<span class="st">'Q'</span>, <span class="st">'hearts'</span>) <span class="kw">in</span> deck</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -218,7 +223,7 @@ Card(rank='J', suit='hearts')</code></pre>
 </div>
 </div>
 <p>We can also write a ranking method for sorting:</p>
-<div id="42705b98" class="cell" data-execution_count="8">
+<div id="f2f2a2c2" class="cell" data-execution_count="8">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>suit_values <span class="op">=</span> <span class="bu">dict</span>(spades<span class="op">=</span><span class="dv">3</span>, hearts<span class="op">=</span><span class="dv">2</span>, diamonds<span class="op">=</span><span class="dv">1</span>, clubs<span class="op">=</span><span class="dv">0</span>)</span>
@@ -253,7 +258,7 @@ Card(rank='3', suit='clubs')</code></pre>
 <section id="numeric-types" class="level3">
 <h3 class="anchored" data-anchor-id="numeric-types">Numeric Types</h3>
 <p>Let’s create a simple <code>Vector</code> class:</p>
-<div id="6d85a28c" class="cell" data-execution_count="9">
+<div id="fa383f65" class="cell" data-execution_count="9">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
@@ -276,16 +281,96 @@ Card(rank='3', suit='clubs')</code></pre>
 <span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> <span class="va">self</span>.x <span class="op">+</span> other.x</span>
 <span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> <span class="va">self</span>.y <span class="op">+</span> other.y</span>
 <span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Vector(x, y)</span>
-<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>v1 <span class="op">=</span> Vector(<span class="dv">2</span>, <span class="dv">4</span>)</span>
-<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>v2 <span class="op">=</span> Vector(<span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">__mul__</span>(<span class="va">self</span>, scalar):</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Vector(<span class="va">self</span>.x <span class="op">*</span> scalar, <span class="va">self</span>.y <span class="op">*</span> scalar)</span>
 <span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>v1 <span class="op">+</span> v2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>v1 <span class="op">=</span> Vector(<span class="dv">2</span>, <span class="dv">4</span>)</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>v2 <span class="op">=</span> Vector(<span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>v1 <span class="op">+</span> v2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-display" data-execution_count="9">
 <pre><code>Vector(4, 5)</code></pre>
 </div>
 </div>
+<div id="90ea4a4d" class="cell" data-execution_count="10">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="bu">abs</span>(Vector(<span class="dv">3</span>,<span class="dv">4</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="10">
+<pre><code>5.0</code></pre>
+</div>
+</div>
+<p>Notice that we don’t call any of the special methods directly. It is the interpreter that calls them behind the scenes.</p>
+</section>
+<section id="string-representation" class="level3">
+<h3 class="anchored" data-anchor-id="string-representation">String Representation</h3>
+<p>The <code>!r</code> above is used to control how python calls objects to be formatted into strings. The <code>!r</code> calls <code>repr()</code> on the backend, while <code>!s</code> would call <code>str()</code>. There is also <code>!a</code> which would call <code>ascii()</code>.</p>
+<p>When we call <code>Vector(2,2)</code> python calls <code>repr()</code> on the object. When we call <code>print(Vector(2,2))</code> python will call <code>str()</code> instead, using the <code>__str__</code> method. If no <code>__str__</code> method is available, python will call <code>__repr__</code>. It is always better to implement a <code>__repr__</code> method over a <code>__str__</code> method.</p>
+<div id="94c95cc1" class="cell" data-execution_count="11">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(Vector(<span class="dv">2</span>,<span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Vector(2, 2)</code></pre>
+</div>
+</div>
+</section>
+<section id="boolean-value-of-a-customer-type" class="level3">
+<h3 class="anchored" data-anchor-id="boolean-value-of-a-customer-type">Boolean Value of a Customer Type</h3>
+<p>When you call <code>if x: ...</code>, python will call <code>bool(x)</code> in the backend. If a user defined object has <code>__bool__</code> available, it will be called. Otherwise, python will call <code>len(x)</code> and pass that to <code>bool</code>. That is, if it has non-zero length, true will be returned. If all else fails, <strong>python will return true</strong>.</p>
+<div id="9c812d2f" class="cell" data-execution_count="12">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> Vector(<span class="dv">2</span>,<span class="dv">2</span>):</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="bu">print</span>(<span class="st">'a'</span>)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> Vector(<span class="dv">0</span>,<span class="dv">0</span>):</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="bu">print</span>(<span class="st">'b'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>a</code></pre>
+</div>
+</div>
+<p>A faster method for <code>__bool__</code> above would be:</p>
+<div id="50b1388b" class="cell" data-execution_count="13">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _new_bool():</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="bu">bool</span>(<span class="va">self</span>.x <span class="kw">or</span> <span class="va">self</span>.y)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>This is the same since <code>abs</code> always returns a non-zero number if <code>x</code> or <code>y</code> are non-zero.</p>
+</section>
+<section id="collection-api" class="level3">
+<h3 class="anchored" data-anchor-id="collection-api">Collection API</h3>
+<p>Define ABCs: abstract base classes.</p>
+<p>Each of the top ABCs have a single special method:</p>
+<ul>
+<li>Iterable: requires <code>__iter__</code></li>
+<li>Sized: requires <code>__len__</code></li>
+<li>Container: <code>__contains__</code></li>
+<li>Sequence: <code>__getitem__</code></li>
+<li>Mapping: <code>__getiem__</code>
+<ul>
+<li>Refer to page 14 for more examples</li>
+</ul></li>
+<li>Set: <code>isdisjoint</code></li>
+</ul>
+<p>There is also a <code>collections.abc</code> module to aid in definitions. But python does not require explicit inheritance. For example, any class with <code>__len__</code> satisfies the Sized interface from <code>collections</code>.</p>
+<p>Only Sequence is Reversible because sequences support arbitrary ordering. Mappings (dictionaries) and Sets do not.</p>
+<p>There will be more on all of this in chapter 13.</p>
+</section>
+<section id="overview-of-special-methods" class="level3">
+<h3 class="anchored" data-anchor-id="overview-of-special-methods">Overview of Special Methods</h3>
+<p>Most of the <em>80</em> special methods (excluding some math operations) are shown on page 16. Most will be covered in some detail throughout the book.</p>
+</section>
+<section id="why-len-is-not-a-method" class="level3">
+<h3 class="anchored" data-anchor-id="why-len-is-not-a-method">Why len is not a method</h3>
+<p>Recall that <code>len</code> runs very fast on built in types because it is simply a read operation for the C struct defining the object. I get the feeling that a lot of people are uncomfortable with this from a purely OOP perspective, since it behaves more functionally. But it if you look at the programming language ABC, this was common done as well use a <code>#</code> infix operator.</p>
 </section>
 
 </main>

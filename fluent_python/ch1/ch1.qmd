@@ -134,14 +134,75 @@ class Vector:
     x = self.x + other.x
     y = self.y + other.y
     return Vector(x, y)
+  
+  def __mul__(self, scalar):
+    return Vector(self.x * scalar, self.y * scalar)
 
 v1 = Vector(2, 4)
 v2 = Vector(2, 1)
 
 v1 + v2
 ```
+```{python}
+abs(Vector(3,4))
+```
+Notice that we don't call any of the special methods directly. It is the interpreter that calls them behind the scenes.
 
+### String Representation
 
+The `!r` above is used to control how python calls objects to be formatted into strings. The `!r` calls `repr()` on the backend, while `!s` would call `str()`. There is also `!a` which would call `ascii()`.
 
+When we call `Vector(2,2)` python calls `repr()` on the object. When we call `print(Vector(2,2))` python will call `str()` instead, using the `__str__` method. If no `__str__` method is available, python will call `__repr__`. It is always better to implement a `__repr__` method over a `__str__` method.
 
+```{python}
+print(Vector(2,2))
+```
+
+### Boolean Value of a Customer Type
+
+When you call `if x: ...`, python will call `bool(x)` in the backend. If a user defined object has `__bool__` available, it will be called. Otherwise, python will call `len(x)` and pass that to `bool`. That is, if it has non-zero length, true will be returned. If all else fails, **python will return true**.
+
+```{python}
+if Vector(2,2):
+  print('a')
+
+if Vector(0,0):
+  print('b')
+```
+
+A faster method for `__bool__` above would be:
+```{python}
+def _new_bool():
+  return bool(self.x or self.y)
+```
+
+This is the same since `abs` always returns a non-zero number if `x` or `y` are non-zero.
+
+### Collection API
+
+Define ABCs: abstract base classes.
+
+Each of the top ABCs have a single special method:
+
+- Iterable: requires `__iter__`
+- Sized: requires `__len__`
+- Container: `__contains__`
+- Sequence: `__getitem__`
+- Mapping: `__getiem__`
+  - Refer to page 14 for more examples
+- Set: `isdisjoint`
+
+There is also a `collections.abc` module to aid in definitions. But python does not require explicit inheritance. For example, any class with `__len__` satisfies the Sized interface from `collections`.
+
+Only Sequence is Reversible because sequences support arbitrary ordering. Mappings (dictionaries) and Sets do not.
+
+There will be more on all of this in chapter 13.
+
+### Overview of Special Methods
+
+Most of the *80* special methods (excluding some math operations) are shown on page 16. Most will be covered in some detail throughout the book.
+
+### Why len is not a method
+
+Recall that `len` runs very fast on built in types because it is simply a read operation for the C struct defining the object. I get the feeling that a lot of people are uncomfortable with this from a purely OOP perspective, since it behaves more functionally. But it if you look at the programming language ABC, this was common done as well use a `#` infix operator.
 
