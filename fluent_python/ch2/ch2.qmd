@@ -1,0 +1,185 @@
+---
+title: "Fluent Python - Chapter 2"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+# An Array of Sequences
+
+Chapter focuses on Sequences in general and can be applied to the familiar `list` all the way to `str` and `byte` types. List, tuples, arrays, and queues will be discussed here.
+
+We will cover:
+
+- List comprehension and basic generator expressions
+- Tuples as records versus tuples as immutable lists
+- Sequence unpacking and sequence patterns
+- Reading and writing to slices
+- Specialized sequence types
+  - Like arrays and queues
+
+There was a small section that had to be removed to meet page requirements. It is now here: [Managing Ordered Sequences with Bisect](https://www.fluentpython.com/extra/ordered-sequences-with-bisect/)
+  
+### Built-in Sequences
+
+Sequence types built in C:
+
+- Container sequences
+  - Can hold items of different types
+  - Includes `list`, `tuple`, and `collection.queue`
+  - Holds references to the objects it contains
+- Flat Sequences
+  - Hold items of one simple type:
+  - `str`, `bytes`, `array.array`
+  - Stores contents in its own memory space
+  
+ Flat sequences are more compact, but they are limited to holding primitive machine values.
+ 
+ Every python object in memory has a header with metadata. For a `float`, there are two metadata fields and a value field:
+ 
+ - `ob_refcnt`: The objects reference count
+  - This is the number of objects that are linked to this memory address
+  - For instance, if we say `a=1` then `b=a`, there will be two references to the object `1`
+    - It is actually not that simple, but that is a clean way of thinking about it
+  - We can use `sys.getrefcount(b)` to help retrieve this, but again the number is not what we expect
+ - `ob_type`: A pointer to the object's type
+ - `ob_fval`: A C `double` holding the value of the `float`
+ 
+On 64-bit python, each of the above field takes 8 bytes. That is why an array of floats is more compact than a tuple of floats. For an array, there is only one object holding the raw values for the floats. For a tuple, there is a separate object for each float in the tuple.
+ 
+We can also groups sequences by mutability:
+
+- Mutable sequences
+  - `list`, `bytearray`, `array.array`, and `collections.queue`
+- Immutable sequences
+  - `tuple`, `str`, `bytes`
+
+Recall, the big difference is that mutable objects can have their values change after declaration. i.e. you can change the value of an element of a list but can do that in a tuple:
+
+```{python}
+a = [1,2,3]
+a[0] = 4
+print(a)
+
+b = (1,2,3)
+try:
+  b[0] = 4
+except Exception as e:
+  print(e)
+print(b)
+```
+
+
+Note: mutable sequences inherit all methods from immutable sequences and implement several  additional methods. The full list is on page 24. 
+
+```{python}
+from collections import abc
+
+print(issubclass(tuple, abc.Sequence))
+print(issubclass(tuple, abc.MutableSequence))
+print(issubclass(list, abc.MutableSequence))
+```
+
+### List Comprehension and Generator Expressions
+
+It's the classic:
+
+```{python}
+symbols = '$c$ao'
+
+codes = []
+
+for symbol in symbols:
+  codes.append(ord(symbol))
+
+# equivalent:
+
+codes = [ord(symbol) for symbol in symbols]
+codes
+```
+Coding tip: line breaks are ignored when using `[]`, `()`, or `{}`. So you don't need to use `\` for multiline (which actually breaks if there is a space after the `\`). Also, a trailing comma is ignored when creating a series of comma separate values, so it is best practice to include it even at the end.
+
+
+List comprehension, generator expressions, `set` and `dict` comprehension has a local scope to hold variables assigned in the `for` clause. However, variables assigned with the "Walrus Operator" remain accessible after those comprehension or expressions return - unlike local variables in a function. PEP 572 defines the scope of the target of `:=` as the enclosing function, unless there is a `global` or `nonlocal` declaration for that target.
+
+```{python}
+x = 'ABC'
+codes = [ord(x) for x in x]
+print(x)
+
+codes = [last := ord(c) for c in x]
+print(codes)
+print(last)
+try:
+  print(c)
+except Exception as e:
+  print(e)
+```
+A little more about the Walrus Operator: it both assigns and returns the variable assigned. This is similar to how you can do `if (cnt <- cnt + 1) ` in R and get the `cnt` checked in the `if` statement, because R will always sliently return the object of an assigment.
+
+```{python}
+#| eval: false
+
+chunk = file.read(1024)
+while chunk:
+    process(chunk)
+    chunk = file.read(1024)
+    
+while (chunk := file.read(1024)):
+    process(chunk)
+```
+
+A simpler one:
+
+```{python}
+try:
+  print(a = 2)
+except Exception as e:
+  print(e)
+
+print(a := 2)
+```
+
+We can do similar comprehensions with `filter` and `map`, but readability suffers.
+
+### Listcomps versus map and filter
+
+Listcomps do everything `map` and `filter` functions can do, without the challenging lambda functions:
+
+```{python}
+asc = [ord(s) for s in symbols if ord(s) > 40]
+print(asc)
+
+asc = list(
+  filter(
+    lambda c: c > 40,
+    map(ord, symbols)
+  )
+)
+asc
+```
+
+More on `filter` and `map` in chapter 7.
+
+### Cartesian Products
+
+```{python}
+colors = ['black', 'white']
+sizes = ['S', 'M', 'L']
+tshirts = [(color, size) for color in colors
+                         for size in sizes]
+print(tshirts)
+print(len(colors)*len(sizes))
+print(len(tshirts))
+
+### Same as
+# for color in colors:
+#   for size in sizes:
+#     print((color, sizes))
+```
+
+Listcomps are a "one-trick pony". For generating data, it is best to use a genexp. 
+
+### Generator Expressions
+
+A genexp can save memory because it yields items one by one using the iterator protocol instead of building a whole list just to feed another constructor. Genexp use the same syntax as listcomps but use `()` instead of `[]`. Another note is that genexp are lazy and only evaluate when called. Listcomps are eager and exectue right away. Genexp can also be useful if the sequence generated is potentially infinite.
