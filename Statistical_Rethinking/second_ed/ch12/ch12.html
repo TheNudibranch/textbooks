@@ -116,6 +116,10 @@ window.Quarto = {
   <li><a href="#over-dispersion-entropy-and-information-criteria" id="toc-over-dispersion-entropy-and-information-criteria" class="nav-link" data-scroll-target="#over-dispersion-entropy-and-information-criteria">Over-dispersion, entropy, and information criteria</a></li>
   </ul></li>
   <li><a href="#zero-inflated-outcomes" id="toc-zero-inflated-outcomes" class="nav-link" data-scroll-target="#zero-inflated-outcomes">12.2 - Zero-inflated outcomes</a></li>
+  <li><a href="#ordered-categorical-outcomes" id="toc-ordered-categorical-outcomes" class="nav-link" data-scroll-target="#ordered-categorical-outcomes">12.3 Ordered categorical outcomes</a>
+  <ul class="collapse">
+  <li><a href="#adding-predictors" id="toc-adding-predictors" class="nav-link" data-scroll-target="#adding-predictors">Adding predictors</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -211,12 +215,12 @@ A_i &amp;\sim \text{BetaBinomial}(N_i, \bar{p}_i, \theta) \\
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(post, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>            mean        sd       5.5%     94.5%   histogram
-a[1]  -0.4347256 0.3968770 -1.0746959 0.1811984     ▁▁▁▇▇▂▁
-a[2]  -0.3209208 0.4230386 -0.9922175 0.3725505     ▁▁▅▇▃▁▁
-phi    1.0196774 0.7771234  0.0890295 2.4890899 ▇▇▅▂▁▁▁▁▁▁▁
-theta  3.0196774 0.7771234  2.0890252 4.4890899 ▇▇▅▂▁▁▁▁▁▁▁
-da    -0.1138047 0.5693842 -1.0064607 0.8063047    ▁▁▃▇▇▂▁▁</code></pre>
+<pre><code>            mean        sd        5.5%     94.5%      histogram
+a[1]  -0.4526197 0.4040618 -1.10715270 0.2173411 ▁▁▁▂▃▇▇▇▅▂▂▁▁▁
+a[2]  -0.3323588 0.4284071 -1.01200225 0.3524162       ▁▁▁▃▇▂▁▁
+phi    1.0492491 0.8527719  0.07450939 2.5984974  ▇▇▃▃▂▁▁▁▁▁▁▁▁
+theta  3.0492491 0.8527719  2.07450830 4.5984974  ▇▇▃▃▂▁▁▁▁▁▁▁▁
+da    -0.1202609 0.5954437 -1.07163832 0.8156154     ▁▁▁▅▇▇▂▁▁▁</code></pre>
 </div>
 </div>
 <p>Look at <code>da</code> the difference in log-odds between the male and female effects. We see that we are uncertain about the difference and cannot rule out zero. This is different from the naive conclusion that we came to in the last chapter before we took into accounting the confounding variables. The difference here is that we are implicitly giving an intercept term to <em>every row</em> in the data set through the use of the beta binomial model.</p>
@@ -390,9 +394,9 @@ y_i &amp;\sim \text{ZIPoisson}(p_i, \lambda_i) \\
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m12<span class="fl">.3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>         mean         sd      5.5%       94.5%     rhat ess_bulk
-ap -1.7091272 0.49846056 -2.603212 -1.04709570 1.004451 631.0934
-al -0.1213434 0.09017381 -0.265725  0.02798335 1.004578 686.9868</code></pre>
+<pre><code>           mean         sd       5.5%      94.5%     rhat ess_bulk
+ap -1.225918216 0.36136074 -1.8569717 -0.7390707 1.003162 521.8011
+al -0.003668797 0.09235508 -0.1571587  0.1387253 1.002991 544.5795</code></pre>
 </div>
 </div>
 <p>Convert back to the natural scale:</p>
@@ -403,17 +407,245 @@ al -0.1213434 0.09017381 -0.265725  0.02798335 1.004578 686.9868</code></pre>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">inv_logit</span>(post<span class="sc">$</span>ap))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.1635415</code></pre>
+<pre><code>[1] 0.2329385</code></pre>
 </div>
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">exp</span>(post<span class="sc">$</span>al))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.889335</code></pre>
+<pre><code>[1] 1.000575</code></pre>
 </div>
 </div>
 <p>Notice we get a nice estimate for the proportion of days they drink, but we are unable to say <em>which</em> days the monks drank.</p>
+</section>
+<section id="ordered-categorical-outcomes" class="level2">
+<h2 class="anchored" data-anchor-id="ordered-categorical-outcomes">12.3 Ordered categorical outcomes</h2>
+<ul>
+<li>For likert data, it is not the same to move a person from a 1 to a 2, that is from a 5 to a 6.
+<ul>
+<li>Those jumps might be different</li>
+</ul></li>
+<li>To model this we’ll use a cumulative link function</li>
+</ul>
+<p>For a little philosophy, consider the following principles:</p>
+<ul>
+<li>The action principle: harm caused by an action is morally worse than equivalent harm caused by omission</li>
+<li>The intention principle: Harm intended as the means to a goal is morally worse than equivalent harm foreseen as the side effect of a goal</li>
+<li>The contact principle: Using physical contact to cause harm to a victim is morally worse than causing equivalent harm to a victim without using physical contact</li>
+</ul>
+<p>Consider a version of the trolley problem that contains the action and intention principle. For this, it is the usual “pull the lever to save 5, but you kill one”. But in this version, pulling the lever causes the one person to fall onto the tracks in front of the five. Therefore slowing down the train (the intention principle).</p>
+<p>Let’s look at some data where we see how people respond to this sort of dilemma.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"Trolley"</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> Trolley</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>In the data set there are 331 unique individuals. Responses are integers from 1 to 7, indicating how morally permissible the action was.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">simplehist</span>(d<span class="sc">$</span>response, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">7</span>), <span class="at">xlab=</span><span class="st">'response'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch12_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Here we will be looking at the cumulative log odds. The reason we use the log odds is so we can translate our constrain 0-1 scale to the full reals:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>p_cum <span class="ot">&lt;-</span> (<span class="fu">table</span>(d<span class="sc">$</span>response)<span class="sc">/</span><span class="fu">nrow</span>(d)) <span class="sc">%&gt;%</span> <span class="fu">cumsum</span>()</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>logit <span class="ot">&lt;-</span> \(x) <span class="fu">log</span>(x <span class="sc">/</span> (<span class="dv">1</span><span class="sc">-</span>x))</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>log_p_cum <span class="ot">&lt;-</span> <span class="fu">logit</span>(p_cum)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">7</span>, p_cum, <span class="at">type=</span><span class="st">'b'</span>, <span class="at">main=</span><span class="st">'Cuml P'</span>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">7</span>, log_p_cum, <span class="at">type=</span><span class="st">'b'</span>, <span class="at">main=</span><span class="st">'log odds cuml p'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch12_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>To model this, we need an intercept for every unique outcome <span class="math inline">\(k\)</span></p>
+<p><span class="math display">\[\log \frac{p(y_i\leq k)}{1-p(y_i\leq k)} = \alpha_k\]</span></p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>log_p_cum <span class="sc">|&gt;</span> <span class="fu">round</span>(<span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>    1     2     3     4     5     6     7 
+-1.92 -1.27 -0.72  0.25  0.89  1.77   Inf </code></pre>
+</div>
+</div>
+<p>Notice that since the total probability for the last category is always one, we don’t have to model a specific intercept for it. So we only have <span class="math inline">\(K-1\)</span> free parameters.</p>
+<p>For the likelihood of the data, we have:</p>
+<p><span class="math display">\[p_k = p(y_i=k)=p(y_i\leq k)-p(y_i\leq k-1)\]</span></p>
+<p>We can write the total model as:</p>
+<p><span class="math display">\[\begin{align}
+R_i &amp;\sim \text{Ordered-logit}(\phi_i, \kappa) \\
+\phi_i &amp;= 0 \\
+\kappa_k &amp;\sim \text{Normal}(0,1.5)
+\end{align}\]</span></p>
+<p>We can define it in terms of the categorical likelihood only as:</p>
+<p><span class="math display">\[\begin{align}
+R_i &amp;\sim \text{Categorical}(\textbf{p}) \\
+p_1 &amp;= q_1 \\
+p_k &amp;= q_k - q_{k-1} \hspace{5mm} \text{for} K&gt;k&gt;1 \\
+p_K &amp;= 1 - q_{k-1} \\
+\text{logit}(q_k) &amp;= \kappa_k - \phi_i \\
+\phi_i &amp;= \text{terms of linear model} \\
+\kappa_k &amp;\sim \text{Normal}(0, 1.5)
+\end{align}\]</span></p>
+<p>Notice that the Ordered-logit is really just a Categorical distribution takes a probability vector for the different responses. Where the response probability has been derived from the cumulative log odds. Also, for this instance we have <span class="math inline">\(\kappa\)</span> as the intercept vector.</p>
+<p>Also, in the original model, we set <span class="math inline">\(\phi = 0\)</span>. This encodes that there is no observation level terms - all explanatory power comes from the intercept terms.</p>
+<p>Let’s go ahead and fit this model:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>m12<span class="fl">.4</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  R <span class="sc">~</span> <span class="fu">dordlogit</span>(<span class="dv">0</span>, cutpoints),</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  cutpoints <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">1.5</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span><span class="fu">list</span>(<span class="at">R=</span>d<span class="sc">$</span>response), <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">iter=</span><span class="dv">300</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>You can still use <code>quap</code>, but you need to give initial values:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>init_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="sc">-</span><span class="dv">2</span><span class="sc">:</span><span class="dv">2</span>, I) <span class="sc">%&gt;%</span> <span class="fu">append</span>(<span class="fl">2.5</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(init_list) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">'a'</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>m12<span class="fl">.4</span>q <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  response <span class="sc">~</span> <span class="fu">dordlogit</span>(<span class="dv">0</span>, <span class="fu">c</span>(a1, a2, a3, a4, a5, a6)),</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  cutpoints <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">1.5</span>)</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>d, <span class="at">start=</span>init_list)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Let’s look at the posterior for <code>m12.4</code>. Recall this is on the cumulative log-odds scale:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m12<span class="fl">.4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>6 vector or matrix parameters hidden. Use depth=2 to show them.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] mean     sd       5.5%     94.5%    rhat     ess_bulk
+&lt;0 rows&gt; (or 0-length row.names)</code></pre>
+</div>
+</div>
+<p>We can recover the cumulative probabilities by:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(m12<span class="fl">.4</span>) <span class="sc">|&gt;</span> <span class="fu">inv_logit</span>() <span class="sc">|&gt;</span> <span class="fu">round</span>(<span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>cutpoints[1] cutpoints[2] cutpoints[3] cutpoints[4] cutpoints[5] cutpoints[6] 
+       0.128        0.220        0.328        0.562        0.709        0.854 </code></pre>
+</div>
+</div>
+<p>These are the same values that we computed earlier, but now with a uncertainty interval.</p>
+<section id="adding-predictors" class="level3">
+<h3 class="anchored" data-anchor-id="adding-predictors">Adding predictors</h3>
+<p>Now we let <span class="math inline">\(\phi_i = \beta x_i\)</span>. Notice from our definition above that our log cumulative odds is <span class="math inline">\(\kappa_k - \phi_i\)</span>.</p>
+<p>Here is something counter intuitive - we are subtracting <span class="math inline">\(\phi_i\)</span> and that is actually <em>increasing</em> out output. A quick example:</p>
+<p>Here is the individual probabilities:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>pk <span class="ot">&lt;-</span> <span class="fu">dordlogit</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">7</span>, <span class="dv">0</span>, <span class="fu">coef</span>(m12<span class="fl">.4</span>))</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(pk,<span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.13 0.09 0.11 0.23 0.15 0.15 0.15</code></pre>
+</div>
+</div>
+<p>If we weight them by the possible outcomes, we get the average response:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">7</span><span class="sc">*</span>pk)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 4.198633</code></pre>
+</div>
+</div>
+<p>Now, let’s subtract 0.5 from the coefs before calculating <code>pk</code>:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>pk <span class="ot">&lt;-</span> <span class="fu">dordlogit</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">7</span>, <span class="dv">0</span>, <span class="fu">coef</span>(m12<span class="fl">.4</span>) <span class="sc">-</span> <span class="fl">0.5</span>)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">7</span><span class="sc">*</span>pk)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 4.729117</code></pre>
+</div>
+</div>
+<p>It actually went up! This is because the linear term <span class="math inline">\(\phi\)</span> is not changing the underlying latent distribution, but instead the cutpoints. Let’s see what is actually happening under the hood. Also, technically the latent distribution is a logistic distribution, but it is easier to code up the normal:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(dnorm, <span class="sc">-</span><span class="dv">4</span>, <span class="dv">4</span>, <span class="at">lwd=</span><span class="dv">3</span>)</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Original Cutpoint position'</span>)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>cut_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">8</span>, <span class="fu">unlist</span>(init_list), <span class="dv">8</span>)</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(<span class="fu">length</span>(init_list) <span class="sc">+</span> <span class="dv">1</span>)) {</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">seq</span>(cut_vec[i], cut_vec[i<span class="sc">+</span><span class="dv">1</span>], <span class="at">length.out=</span><span class="dv">100</span>)</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">polygon</span>(<span class="at">x=</span><span class="fu">c</span>(s, <span class="fu">rev</span>(s)), <span class="at">y=</span><span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">0</span>,<span class="fu">length</span>(s)), <span class="fu">dnorm</span>(<span class="fu">rev</span>(s))), <span class="at">col=</span>i)</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v=</span>cut_vec[[i<span class="sc">+</span><span class="dv">1</span>]], <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">2</span>, <span class="at">col=</span>i)</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(dnorm, <span class="sc">-</span><span class="dv">4</span>, <span class="dv">4</span>, <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">add=</span>T)</span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>new_cuts <span class="ot">&lt;-</span> <span class="fu">unlist</span>(init_list) <span class="sc">-</span> <span class="fl">1.5</span></span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(dnorm, <span class="sc">-</span><span class="dv">4</span>, <span class="dv">4</span>, <span class="at">lwd=</span><span class="dv">3</span>)</span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'New Cutpoints'</span>)</span>
+<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a>cut_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">8</span>, new_cuts, <span class="dv">8</span>)</span>
+<span id="cb36-16"><a href="#cb36-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(<span class="fu">length</span>(new_cuts) <span class="sc">+</span> <span class="dv">1</span>)) {</span>
+<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">seq</span>(cut_vec[i], cut_vec[i<span class="sc">+</span><span class="dv">1</span>], <span class="at">length.out=</span><span class="dv">100</span>)</span>
+<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">polygon</span>(<span class="at">x=</span><span class="fu">c</span>(s, <span class="fu">rev</span>(s)), <span class="at">y=</span><span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">0</span>,<span class="fu">length</span>(s)), <span class="fu">dnorm</span>(<span class="fu">rev</span>(s))), <span class="at">col=</span>i)</span>
+<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v=</span>new_cuts[i<span class="sc">+</span><span class="dv">1</span>], <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb36-20"><a href="#cb36-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb36-21"><a href="#cb36-21" aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(dnorm, <span class="sc">-</span><span class="dv">4</span>, <span class="dv">4</span>, <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">add=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch12_files/figure-html/unnamed-chunk-24-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Notice that by shifting the cutpoints down, we are actually allocating more probability to the higher categories.</p>
+<p>Looking back at our trolley data, we need to encode the information about the various principles. One key feature to note is that the contact principle, necessarily requires the action principle. With this we have the following cases:</p>
+<ul>
+<li>No Action, contact, or intention</li>
+<li>action</li>
+<li>contact</li>
+<li>intention</li>
+<li>action and intention</li>
+<li>contact and intention</li>
+</ul>
+<p>We don’t have an interaction between action and contact because two coefficients (with intercepts for 0 case) is enough to encode all the possible (3) cases.</p>
+<p>The equation we will use looks like:</p>
+<p><span class="math display">\[\begin{align}
+\log \frac{p(y_i \leq k)}{1 - p(y_i \leq k)} &amp;= \alpha_k - \phi_i \\
+\phi_i &amp;= \beta_A A_i + \beta_C C_i + B_{I,i} I_i \\
+B_{I, i} &amp;= \beta_I + \beta_{IA} A_i + \beta_{IC} C_i
+\end{align}\]</span></p>
+</section>
 </section>
 
 </main>

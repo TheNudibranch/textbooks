@@ -243,3 +243,222 @@ mean(exp(post$al))
 
 Notice we get a nice estimate for the proportion of days they drink, but we are unable to say *which* days the monks drank.
 
+## 12.3 Ordered categorical outcomes
+
+- For likert data, it is not the same to move a person from a 1 to a 2, that is from a 5 to a 6. 
+  - Those jumps might be different 
+- To model this we'll use a cumulative link function
+
+For a little philosophy, consider the following principles:
+
+- The action principle: harm caused by an action is morally worse than equivalent harm caused by omission
+- The intention principle: Harm intended as the means to a goal is morally worse than equivalent harm foreseen as the side effect of a goal
+- The contact principle: Using physical contact to cause harm to a victim is morally worse than causing equivalent harm to a victim without using physical contact 
+
+Consider a version of the trolley problem that contains the action and intention principle. For this, it is the usual "pull the lever to save 5, but you kill one". But in this version, pulling the lever causes the one person to fall onto the tracks in front of the five. Therefore slowing down the train (the intention principle).
+
+Let's look at some data where we see how people respond to this sort of dilemma.
+
+```{r}
+data("Trolley")
+d <- Trolley
+```
+
+In the data set there are 331 unique individuals. Responses are integers from 1 to 7, indicating how morally permissible the action was.
+
+```{r}
+simplehist(d$response, xlim=c(1,7), xlab='response')
+```
+
+Here we will be looking at the cumulative log odds. The reason we use the log odds is so we can translate our constrain 0-1 scale to the full reals:
+
+
+```{r}
+p_cum <- (table(d$response)/nrow(d)) %>% cumsum()
+logit <- \(x) log(x / (1-x))
+log_p_cum <- logit(p_cum)
+par(mfrow=c(1,2))
+plot(1:7, p_cum, type='b', main='Cuml P')
+plot(1:7, log_p_cum, type='b', main='log odds cuml p')
+```
+To model this, we need an intercept for every unique outcome $k$
+
+$$\log \frac{p(y_i\leq k)}{1-p(y_i\leq k)} = \alpha_k$$
+
+```{r}
+log_p_cum |> round(2)
+```
+
+Notice that since the total probability for the last category is always one, we don't have to model a specific intercept for it. So we only have $K-1$ free parameters.
+
+For the likelihood of the data, we have:
+
+$$p_k = p(y_i=k)=p(y_i\leq k)-p(y_i\leq k-1)$$
+
+We can write the total model as:
+
+\begin{align}
+R_i &\sim \text{Ordered-logit}(\phi_i, \kappa) \\
+\phi_i &= 0 \\
+\kappa_k &\sim \text{Normal}(0,1.5)
+\end{align}
+
+We can define it in terms of the categorical likelihood only as:
+
+
+\begin{align}
+R_i &\sim \text{Categorical}(\textbf{p}) \\
+p_1 &= q_1 \\
+p_k &= q_k - q_{k-1} \hspace{5mm} \text{for} K>k>1 \\
+p_K &= 1 - q_{k-1} \\
+\text{logit}(q_k) &= \kappa_k - \phi_i \\
+\phi_i &= \text{terms of linear model} \\
+\kappa_k &\sim \text{Normal}(0, 1.5)
+\end{align}
+
+Notice that the Ordered-logit is really just a Categorical distribution takes a probability vector for the different responses. Where the response probability has been derived from the cumulative log odds. Also, for this instance we have $\kappa$ as the intercept vector.
+
+Also, in the original model, we set $\phi = 0$. This encodes that there is no observation level terms - all explanatory power comes from the intercept terms.
+
+Let's go ahead and fit this model:
+
+```{r}
+#| output: false
+
+m12.4 <- ulam(alist(
+  R ~ dordlogit(0, cutpoints),
+  cutpoints ~ dnorm(0, 1.5)
+), data=list(R=d$response), chains=4, cores=4, iter=300)
+```
+
+
+You can still use `quap`, but you need to give initial values:
+
+```{r}
+init_list <- lapply(-2:2, I) %>% append(2.5)
+names(init_list) <- paste0('a', 1:6)
+
+m12.4q <- quap(alist(
+  response ~ dordlogit(0, c(a1, a2, a3, a4, a5, a6)),
+  cutpoints ~ dnorm(0, 1.5)
+), data=d, start=init_list)
+```
+
+Let's look at the posterior for `m12.4`. Recall this is on the cumulative log-odds scale:
+
+```{r}
+precis(m12.4)
+```
+
+We can recover the cumulative probabilities by:
+
+```{r}
+coef(m12.4) |> inv_logit() |> round(3)
+```
+These are the same values that we computed earlier, but now with a uncertainty interval.
+
+
+### Adding predictors
+
+Now we let $\phi_i = \beta x_i$. Notice from our definition above that our log cumulative odds is $\kappa_k - \phi_i$.
+
+Here is something counter intuitive - we are subtracting $\phi_i$ and that is actually *increasing* out output. A quick example:
+
+Here is the individual probabilities:
+```{r}
+pk <- dordlogit(1:7, 0, coef(m12.4))
+round(pk,2)
+```
+
+If we weight them by the possible outcomes, we get the average response:
+
+```{r}
+sum(1:7*pk)
+```
+Now, let's subtract 0.5 from the coefs before calculating `pk`:
+
+```{r}
+pk <- dordlogit(1:7, 0, coef(m12.4) - 0.5)
+sum(1:7*pk)
+```
+
+It actually went up! This is because the linear term $\phi$ is not changing the underlying latent distribution, but instead the cutpoints. Let's see what is actually happening under the hood. Also, technically the latent distribution is a logistic distribution, but it is easier to code up the normal:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+#| 
+par(mfrow=c(1,2))
+curve(dnorm, -4, 4, lwd=3)
+title('Original Cutpoint position')
+cut_vec <- c(-8, unlist(init_list), 8)
+for (i in 1:(length(init_list) + 1)) {
+  s <- seq(cut_vec[i], cut_vec[i+1], length.out=100)
+  polygon(x=c(s, rev(s)), y=c(rep(0,length(s)), dnorm(rev(s))), col=i)
+  abline(v=cut_vec[[i+1]], lwd=2, lty=2)
+}
+curve(dnorm, -4, 4, lwd=3, add=T)
+
+new_cuts <- unlist(init_list) - 1.5
+curve(dnorm, -4, 4, lwd=3)
+title('New Cutpoints')
+cut_vec <- c(-8, new_cuts, 8)
+for (i in 1:(length(new_cuts) + 1)) {
+  s <- seq(cut_vec[i], cut_vec[i+1], length.out=100)
+  polygon(x=c(s, rev(s)), y=c(rep(0,length(s)), dnorm(rev(s))), col=i)
+  abline(v=new_cuts[i+1], lwd=2, lty=2)
+}
+curve(dnorm, -4, 4, lwd=3, add=T)
+```
+
+Notice that by shifting the cutpoints down, we are actually allocating more probability to the higher categories.
+
+Looking back at our trolley data, we need to encode the information about the various principles. One key feature to note is that the contact principle, necessarily requires the action principle. With this we have the following cases:
+
+- No Action, contact, or intention
+- action
+- contact
+- intention
+- action and intention
+- contact and intention
+
+We don't have an interaction between action and contact because two coefficients (with intercepts for 0 case) is enough to encode all the possible (3) cases.
+
+The equation we will use looks like:
+
+\begin{align}
+\log \frac{p(y_i \leq k)}{1 - p(y_i \leq k)} &= \alpha_k - \phi_i \\
+\phi_i &= \beta_A A_i + \beta_C C_i + B_{I,i} I_i \\
+B_{I, i} &= \beta_I + \beta_{IA} A_i + \beta_{IC} C_i
+\end{align}
+
+Now let's fit the model:
+
+```{r}
+#| output: false
+dat <- list(
+  R = d$response,
+  A = d$action,
+  I = d$intention,
+  C = d$contact
+)
+
+m12.5 <- ulam(alist(
+  R ~ dordlogit(phi, cutpoints),
+  phi <- bA*A + bC*C + BI*I,
+  BI <- bI + bIA*A + bIC*C,
+  c(bA, bC, bI, bIA, bIC) ~ dnorm(0,0.5),
+  cutpoints ~ dnorm(0,1.5)
+), data=dat, chains=4, cores=4, iter=300)
+```
+
+```{r}
+precis(m12.5)
+```
+
+```{r}
+plot(precis(m12.5))
+```
+
+Notice that all the coefficients are negative - meaning they reduce the given rating when present.
