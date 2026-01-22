@@ -462,3 +462,112 @@ plot(precis(m12.5))
 ```
 
 Notice that all the coefficients are negative - meaning they reduce the given rating when present.
+
+Theses models are a bit hard to plot since the outcome for a single point is a $K$ length vector. One way we can attempt to is by visualizing the cumulative probability as it changes for each outcome:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+
+plot(NULL, type='n', xlab='intention', ylab='probability',
+     xlim=c(0,1), ylim=c(0,1), xaxp=c(0,1,1), yaxp=c(0,1,2), yaxt='n')
+
+seq(0,1,0.2) %>% {axis(side=2, at=., labels=.); abline(h=., col='lightgrey')}
+
+kA <- kC <- 0
+kI <- 0:1
+pdat <- data.frame(A=kA, C=kC, I=kI)
+phi <- link(m12.5, dat=pdat)$phi
+
+post <- extract.samples(m12.5)
+for (s in 1:50){
+  pk <- pordlogit(1:6, phi[s,], post$cutpoints[s,])
+  for (i in 1:6){
+    lines(kI, pk[,i], col=grau(0.1))
+  }
+}
+```
+
+Where `pordlogit` gives us the cumulative probability for each of the categories. Here is the last one:
+
+```{r}
+pk
+```
+
+Let's see what a simulated histogram looks like so we can see the different implied counts change:
+
+```{r}
+# Im not sure why this isn't working - my guess is that the new version of 
+# Stan broke something
+# s <- sim(m12.5, data=pdat)
+```
+
+## 12.4 Ordered Categorical predictors
+
+Let's look and recode the education level from the trolley problem:
+
+```{r}
+levels(d$edu)
+edu_levels <- c(6, 1, 8, 4, 7, 2, 5, 3)
+d$edu_new <- edu_levels[d$edu] # only works if d$edu is a factor
+```
+
+To encode this predictor, define a vector of length $c - 1$ where $c$ is the number of unique categories. This vector $\delta$ will be defined to sum to one. We can also define some coefficient $\beta_E$ which is the value of reaching the highest education - a graduate degree. We only need $c-1$ length since one of the categories will get absorbed into the intercept. This makes our definition of $\phi$:
+
+$$\phi_i = \beta_E \sum_{j=0}^{E_i-1} \delta_j + \text{other stuff}$$
+
+where $E_i$ is the ordered category for education completed. For $E_i=1$, that is "Elementary School", we let $\delta_0=0$. Thus when $E_i=1$, $\beta_E$ is no longer in the model.
+
+Let's now show the full model with our new ordinal predictor:
+
+\begin{align}
+R_i &\sim \text{Ordered-logit}(\phi_i, \kappa) \\ \\
+\phi_i &= \beta_E \sum_{j=0}^{E_i-1} \delta_j + \beta_A A_i + \beta_I I_i + \beta_C C_i \\
+\kappa_k &\sim \text{Normal}(0, 1.5) \\
+\beta_A, \beta_I, \beta_C, \beta_E &\sim \text{Normal}(0,1) \\
+\delta &\sim \text{Dirichlet}(\alpha)
+\end{align}
+
+Notice the introduction of the new Dirichlet distribution. This is the multivariate extension of the beta and accepts a $\alpha$ vector as the parameter where the length of $\alpha$ is the number of unique categories.
+
+Let's simulate some draws from a Dirichlet:
+
+```{r}
+library(gtools)
+delta <- rdirichlet(10, alpha=rep(2,7))
+
+h <- 3
+plot(NULL, xlim=c(1,7), ylim=c(0,0.5), ylab='prob')
+for (i in 1:nrow(delta)){
+  lines(1:7, delta[i,], type='b', pch=ifelse(i==h, 16, 1), lwd=ifelse(i==h, 4, 1.5),
+        col=ifelse(i==h, 'black', col.alpha('black', 0.7)))
+}
+```
+
+Let's see what this model looks like:
+
+```{r}
+# dat <- list(
+#   R = d$response,
+#   action = d$action,
+#   intention = d$intention,
+#   contact = d$contact,
+#   E = as.integer(d$edu_new),
+#   alpha=rep(2, 7)
+# )
+# 
+# m12.6 <- ulam(alist(
+#   R ~ ordered_logistic(phi, kappa),
+#   phi <- bE*sum(delta_j[1:E]) + bA*action + bC*contact + bI*intention,
+#   kappa ~ normal(0, 1.5),
+#   c(bA, bI, bC, bE) ~ normal(0,1),
+#   vector[8]: delta_j <<- append_row(0, delta),
+#   simplex[7]: delta ~ dirichlet(alpha)
+# ), data=dat, chains=4, cores=4, iter=200, start=list(kappa=seq(-3,3,length.out=6)))
+
+```
+
+
+To handle the $\delta_0=0$ case we used Stan syntax explicitly. We defined defined a `vector` object that manually placed a 0 in the first position. 

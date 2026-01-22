@@ -120,6 +120,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#adding-predictors" id="toc-adding-predictors" class="nav-link" data-scroll-target="#adding-predictors">Adding predictors</a></li>
   </ul></li>
+  <li><a href="#ordered-categorical-predictors" id="toc-ordered-categorical-predictors" class="nav-link" data-scroll-target="#ordered-categorical-predictors">12.4 Ordered Categorical predictors</a></li>
   </ul>
 </nav>
 </div>
@@ -215,12 +216,12 @@ A_i &amp;\sim \text{BetaBinomial}(N_i, \bar{p}_i, \theta) \\
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(post, <span class="at">depth=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>            mean        sd        5.5%     94.5%      histogram
-a[1]  -0.4526197 0.4040618 -1.10715270 0.2173411 ▁▁▁▂▃▇▇▇▅▂▂▁▁▁
-a[2]  -0.3323588 0.4284071 -1.01200225 0.3524162       ▁▁▁▃▇▂▁▁
-phi    1.0492491 0.8527719  0.07450939 2.5984974  ▇▇▃▃▂▁▁▁▁▁▁▁▁
-theta  3.0492491 0.8527719  2.07450830 4.5984974  ▇▇▃▃▂▁▁▁▁▁▁▁▁
-da    -0.1202609 0.5954437 -1.07163832 0.8156154     ▁▁▁▅▇▇▂▁▁▁</code></pre>
+<pre><code>            mean        sd       5.5%     94.5%      histogram
+a[1]  -0.4466794 0.4022683 -1.1194682 0.1828077 ▁▁▁▂▃▇▇▇▅▃▁▁▁▁
+a[2]  -0.3111227 0.4061774 -0.9620822 0.3341582  ▁▁▁▂▅▇▇▇▅▂▁▁▁
+phi    1.0530266 0.8260092  0.1004255 2.6439702    ▇▇▅▂▂▁▁▁▁▁▁
+theta  3.0530266 0.8260091  2.1004305 4.6439701    ▇▇▅▂▂▁▁▁▁▁▁
+da    -0.1355567 0.5680683 -1.0403111 0.7999982       ▁▁▅▇▇▂▁▁</code></pre>
 </div>
 </div>
 <p>Look at <code>da</code> the difference in log-odds between the male and female effects. We see that we are uncertain about the difference and cannot rule out zero. This is different from the naive conclusion that we came to in the last chapter before we took into accounting the confounding variables. The difference here is that we are implicitly giving an intercept term to <em>every row</em> in the data set through the use of the beta binomial model.</p>
@@ -395,8 +396,8 @@ y_i &amp;\sim \text{ZIPoisson}(p_i, \lambda_i) \\
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>           mean         sd       5.5%      94.5%     rhat ess_bulk
-ap -1.225918216 0.36136074 -1.8569717 -0.7390707 1.003162 521.8011
-al -0.003668797 0.09235508 -0.1571587  0.1387253 1.002991 544.5795</code></pre>
+ap -1.321495426 0.36489544 -1.9530086 -0.8336646 1.001726 554.5247
+al  0.004843552 0.08863623 -0.1432942  0.1409790 1.007279 574.9837</code></pre>
 </div>
 </div>
 <p>Convert back to the natural scale:</p>
@@ -407,14 +408,14 @@ al -0.003668797 0.09235508 -0.1571587  0.1387253 1.002991 544.5795</code></pre>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">inv_logit</span>(post<span class="sc">$</span>ap))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.2329385</code></pre>
+<pre><code>[1] 0.2167204</code></pre>
 </div>
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">exp</span>(post<span class="sc">$</span>al))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 1.000575</code></pre>
+<pre><code>[1] 1.008791</code></pre>
 </div>
 </div>
 <p>Notice we get a nice estimate for the proportion of days they drink, but we are unable to say <em>which</em> days the monks drank.</p>
@@ -554,7 +555,7 @@ p_K &amp;= 1 - q_{k-1} \\
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>cutpoints[1] cutpoints[2] cutpoints[3] cutpoints[4] cutpoints[5] cutpoints[6] 
-       0.128        0.220        0.328        0.562        0.709        0.854 </code></pre>
+       0.128        0.220        0.328        0.561        0.709        0.854 </code></pre>
 </div>
 </div>
 <p>These are the same values that we computed earlier, but now with a uncertainty interval.</p>
@@ -580,7 +581,7 @@ p_K &amp;= 1 - q_{k-1} \\
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">7</span><span class="sc">*</span>pk)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 4.198633</code></pre>
+<pre><code>[1] 4.200041</code></pre>
 </div>
 </div>
 <p>Now, let’s subtract 0.5 from the coefs before calculating <code>pk</code>:</p>
@@ -591,7 +592,7 @@ p_K &amp;= 1 - q_{k-1} \\
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">7</span><span class="sc">*</span>pk)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 4.729117</code></pre>
+<pre><code>[1] 4.730348</code></pre>
 </div>
 </div>
 <p>It actually went up! This is because the linear term <span class="math inline">\(\phi\)</span> is not changing the underlying latent distribution, but instead the cutpoints. Let’s see what is actually happening under the hood. Also, technically the latent distribution is a logistic distribution, but it is easier to code up the normal:</p>
@@ -605,7 +606,7 @@ p_K &amp;= 1 - q_{k-1} \\
 <span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(<span class="fu">length</span>(init_list) <span class="sc">+</span> <span class="dv">1</span>)) {</span>
 <span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">seq</span>(cut_vec[i], cut_vec[i<span class="sc">+</span><span class="dv">1</span>], <span class="at">length.out=</span><span class="dv">100</span>)</span>
 <span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">polygon</span>(<span class="at">x=</span><span class="fu">c</span>(s, <span class="fu">rev</span>(s)), <span class="at">y=</span><span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">0</span>,<span class="fu">length</span>(s)), <span class="fu">dnorm</span>(<span class="fu">rev</span>(s))), <span class="at">col=</span>i)</span>
-<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v=</span>cut_vec[[i<span class="sc">+</span><span class="dv">1</span>]], <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">2</span>, <span class="at">col=</span>i)</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v=</span>cut_vec[[i<span class="sc">+</span><span class="dv">1</span>]], <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">2</span>)</span>
 <span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(dnorm, <span class="sc">-</span><span class="dv">4</span>, <span class="dv">4</span>, <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">add=</span>T)</span>
 <span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a></span>
@@ -645,7 +646,207 @@ p_K &amp;= 1 - q_{k-1} \\
 \phi_i &amp;= \beta_A A_i + \beta_C C_i + B_{I,i} I_i \\
 B_{I, i} &amp;= \beta_I + \beta_{IA} A_i + \beta_{IC} C_i
 \end{align}\]</span></p>
+<p>Now let’s fit the model:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">R =</span> d<span class="sc">$</span>response,</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">A =</span> d<span class="sc">$</span>action,</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">I =</span> d<span class="sc">$</span>intention,</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">C =</span> d<span class="sc">$</span>contact</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>m12<span class="fl">.5</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>  R <span class="sc">~</span> <span class="fu">dordlogit</span>(phi, cutpoints),</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>  phi <span class="ot">&lt;-</span> bA<span class="sc">*</span>A <span class="sc">+</span> bC<span class="sc">*</span>C <span class="sc">+</span> BI<span class="sc">*</span>I,</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>  BI <span class="ot">&lt;-</span> bI <span class="sc">+</span> bIA<span class="sc">*</span>A <span class="sc">+</span> bIC<span class="sc">*</span>C,</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(bA, bC, bI, bIA, bIC) <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">0.5</span>),</span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>  cutpoints <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="fl">1.5</span>)</span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">iter=</span><span class="dv">300</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m12<span class="fl">.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>6 vector or matrix parameters hidden. Use depth=2 to show them.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          mean         sd       5.5%      94.5%     rhat ess_bulk
+bIC -1.2402745 0.09605580 -1.4049069 -1.0936373 1.007370 328.9281
+bIA -0.4365442 0.08104432 -0.5634923 -0.3061305 1.009409 306.7566
+bI  -0.2887089 0.05941694 -0.3799644 -0.1902630 1.009265 257.0501
+bC  -0.3380492 0.06648787 -0.4432829 -0.2301206 1.007693 329.6209
+bA  -0.4698393 0.05404434 -0.5526846 -0.3819923 1.007135 321.7061</code></pre>
+</div>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">precis</span>(m12<span class="fl">.5</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>6 vector or matrix parameters hidden. Use depth=2 to show them.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch12_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Notice that all the coefficients are negative - meaning they reduce the given rating when present.</p>
+<p>Theses models are a bit hard to plot since the outcome for a single point is a <span class="math inline">\(K\)</span> length vector. One way we can attempt to is by visualizing the cumulative probability as it changes for each outcome:</p>
+<div class="cell" data-layout-align="center">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">type=</span><span class="st">'n'</span>, <span class="at">xlab=</span><span class="st">'intention'</span>, <span class="at">ylab=</span><span class="st">'probability'</span>,</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>), <span class="at">xaxp=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>), <span class="at">yaxp=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>), <span class="at">yaxt=</span><span class="st">'n'</span>)</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="fl">0.2</span>) <span class="sc">%&gt;%</span> {<span class="fu">axis</span>(<span class="at">side=</span><span class="dv">2</span>, <span class="at">at=</span>., <span class="at">labels=</span>.); <span class="fu">abline</span>(<span class="at">h=</span>., <span class="at">col=</span><span class="st">'lightgrey'</span>)}</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>kA <span class="ot">&lt;-</span> kC <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>kI <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">1</span></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>pdat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">A=</span>kA, <span class="at">C=</span>kC, <span class="at">I=</span>kI)</span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>phi <span class="ot">&lt;-</span> <span class="fu">link</span>(m12<span class="fl">.5</span>, <span class="at">dat=</span>pdat)<span class="sc">$</span>phi</span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m12<span class="fl">.5</span>)</span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (s <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">50</span>){</span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>  pk <span class="ot">&lt;-</span> <span class="fu">pordlogit</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, phi[s,], post<span class="sc">$</span>cutpoints[s,])</span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>){</span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">lines</span>(kI, pk[,i], <span class="at">col=</span><span class="fu">grau</span>(<span class="fl">0.1</span>))</span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="ch12_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Where <code>pordlogit</code> gives us the cumulative probability for each of the categories. Here is the last one:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>pk</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>           [,1]      [,2]      [,3]      [,4]      [,5]      [,6]
+[1,] 0.06572939 0.1277568 0.2148137 0.4318444 0.5975146 0.7793960
+[2,] 0.08623329 0.1642089 0.2684602 0.5048426 0.6657046 0.8257572</code></pre>
+</div>
+</div>
+<p>Let’s see what a simulated histogram looks like so we can see the different implied counts change:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Im not sure why this isn't working - my guess is that the new version of </span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Stan broke something</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="co"># s &lt;- sim(m12.5, data=pdat)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
 </section>
+</section>
+<section id="ordered-categorical-predictors" class="level2">
+<h2 class="anchored" data-anchor-id="ordered-categorical-predictors">12.4 Ordered Categorical predictors</h2>
+<p>Let’s look and recode the education level from the trolley problem:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(d<span class="sc">$</span>edu)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Bachelor's Degree"    "Elementary School"    "Graduate Degree"     
+[4] "High School Graduate" "Master's Degree"      "Middle School"       
+[7] "Some College"         "Some High School"    </code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>edu_levels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">1</span>, <span class="dv">8</span>, <span class="dv">4</span>, <span class="dv">7</span>, <span class="dv">2</span>, <span class="dv">5</span>, <span class="dv">3</span>)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>edu_new <span class="ot">&lt;-</span> edu_levels[d<span class="sc">$</span>edu] <span class="co"># only works if d$edu is a factor</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>To encode this predictor, define a vector of length <span class="math inline">\(c - 1\)</span> where <span class="math inline">\(c\)</span> is the number of unique categories. This vector <span class="math inline">\(\delta\)</span> will be defined to sum to one. We can also define some coefficient <span class="math inline">\(\beta_E\)</span> which is the value of reaching the highest education - a graduate degree. We only need <span class="math inline">\(c-1\)</span> length since one of the categories will get absorbed into the intercept. This makes our definition of <span class="math inline">\(\phi\)</span>:</p>
+<p><span class="math display">\[\phi_i = \beta_E \sum_{j=0}^{E_i-1} \delta_j + \text{other stuff}\]</span></p>
+<p>where <span class="math inline">\(E_i\)</span> is the ordered category for education completed. For <span class="math inline">\(E_i=1\)</span>, that is “Elementary School”, we let <span class="math inline">\(\delta_0=0\)</span>. Thus when <span class="math inline">\(E_i=1\)</span>, <span class="math inline">\(\beta_E\)</span> is no longer in the model.</p>
+<p>Let’s now show the full model with our new ordinal predictor:</p>
+<p><span class="math display">\[\begin{align}
+R_i &amp;\sim \text{Ordered-logit}(\phi_i, \kappa) \\ \\
+\phi_i &amp;= \beta_E \sum_{j=0}^{E_i-1} \delta_j + \beta_A A_i + \beta_I I_i + \beta_C C_i \\
+\kappa_k &amp;\sim \text{Normal}(0, 1.5) \\
+\beta_A, \beta_I, \beta_C, \beta_E &amp;\sim \text{Normal}(0,1) \\
+\delta &amp;\sim \text{Dirichlet}(\alpha)
+\end{align}\]</span></p>
+<p>Notice the introduction of the new Dirichlet distribution. This is the multivariate extension of the beta and accepts a <span class="math inline">\(\alpha\)</span> vector as the parameter where the length of <span class="math inline">\(\alpha\)</span> is the number of unique categories.</p>
+<p>Let’s simulate some draws from a Dirichlet:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gtools)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'gtools'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked _by_ '.GlobalEnv':
+
+    logit</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:rethinking':
+
+    logit</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>delta <span class="ot">&lt;-</span> <span class="fu">rdirichlet</span>(<span class="dv">10</span>, <span class="at">alpha=</span><span class="fu">rep</span>(<span class="dv">2</span>,<span class="dv">7</span>))</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">7</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="fl">0.5</span>), <span class="at">ylab=</span><span class="st">'prob'</span>)</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(delta)){</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">7</span>, delta[i,], <span class="at">type=</span><span class="st">'b'</span>, <span class="at">pch=</span><span class="fu">ifelse</span>(i<span class="sc">==</span>h, <span class="dv">16</span>, <span class="dv">1</span>), <span class="at">lwd=</span><span class="fu">ifelse</span>(i<span class="sc">==</span>h, <span class="dv">4</span>, <span class="fl">1.5</span>),</span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">col=</span><span class="fu">ifelse</span>(i<span class="sc">==</span>h, <span class="st">'black'</span>, <span class="fu">col.alpha</span>(<span class="st">'black'</span>, <span class="fl">0.7</span>)))</span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch12_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s see what this model looks like:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># dat &lt;- list(</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   R = d$response,</span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   action = d$action,</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   intention = d$intention,</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   contact = d$contact,</span></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   E = as.integer(d$edu_new),</span></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   alpha=rep(2, 7)</span></span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a><span class="co"># )</span></span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a><span class="co"># m12.6 &lt;- ulam(alist(</span></span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a><span class="co">#   R ~ ordered_logistic(phi, kappa),</span></span>
+<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a><span class="co">#   phi &lt;- bE*sum(delta_j[1:E]) + bA*action + bC*contact + bI*intention,</span></span>
+<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a><span class="co">#   kappa ~ normal(0, 1.5),</span></span>
+<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a><span class="co">#   c(bA, bI, bC, bE) ~ normal(0,1),</span></span>
+<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a><span class="co">#   vector[8]: delta_j &lt;&lt;- append_row(0, delta),</span></span>
+<span id="cb55-16"><a href="#cb55-16" aria-hidden="true" tabindex="-1"></a><span class="co">#   simplex[7]: delta ~ dirichlet(alpha)</span></span>
+<span id="cb55-17"><a href="#cb55-17" aria-hidden="true" tabindex="-1"></a><span class="co"># ), data=dat, chains=4, cores=4, iter=200, start=list(kappa=seq(-3,3,length.out=6)))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>To handle the <span class="math inline">\(\delta_0=0\)</span> case we used Stan syntax explicitly. We defined defined a <code>vector</code> object that manually placed a 0 in the first position.</p>
 </section>
 
 </main>
