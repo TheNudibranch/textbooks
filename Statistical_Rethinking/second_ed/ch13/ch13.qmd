@@ -1,0 +1,139 @@
+---
+title: "Rethinking - Chapter 13"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+```{r}
+#| output: false
+#| code-fold: true
+library(rethinking)
+library(dagitty)
+library(tidyverse)
+```
+
+## 13.0
+
+**Multilevel models**
+
+- Improved estimates for repeated sampling
+- Improved estimates for imbalance in sampling
+- Estimates of variation
+  - How does the mean of groups vary
+- Avoid averaging, retain variation
+  - Instead of data transformations that create new features based on averages, model the variation explicitly.
+
+Multilevel models should always be the default. 
+
+## 13.1 - Example: Multilevel tadpoles
+
+Reed frog mortality data:
+
+```{r}
+data('reedfrogs')
+d <- reedfrogs
+str(d)
+```
+
+Each row in the data is a different tank. We are interested in the number that `surv` in each based on the `denisty` ($N$). We'll start with the simple naive model from earlier chapters:
+
+\begin{align}
+S_i &\sim \text{Binomial}(p_i, N_i) \\
+\text{logit}(p_i) &= \alpha_{\text{TANK}[i]} \\ 
+\alpha_j &\sim \text{Normal}(0, 1.5)
+\end{align}
+
+```{r}
+#| output: false
+
+d$tank <- 1:nrow(d)
+dat <- list(S=d$surv, N=d$density, tank=d$tank)
+
+m13.1 <- ulam(alist(
+  S ~ dbinom(N, p),
+  logit(p) <- a[tank],
+  a[tank] ~ dnorm(0, 1.5)
+), data=dat, chains=4, log_lik=T)
+```
+
+
+```{r}
+precis(m13.1, depth=2) |> head()
+```
+
+Let's now look at the multilevel model:
+
+\begin{align}
+S_i &\sim \text{Binomial}(p_i, N_i) \\
+\text{logit}(p_i) &= \alpha_{\text{TANK}[i]} \\ 
+\alpha_j &\sim \text{Normal}(\bar{\alpha}, \sigma) \\ 
+\bar{\alpha} &\sim \text{Normal}(0, 1.5) \\ 
+\sigma &\sim \text{Exponential}(1)
+\end{align}
+
+And fit it with `ulam`:
+
+```{r}
+#| output: false
+
+m13.2 <- ulam(alist(
+  S ~ dbinom(N, p),
+  logit(p) <- a[tank],
+  a[tank] ~ dnorm(a_bar, sigma),
+  a_bar ~ dnorm(0,1.5),
+  sigma ~ dexp(1)
+), data=dat, chains=4, log_lik=T)
+```
+
+```{r}
+compare(m13.1, m13.2)
+```
+
+Notice that for both models, they have smaller number of effective parameters than they do in the real model. This is because both models employ some sort of regularizing prior. *But*, the multilevel model has an even stronger regularizing prior even though it has two more real parameters. This is of course because it learned a stronger prior through the data.
+
+Let's now plot the effect of using the multilevel model on the parameters.
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+
+post <- extract.samples(m13.2)
+d$propsurv.est <- logistic(apply(post$a, 2, mean))
+
+plot(d$propsurv, ylim=c(0,1), pch=16, xaxt='n', xlab='tank', 
+     ylab='proportion survival', col=rangi2)
+c(1, 16, 32, 48) %>% {axis(1, at=., label=.)}
+
+points(d$propsurv.est)
+
+post$a_bar |> inv_logit() |> mean() |> abline(h=_, lty=2)
+
+c(16.5, 32.5) |> abline(v=_, lwd=0.5)
+text(8,0,'small tanks')
+text(8+16,0,'medium tanks')
+text(8+32,0,'large tanks')
+title('Blue=Data Prop, Clear=Model Est')
+```
+
+Let's take a closer look at the posterior distribution for $\bar \alpha$ and $\sigma$ by looking at the Normal distribution they produce:
+
+```{r}
+plot(NULL, xlim=c(-3,7), ylim=c(0,0.35), xlab='log-odds survival', ylab='Density')
+for (i in 1:100){
+  curve(dnorm(x, post$a_bar[i], post$sigma[i]), add=T, col=col.alpha('black', 0.2))
+}
+```
+Let's sample some "tanks" for the inferred population distribution of tanks:
+
+```{r}
+sim_tanks <- rnorm(8e3, post$a_bar, post$sigma) # post will be recycled
+sim_tanks |> inv_logit() |> dens(lwd=2, adj=0.3)
+```
+
+We talked in the previous chapter about how the beta-binomial or gamma-Poisson accounted for over-dispersion in our data. They did this by adding an extra variance parameter (which was really just marginalized out intercepts). The multilevel model achieves over-dispersion correction as well since we get one observation per group.
+
+One thing to note - we have been using the exponential prior almost exclusively for $\sigma$ parameters. This is okay usually, but can be problematic when $\sigma$ *can* but shouldn't take larger values. This is because the exponential distribution has long tails which give way to more plausible large variances. You can always mitigate this by using a Half-Normal prior with of course has much thinner tails.
+
+## 13.2 - Varying Effects and the underfitting/overfitting trade-off
