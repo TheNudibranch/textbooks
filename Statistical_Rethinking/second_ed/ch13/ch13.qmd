@@ -137,3 +137,88 @@ We talked in the previous chapter about how the beta-binomial or gamma-Poisson a
 One thing to note - we have been using the exponential prior almost exclusively for $\sigma$ parameters. This is okay usually, but can be problematic when $\sigma$ *can* but shouldn't take larger values. This is because the exponential distribution has long tails which give way to more plausible large variances. You can always mitigate this by using a Half-Normal prior with of course has much thinner tails.
 
 ## 13.2 - Varying Effects and the underfitting/overfitting trade-off
+
+One of the perks of using varying effects is that we are less underfit than the grand mean (complete pooling), and less overfit than the no-pooling estimates (one intercept per tank). This is especially true for when a tank has a low amount of data and it overfits quite aggressively.
+
+Let's now simulate some data, but instead of tanks, we'll call them ponds. This will make our mission to predict future ponds survival rate more realistic. Recall the data generating process we modeled before:
+
+
+\begin{align}
+S_i &\sim \text{Binomial}(p_i, N_i) \\
+\text{logit}(p_i) &= \alpha_{\text{TANK}[i]} \\ 
+\alpha_j &\sim \text{Normal}(\bar{\alpha}, \sigma) \\ 
+\bar{\alpha} &\sim \text{Normal}(0, 1.5) \\ 
+\sigma &\sim \text{Exponential}(1)
+\end{align}
+
+To simulate from this, we need to define $\bar \alpha$, $\sigma$, and a vector $\alpha$ for the true pond effects. We'll also need to assign $N_i$ for each pond.
+
+Notice that the priors are part of the model when we estimate, but not when we simulate. This is because priors are epistemological, not ontological. That is, priors are from incomplete knowledge of the process, not the inherit random of the process itself. Similar to a coin flip, we know there is some uncertainty in the weightedness of the coin - governing the probability that it comes up heads. But there is also uncertainty from the inherit randomness of the system that we won't be able to pin down. The latter type of randomness is that from which we sample from. For simulating, we would lock down the probability of the coin.
+
+
+```{r}
+a_bar <- 1.4
+sigma <- 1.5
+nponds <- 60
+Ni <- c(5,10,25,35) |> rep(each=15) |> as.integer()
+
+set.seed(5005)
+a_pond <- rnorm(nponds, a_bar, sigma)
+dsim <- data.frame(pond=seq_along(a_pond), Ni, true_a=a_pond)
+```
+
+Recall that we can convert to log-odds to probabilities with the `logistic` function:
+
+```{r}
+#| output: false
+
+dsim$Si <- rbinom(nponds, prob=logistic(dsim$true_a), size=dsim$Ni)
+
+# no pooling estimates
+dsim$p_nopool <- dsim$Si / dsim$Ni
+
+# partial pooling estimates
+m13.3 <- ulam(alist(
+  Si ~ dbinom(Ni, p),
+  logit(p) <- a[pond],
+  a[pond] ~ dnorm(a_bar, sigma),
+  a_bar ~ dnorm(0,1.5),
+  sigma ~ dexp(1)
+), data=dsim, chains=4, log_lik=T)
+```
+
+```{r}
+post <- extract.samples(m13.3)
+dsim$p_partpool <- post$a |> inv_logit() |> apply(2, mean)
+```
+
+Now compute the error between the two estimates:
+
+```{r}
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 6
+dsim$p_true <- inv_logit(dsim$true_a)
+nopool_error <- abs(dsim$p_nopool - dsim$p_true)
+partpool_error <- abs(dsim$p_partpool - dsim$p_true)
+
+err_grp <- dsim %>% mutate(nopool_error, partpool_error) %>% 
+  group_by(Ni) %>% summarise(m_nopool=mean(nopool_error), m_part=mean(partpool_error))
+
+plot(1:60, nopool_error, xlab='pond', ylab='absolute error', col=rangi2, pch=16)
+points(1:60, partpool_error)
+for (i in unique(dsim$Ni)){
+  end_pt <- max(which(dsim$Ni == i))
+  abline(v=end_pt + 0.5)
+  lines(which(dsim$Ni == i), err_grp %>% filter(Ni==i) %>% pull(m_nopool) %>% rep(15), lwd=2, col=rangi2)
+  lines(which(dsim$Ni == i), err_grp %>% filter(Ni==i) %>% pull(m_part) %>% rep(15), lwd=2, lty=2)
+}
+
+```
+
+Notice the error is much larger for smaller ponds. The blue line is the error for no pooling estimates. You'll notice that partial pooling does better on average.
+
+Partial pooling might not always be the answer. If outlier points are suspected to be possible, then partial pooling might regularize those points to strongly.
+
+## 13.3 - More than one type of cluster
+
