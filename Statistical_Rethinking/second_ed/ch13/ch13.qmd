@@ -35,7 +35,6 @@ Reed frog mortality data:
 data('reedfrogs')
 d <- reedfrogs
 str(d)
-
 ```
 
 Each row in the data is a different tank. We are interested in the number that `surv` in each based on the `denisty` ($N$). We'll start with the simple naive model from earlier chapters:

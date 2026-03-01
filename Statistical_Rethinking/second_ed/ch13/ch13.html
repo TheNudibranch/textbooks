@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.25">
+<meta name="generator" content="quarto-1.8.27">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -66,7 +66,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="ch13_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="ch13_files/libs/quarto-html/anchor.min.js"></script>
 <link href="ch13_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="ch13_files/libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="ch13_files/libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="ch13_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="ch13_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="ch13_files/libs/bootstrap/bootstrap-5a02808b36f57f0ecab8a1e258f9e614.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -116,6 +116,7 @@ window.Quarto = {
   <li><a href="#varying-effects-and-the-underfittingoverfitting-trade-off" id="toc-varying-effects-and-the-underfittingoverfitting-trade-off" class="nav-link" data-scroll-target="#varying-effects-and-the-underfittingoverfitting-trade-off">13.2 - Varying Effects and the underfitting/overfitting trade-off</a></li>
   <li><a href="#more-than-one-type-of-cluster" id="toc-more-than-one-type-of-cluster" class="nav-link" data-scroll-target="#more-than-one-type-of-cluster">13.3 - More than one type of cluster</a></li>
   <li><a href="#divergent-transitions-and-non-centered-priors" id="toc-divergent-transitions-and-non-centered-priors" class="nav-link" data-scroll-target="#divergent-transitions-and-non-centered-priors">13.4 - Divergent transitions and non-centered priors</a></li>
+  <li><a href="#multilevel-posterior-predictions" id="toc-multilevel-posterior-predictions" class="nav-link" data-scroll-target="#multilevel-posterior-predictions">13.5 - Multilevel posterior predictions</a></li>
   </ul>
 </nav>
 </div>
@@ -209,13 +210,13 @@ S_i &amp;\sim \text{Binomial}(p_i, N_i) \\
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m13<span class="fl">.1</span>, <span class="at">depth=</span><span class="dv">2</span>) <span class="sc">|&gt;</span> <span class="fu">head</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>          mean        sd       5.5%    94.5%      rhat ess_bulk
-a[1] 1.7132837 0.7676238  0.5874851 3.013712 1.0051910 3174.426
-a[2] 2.4366261 0.9505739  1.0565098 4.071234 1.0051617 4860.137
-a[3] 0.7794814 0.6946187 -0.2742041 1.886396 0.9990425 4139.109
-a[4] 2.3937873 0.9167567  1.0325395 3.927451 0.9997481 3961.674
-a[5] 1.7089574 0.7771507  0.5268876 2.991572 1.0029258 4472.983
-a[6] 1.7000524 0.7738212  0.5652701 3.013153 1.0001213 4075.040</code></pre>
+<pre><code>          mean        sd       5.5%    94.5%     rhat ess_bulk
+a[1] 1.7135673 0.7729945  0.5283236 3.016259 1.002581 5114.454
+a[2] 2.4173855 0.9349755  1.0767577 3.991890 1.005645 4400.765
+a[3] 0.7751756 0.6447894 -0.2009293 1.835245 1.004785 4466.643
+a[4] 2.3916169 0.8681642  1.0676507 3.854178 1.000372 3827.610
+a[5] 1.7006027 0.7720327  0.5670641 2.996129 1.002440 4735.399
+a[6] 1.7423538 0.7983454  0.5577416 3.102341 1.004749 4999.486</code></pre>
 </div>
 </div>
 <p>Let’s now look at the multilevel model:</p>
@@ -245,9 +246,9 @@ S_i &amp;\sim \text{Binomial}(p_i, N_i) \\
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m13<span class="fl">.1</span>, m13<span class="fl">.2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>          WAIC       SE    dWAIC      dSE    pWAIC       weight
-m13.2 199.0605 7.333674  0.00000       NA 20.43035 0.9998315184
-m13.1 216.4375 4.626677 17.37703 4.061174 26.37506 0.0001684816</code></pre>
+<pre><code>          WAIC       SE    dWAIC      dSE    pWAIC      weight
+m13.2 200.3300 7.158956  0.00000       NA 21.07366 0.999135318
+m13.1 214.4346 4.338518 14.10457 3.952296 25.46012 0.000864682</code></pre>
 </div>
 </div>
 <p>Notice that for both models, they have smaller number of effective parameters than they do in the real model. This is because both models employ some sort of regularizing prior. <em>But</em>, the multilevel model has an even stronger regularizing prior even though it has two more real parameters. This is of course because it learned a stronger prior through the data.</p>
@@ -693,6 +694,39 @@ x_j &amp;\sim \text{Normal}(0, 1)\\
 <span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat_list, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">log_lik=</span>T)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
+<p>Let’s now plot the different <code>neff</code> for each model:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>prec_c <span class="ot">&lt;-</span> <span class="fu">precis</span>(m13<span class="fl">.4</span>, <span class="at">depth=</span><span class="dv">2</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>prec_nc <span class="ot">&lt;-</span> <span class="fu">precis</span>(m13<span class="fl">.4</span>nc, <span class="at">depth=</span><span class="dv">2</span>)</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>pars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">paste0</span>(<span class="st">'a['</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">7</span>, <span class="st">']'</span>), <span class="fu">paste0</span>(<span class="st">'g['</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="st">']'</span>),</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>          <span class="fu">paste0</span>(<span class="st">'b['</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="st">']'</span>), <span class="st">'a_bar'</span>, <span class="st">'sigma_a'</span>, <span class="st">'sigma_g'</span>)</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>neff_table <span class="ot">&lt;-</span> <span class="fu">cbind</span>(prec_c[pars, <span class="st">'ess_bulk'</span>],</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>                    prec_nc[pars, <span class="st">'ess_bulk'</span>])</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(neff_table, <span class="at">xlim=</span><span class="fu">range</span>(neff_table), <span class="at">ylim=</span><span class="fu">range</span>(neff_table), <span class="at">xlab=</span><span class="st">'n_eff (centered)'</span>,</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab=</span><span class="st">'n_eff (non-centered'</span>, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">a=</span><span class="dv">0</span>,<span class="at">b=</span><span class="dv">1</span>, <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch13_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>When should we use the non-centered? Typically, a cluster with low variation, like block in <code>m13.4</code>, will perform better with non-centered. Think about the funnel - we won’t have to worry about the near zero issue if the <span class="math inline">\(\sigma\)</span> estimated is far from zero. Also, if there is a large number of units inside the cluster, but not much data per unit, non-centered is preferred. Again, this works well when the likelihood doesn’t overwhelm the posterior.</p>
+<p>We can reparameterize lots of other things too:</p>
+<p><span class="math display">\[\begin{align}
+x &amp;= z\lambda \\
+z &amp;\sim \text{Exponential}(1)
+\end{align}\]</span></p>
+<p>is the same thing as <span class="math inline">\(x \sim \text{Exponential}(\lambda)\)</span>.</p>
+</section>
+<section id="multilevel-posterior-predictions" class="level2">
+<h2 class="anchored" data-anchor-id="multilevel-posterior-predictions">13.5 - Multilevel posterior predictions</h2>
 </section>
 
 </main>

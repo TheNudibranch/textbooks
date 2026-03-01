@@ -1,2 +1,11 @@
-**.Rhistory
-**_cache/
+# Python Virtual Environments
+.venv/
+__pycache__/
+*.py[cod]
+
+# R/Quarto
+.Rproj.user
+.Rhistory
+.RData
+.quarto/
+_site/
