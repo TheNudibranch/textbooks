@@ -115,6 +115,7 @@ window.Quarto = {
   <li><a href="#example-multilevel-tadpoles" id="toc-example-multilevel-tadpoles" class="nav-link" data-scroll-target="#example-multilevel-tadpoles">13.1 - Example: Multilevel tadpoles</a></li>
   <li><a href="#varying-effects-and-the-underfittingoverfitting-trade-off" id="toc-varying-effects-and-the-underfittingoverfitting-trade-off" class="nav-link" data-scroll-target="#varying-effects-and-the-underfittingoverfitting-trade-off">13.2 - Varying Effects and the underfitting/overfitting trade-off</a></li>
   <li><a href="#more-than-one-type-of-cluster" id="toc-more-than-one-type-of-cluster" class="nav-link" data-scroll-target="#more-than-one-type-of-cluster">13.3 - More than one type of cluster</a></li>
+  <li><a href="#divergent-transitions-and-non-centered-priors" id="toc-divergent-transitions-and-non-centered-priors" class="nav-link" data-scroll-target="#divergent-transitions-and-non-centered-priors">13.4 - Divergent transitions and non-centered priors</a></li>
   </ul>
 </nav>
 </div>
@@ -209,12 +210,12 @@ S_i &amp;\sim \text{Binomial}(p_i, N_i) \\
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>          mean        sd       5.5%    94.5%      rhat ess_bulk
-a[1] 1.7145893 0.7526115  0.5943804 3.011220 1.0051014 4816.095
-a[2] 2.4181907 0.9539612  1.0220310 4.096249 1.0039728 4248.700
-a[3] 0.7364378 0.6457177 -0.2948222 1.741685 1.0065882 4178.404
-a[4] 2.4179589 0.9136366  1.0727695 3.943026 1.0004786 4313.104
-a[5] 1.7107383 0.7449084  0.5962646 2.981386 1.0029039 4488.191
-a[6] 1.7110718 0.7815041  0.5502023 2.993708 0.9994788 4418.806</code></pre>
+a[1] 1.7132837 0.7676238  0.5874851 3.013712 1.0051910 3174.426
+a[2] 2.4366261 0.9505739  1.0565098 4.071234 1.0051617 4860.137
+a[3] 0.7794814 0.6946187 -0.2742041 1.886396 0.9990425 4139.109
+a[4] 2.3937873 0.9167567  1.0325395 3.927451 0.9997481 3961.674
+a[5] 1.7089574 0.7771507  0.5268876 2.991572 1.0029258 4472.983
+a[6] 1.7000524 0.7738212  0.5652701 3.013153 1.0001213 4075.040</code></pre>
 </div>
 </div>
 <p>Let’s now look at the multilevel model:</p>
@@ -244,9 +245,9 @@ S_i &amp;\sim \text{Binomial}(p_i, N_i) \\
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m13<span class="fl">.1</span>, m13<span class="fl">.2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>          WAIC       SE   dWAIC     dSE    pWAIC       weight
-m13.2 200.1458 7.330824  0.0000      NA 20.88908 0.9995100668
-m13.1 215.3873 4.704021 15.2415 3.82593 25.98256 0.0004899332</code></pre>
+<pre><code>          WAIC       SE    dWAIC      dSE    pWAIC       weight
+m13.2 199.0605 7.333674  0.00000       NA 20.43035 0.9998315184
+m13.1 216.4375 4.626677 17.37703 4.061174 26.37506 0.0001684816</code></pre>
 </div>
 </div>
 <p>Notice that for both models, they have smaller number of effective parameters than they do in the real model. This is because both models employ some sort of regularizing prior. <em>But</em>, the multilevel model has an even stronger regularizing prior even though it has two more real parameters. This is of course because it learned a stronger prior through the data.</p>
@@ -399,6 +400,299 @@ S_i &amp;\sim \text{Binomial}(p_i, N_i) \\
 </section>
 <section id="more-than-one-type-of-cluster" class="level2">
 <h2 class="anchored" data-anchor-id="more-than-one-type-of-cluster">13.3 - More than one type of cluster</h2>
+<p>Recall the chimpanzee dataset from before. There were different <code>actors</code> and <code>blocks</code>. The <code>blocks</code> specify the different day the experiment was done. Notice this is what is known as a <em>cross-classified</em> multilevel model. The main difference between this an hierarchy multilevel model is that one <code>actor</code> is not assigned to one day. That is, a chimp might appear on different days. Regardless if this was a hierarchy or cross-classified, it wouldn’t change the model structure:</p>
+<p><span class="math display">\[\begin{align}
+L &amp;\sim \text{Binomial}(1,p_i)\\
+\text{logit}(p_i) &amp;= \alpha_{\text{ACTOR}[i]} + \gamma_{\text{BLOCK}[i]} + \beta_{\text{TREATMENT}[i]}\\
+\beta_j &amp;\sim \text{Normal}(0, 0.5)\\
+\alpha_j &amp;\sim \text{Normal}(\bar \alpha, \sigma_\alpha)\\
+\gamma_j &amp;\sim \text{Normal}(0, \sigma_\gamma) \\
+\bar \alpha &amp;\sim \text{Normal}(0, 1.5) \\
+\sigma_\alpha &amp;\sim \text{Exponential}(1) \\
+\sigma_\gamma &amp;\sim \text{Exponential}(1) \\
+\end{align}\]</span></p>
+<p>One thing to notice, the <span class="math inline">\(\gamma\)</span> vector is centered at zero. That is because we can’t identify a mean for each varying intercept type. This would be akin to the right/left leg example. There would be a high degree of correlation. We can also think of this as: there is one global mean. The actor vector perturbs that, then the block vector next. We could just as easily have given the global mean to the population mean of <span class="math inline">\(\gamma\)</span> instead.</p>
+<p>Let’s now fit the model:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"chimpanzees"</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> chimpanzees</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>treatment <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">+</span> d<span class="sc">$</span>prosoc_left <span class="sc">+</span> <span class="dv">2</span><span class="sc">*</span>d<span class="sc">$</span>condition</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>dat_list <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">pulled_left =</span> d<span class="sc">$</span>pulled_left,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">actor =</span> d<span class="sc">$</span>actor,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">block_id =</span> d<span class="sc">$</span>block,</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">treatment =</span> d<span class="sc">$</span>treatment <span class="sc">|&gt;</span> <span class="fu">as.integer</span>()</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13</span>)</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>m13<span class="fl">.4</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  pulled_left <span class="sc">~</span> <span class="fu">dbinom</span>(<span class="dv">1</span>, p),</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logit</span>(p) <span class="ot">&lt;-</span> a[actor] <span class="sc">+</span> g[block_id] <span class="sc">+</span> b[treatment],</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>  b[treatment] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>  a[actor] <span class="sc">~</span> <span class="fu">dnorm</span>(a_bar, sigma_a),</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>  g[block_id] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, sigma_g),</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>  a_bar <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">1.5</span>),</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>  sigma_a <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>),</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>  sigma_g <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat_list, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">log_lik=</span>T)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>est <span class="ot">&lt;-</span> <span class="fu">precis</span>(m13<span class="fl">.4</span>, <span class="at">depth=</span><span class="dv">2</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>est</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                mean        sd         5.5%        94.5%     rhat  ess_bulk
+b[1]    -0.137057028 0.3048831 -0.620338120  0.335316081 1.005529  506.7992
+b[2]     0.394144828 0.3035896 -0.101810086  0.857400499 1.001123  505.5572
+b[3]    -0.479359062 0.3039009 -0.976847855 -0.006089812 1.006157  538.6465
+b[4]     0.279144969 0.3000176 -0.210963611  0.763181807 1.002661  485.5217
+a[1]    -0.345940202 0.3619639 -0.907848472  0.244810073 1.001341  490.4486
+a[2]     4.650511043 1.2992305  2.991709893  6.914118191 1.002681  906.0745
+a[3]    -0.648270702 0.3611865 -1.222230589 -0.078461537 1.001026  568.2277
+a[4]    -0.644599133 0.3618834 -1.240225305 -0.062896243 1.001300  605.3340
+a[5]    -0.356123052 0.3641387 -0.927370839  0.208407323 1.003454  559.0310
+a[6]     0.591968922 0.3669466  0.005595042  1.175290501 1.001066  568.0040
+a[7]     2.117882975 0.4557635  1.381918726  2.843236570 1.003039  640.5984
+g[1]    -0.170902913 0.2136331 -0.576438476  0.069044160 1.003351  562.5813
+g[2]     0.026945492 0.1650323 -0.218139343  0.307572621 1.003304 1484.4694
+g[3]     0.040581328 0.1706475 -0.213304258  0.331734646 1.006552 1489.5497
+g[4]     0.001204788 0.1693886 -0.285626040  0.272534181 1.013628 1616.2130
+g[5]    -0.031811796 0.1668612 -0.328509894  0.211574073 1.006145 1510.7279
+g[6]     0.103250871 0.1853779 -0.119900642  0.430881059 1.002173 1143.3693
+a_bar    0.578458475 0.7114969 -0.518872696  1.673269130 1.006396  917.4256
+sigma_a  1.994575610 0.6452425  1.168432519  3.170578896 1.001749  788.1982
+sigma_g  0.203993367 0.1520194  0.025770046  0.487487081 1.009005  206.9422</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>est <span class="sc">|&gt;</span> <span class="fu">plot</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch13_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Notice that <code>sigma_a</code> has a much larger magnitude than <code>sigma_g</code>. The model is picking up on the fact that there is more variation among actors, but not so much around blocks. That is, it matters a lot more who the actor is and less so what day it is. You’ll also see low effective sample sizes. That is mostly due to high autocorrelation that will be fixed later (non-centered param).</p>
+<p>Let’s do a quick compare where we don’t have a varying block intercept.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>m13<span class="fl">.5</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  pulled_left <span class="sc">~</span> <span class="fu">dbinom</span>(<span class="dv">1</span>, p),</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logit</span>(p) <span class="ot">&lt;-</span> a[actor] <span class="sc">+</span> b[treatment],</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  b[treatment] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  a[actor] <span class="sc">~</span> <span class="fu">dnorm</span>(a_bar, sigma_a),</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  a_bar <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">1.5</span>),</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  sigma_a <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat_list, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">log_lik=</span>T)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">compare</span>(m13<span class="fl">.4</span>, m13<span class="fl">.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>          WAIC       SE     dWAIC      dSE     pWAIC    weight
+m13.5 531.1970 19.19458 0.0000000       NA  8.560742 0.6163477
+m13.4 532.1451 19.32516 0.9481491 1.623267 10.513103 0.3836523</code></pre>
+</div>
+</div>
+<p>Notice, we lost two effective parameters, but in reality we lost 7. That is because the block vector was shrunk towards zero.</p>
+<p>We could also add a varying intercept to our <code>treatment</code> variable. Many people would say that we can’t because use varying effects here since <code>treatment</code> was experimentally controlled. But really, the only thing we need to worry about is <strong>exchangability</strong>. If we can swap the order of the indexes for the variable, and the interpretation does not change, then we are good to go.</p>
+<p>Let’s see what that kind of model would look like:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>m13<span class="fl">.6</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  pulled_left <span class="sc">~</span> <span class="fu">dbinom</span>(<span class="dv">1</span>, p),</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logit</span>(p) <span class="ot">&lt;-</span> a[actor] <span class="sc">+</span> g[block_id] <span class="sc">+</span> b[treatment],</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  b[treatment] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, sigma_b),</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  a[actor] <span class="sc">~</span> <span class="fu">dnorm</span>(a_bar, sigma_a),</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  g[block_id] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, sigma_g),</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  a_bar <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">1.5</span>),</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  sigma_a <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>),</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  sigma_g <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>),</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  sigma_b <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat_list, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">log_lik=</span>T)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">coeftab</span>(m13<span class="fl">.4</span>, m13<span class="fl">.6</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>        m13.4   m13.6  
+b[1]      -0.14   -0.12
+b[2]       0.39    0.37
+b[3]      -0.48   -0.43
+b[4]       0.28    0.26
+a[1]      -0.35   -0.38
+a[2]       4.65    4.56
+a[3]      -0.65   -0.66
+a[4]      -0.64   -0.66
+a[5]      -0.36   -0.35
+a[6]       0.59    0.55
+a[7]       2.12    2.11
+g[1]      -0.17   -0.15
+g[2]       0.03    0.06
+g[3]       0.04    0.06
+g[4]       0.00    0.02
+g[5]      -0.03   -0.02
+g[6]       0.10    0.11
+a_bar      0.58    0.62
+sigma_a    1.99    1.98
+sigma_g    0.20    0.21
+sigma_b      NA    0.56
+nobs        504     504</code></pre>
+</div>
+</div>
+<p>Because the coefficients are well informed by the data, the varying effects doesn’t change the estimates much.</p>
+</section>
+<section id="divergent-transitions-and-non-centered-priors" class="level2">
+<h2 class="anchored" data-anchor-id="divergent-transitions-and-non-centered-priors">13.4 - Divergent transitions and non-centered priors</h2>
+<p>Recall the HMC is all about conservation of “energy”. When the simulation runs, it expects the starting energy to be the same as the ending energy. When this is not the case, we call this a divergent transition. This mostly due to the issue with discretizing the sampler and how the discretization manifests with steep geometries (poorly). We can fix this by changing the <code>adapt_delta</code> or reparameterizing.</p>
+<p>Let’s look at a simple model:</p>
+<p><span class="math display">\[\begin{align}
+v &amp;\sim \text{Normal}(0,3) \\
+x &amp;\sim \text{Normal}(0, \exp(v))
+\end{align}\]</span></p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>m13<span class="fl">.7</span> <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  v <span class="sc">~</span> <span class="fu">normal</span>(<span class="dv">0</span>, <span class="dv">3</span>),</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  x <span class="sc">~</span> <span class="fu">normal</span>(<span class="dv">0</span>, <span class="fu">exp</span>(v))</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span><span class="fu">list</span>(<span class="at">N=</span><span class="dv">1</span>), <span class="at">chains=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m13<span class="fl">.7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>       mean         sd       5.5%     94.5%     rhat ess_bulk
+v  1.863151   2.109869  -1.547401  5.398674 1.117667 36.56997
+x 41.336194 324.815328 -63.837649 94.850935 1.124270 23.19956</code></pre>
+</div>
+</div>
+<p>Not great, the trace plot is terrible too:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traceplot</span>(m13<span class="fl">.7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch13_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This is of course Neal’s funnel. As <span class="math inline">\(v\)</span> approaches zero, the posterior for <span class="math inline">\(x\)</span> gets very steep and hard to sample from. The example above: <span class="math inline">\(x \sim \text{Normal}(0, \exp(v))\)</span> is an example of <strong>centered parameterization</strong>. Really just indicating that <span class="math inline">\(x\)</span> is conditional on one or more other parameters. The <strong>non-centered parameterization</strong> looks like:</p>
+<p><span class="math display">\[\begin{align}
+v &amp;\sim \text{Normal}(0,3) \\
+z &amp;\sim \text{Normal}(0,1) \\
+x &amp;= z\cdot \exp (v)
+\end{align}\]</span></p>
+<p>Recall that in the text we usually standardize a variable by dividing by the standard deviation and subtracting the mean (the z-score). This is the same procedure. Let’s now see that this model fits much better:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>m13<span class="fl">.7</span>nc <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  v <span class="sc">~</span> <span class="fu">normal</span>(<span class="dv">0</span>, <span class="dv">3</span>),</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  z <span class="sc">~</span> <span class="fu">normal</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  gq<span class="sc">&gt;</span> real[<span class="dv">1</span>]<span class="sc">:</span> x <span class="ot">&lt;&lt;-</span> z<span class="sc">*</span><span class="fu">exp</span>(v)</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span><span class="fu">list</span>(<span class="at">N=</span><span class="dv">1</span>), <span class="at">chains=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m13<span class="fl">.7</span>nc)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>          mean          sd       5.5%     94.5%     rhat ess_bulk
+v  0.040345088    2.898735  -4.449517  4.707179 1.003648 1505.805
+z  0.004952278    1.010775  -1.521948  1.686363 1.004630 1507.287
+x 42.208685370 1303.142704 -24.460435 24.782189 1.001189 1433.295</code></pre>
+</div>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">extract.samples</span>(m13<span class="fl">.7</span>nc) <span class="sc">|&gt;</span> <span class="fu">as.data.frame</span>() <span class="sc">|&gt;</span> <span class="fu">select</span>(x,v) <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">abs</span>(x) <span class="sc">&lt;</span> <span class="dv">3</span>)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="co"># dens &lt;- MASS::kde2d(post$x, post$v, n = 10, h=4)</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>post <span class="sc">|&gt;</span> <span class="fu">sample_n</span>(<span class="dv">100</span>) <span class="sc">|&gt;</span> <span class="fu">plot</span>(<span class="at">col =</span> <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="fl">0.1</span>), <span class="at">pch =</span> <span class="dv">20</span>,</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="at">xlab =</span> <span class="st">"v"</span>, <span class="at">ylab =</span> <span class="st">"x"</span>, <span class="at">main =</span> <span class="st">"Posterior"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch13_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># contour(dens, col = "firebrick", lwd = 2, add=T)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>We still might need to use the centered parameterization (likelihood dominating).</p>
+<p>Let’s go back to the <code>m13.4</code> model and change the <code>adapt_delta</code>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>m13<span class="fl">.4</span>b <span class="ot">&lt;-</span> <span class="fu">ulam</span>(m13<span class="fl">.4</span>, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">control=</span><span class="fu">list</span>(<span class="at">adapt_delta=</span><span class="fl">0.99</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>Better, but we are hitting maximum treedepth warnings now. Let’s go ahead and do the non-centered parameterization.</p>
+<p>The model now looks like:</p>
+<p><span class="math display">\[\begin{align}
+L &amp;\sim \text{Binomial}(1,p_i)\\
+\text{logit}(p_i) &amp;= \bar \alpha + z_{\text{ACTOR}[i]} \cdot \sigma_{\alpha} + x_{\text{BLOCK}[i]} \cdot \sigma_\gamma + \beta_{\text{TREATMENT}[i]} \\
+\beta_j &amp;\sim \text{Normal}(0, 0.5)\\
+z_j &amp;\sim \text{Normal}(0, 1)\\
+x_j &amp;\sim \text{Normal}(0, 1)\\
+\bar \alpha &amp;\sim \text{Normal}(0, 1.5) \\
+\sigma_\alpha &amp;\sim \text{Exponential}(1) \\
+\sigma_\gamma &amp;\sim \text{Exponential}(1) \\
+\end{align}\]</span></p>
+<p>The actor intercepts now look like:</p>
+<p><span class="math display">\[\alpha_j = \bar \alpha + z_j \sigma_\alpha\]</span></p>
+<p>and the block intercept is:</p>
+<p><span class="math display">\[\gamma_j = x_j \sigma_\gamma\]</span></p>
+<p>Let’s now sample:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>m13<span class="fl">.4</span>nc <span class="ot">&lt;-</span> <span class="fu">ulam</span>(<span class="fu">alist</span>(</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  pulled_left <span class="sc">~</span> <span class="fu">dbinom</span>(<span class="dv">1</span>, p),</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logit</span>(p) <span class="ot">&lt;-</span> a_bar <span class="sc">+</span> z[actor]<span class="sc">*</span>sigma_a <span class="sc">+</span> x[block_id]<span class="sc">*</span>sigma_g <span class="sc">+</span> b[treatment],</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>  b[treatment] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>  z[actor] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>  x[block_id] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>  a_bar <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">1.5</span>),</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>  sigma_a <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>),</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>  sigma_g <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>),</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>  gq<span class="sc">&gt;</span> vector[actor]<span class="sc">:</span>a <span class="ot">&lt;&lt;-</span> a_bar <span class="sc">+</span> z<span class="sc">*</span>sigma_a,</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>  gq<span class="sc">&gt;</span> vector[block_id]<span class="sc">:</span>g <span class="ot">&lt;&lt;-</span> x<span class="sc">*</span>sigma_g</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat_list, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">cores=</span><span class="dv">4</span>, <span class="at">log_lik=</span>T)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
 </section>
 
 </main>

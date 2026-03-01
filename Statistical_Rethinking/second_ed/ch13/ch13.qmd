@@ -223,4 +223,241 @@ Notice the error is much larger for smaller ponds. The blue line is the error fo
 Partial pooling might not always be the answer. If outlier points are suspected to be possible, then partial pooling might regularize those points to strongly.
 
 ## 13.3 - More than one type of cluster
+ Recall the chimpanzee dataset from before. There were different `actors` and `blocks`. The `blocks` specify the different day the experiment was done. Notice this is what is known as a *cross-classified* multilevel model. The main difference between this an hierarchy multilevel model is that one `actor` is not assigned to one day. That is, a chimp might appear on different days. Regardless if this was a hierarchy or cross-classified, it wouldn't change the model structure:
+ 
+ \begin{align}
+L &\sim \text{Binomial}(1,p_i)\\
+\text{logit}(p_i) &= \alpha_{\text{ACTOR}[i]} + \gamma_{\text{BLOCK}[i]} + \beta_{\text{TREATMENT}[i]}\\
+\beta_j &\sim \text{Normal}(0, 0.5)\\
+\alpha_j &\sim \text{Normal}(\bar \alpha, \sigma_\alpha)\\
+\gamma_j &\sim \text{Normal}(0, \sigma_\gamma) \\
+\bar \alpha &\sim \text{Normal}(0, 1.5) \\
+\sigma_\alpha &\sim \text{Exponential}(1) \\
+\sigma_\gamma &\sim \text{Exponential}(1) \\
+\end{align}
+
+One thing to notice, the $\gamma$ vector is centered at zero. That is because we can't identify a mean for each varying intercept type. This would be akin to the right/left leg example. There would be a high degree of correlation. We can also think of this as: there is one global mean. The actor vector perturbs that, then the block vector next. We could just as easily have given the global mean to the population mean of $\gamma$ instead.
+
+Let's now fit the model:
+
+```{r}
+#| output: false
+
+data("chimpanzees")
+d <- chimpanzees
+d$treatment <- 1 + d$prosoc_left + 2*d$condition
+
+dat_list <- list(
+  pulled_left = d$pulled_left,
+  actor = d$actor,
+  block_id = d$block,
+  treatment = d$treatment |> as.integer()
+)
+
+set.seed(13)
+m13.4 <- ulam(alist(
+  pulled_left ~ dbinom(1, p),
+  logit(p) <- a[actor] + g[block_id] + b[treatment],
+  b[treatment] ~ dnorm(0, 0.5),
+  a[actor] ~ dnorm(a_bar, sigma_a),
+  g[block_id] ~ dnorm(0, sigma_g),
+  a_bar ~ dnorm(0, 1.5),
+  sigma_a ~ dexp(1),
+  sigma_g ~ dexp(1)
+), data=dat_list, chains=4, cores=4, log_lik=T)
+```
+
+```{r}
+est <- precis(m13.4, depth=2)
+est
+est |> plot()
+```
+Notice that `sigma_a` has a much larger magnitude than `sigma_g`. The model is picking up on the fact that there is more variation among actors, but not so much around blocks. That is, it matters a lot more who the actor is and less so what day it is. You'll also see low effective sample sizes. That is mostly due to high autocorrelation that will be fixed later (non-centered param).
+
+Let's do a quick compare where we don't have a varying block intercept.
+
+```{r}
+#| output: false
+
+m13.5 <- ulam(alist(
+  pulled_left ~ dbinom(1, p),
+  logit(p) <- a[actor] + b[treatment],
+  b[treatment] ~ dnorm(0, 0.5),
+  a[actor] ~ dnorm(a_bar, sigma_a),
+  a_bar ~ dnorm(0, 1.5),
+  sigma_a ~ dexp(1)
+), data=dat_list, chains=4, cores=4, log_lik=T)
+```
+
+```{r}
+compare(m13.4, m13.5)
+```
+
+Notice, we lost two effective parameters, but in reality we lost 7. That is because the block vector was shrunk towards zero. 
+
+We could also add a varying intercept to our `treatment` variable. Many people would say that we can't because use varying effects here since `treatment` was experimentally controlled. But really, the only thing we need to worry about is **exchangability**. If we can swap the order of the indexes for the variable, and the interpretation does not change, then we are good to go.
+
+Let's see what that kind of model would look like:
+
+```{r}
+#| output: false
+
+m13.6 <- ulam(alist(
+  pulled_left ~ dbinom(1, p),
+  logit(p) <- a[actor] + g[block_id] + b[treatment],
+  b[treatment] ~ dnorm(0, sigma_b),
+  a[actor] ~ dnorm(a_bar, sigma_a),
+  g[block_id] ~ dnorm(0, sigma_g),
+  a_bar ~ dnorm(0, 1.5),
+  sigma_a ~ dexp(1),
+  sigma_g ~ dexp(1),
+  sigma_b ~ dexp(1)
+), data=dat_list, chains=4, cores=4, log_lik=T)
+```
+
+```{r}
+coeftab(m13.4, m13.6)
+```
+
+Because the coefficients are well informed by the data, the varying effects doesn't change the estimates much.
+
+## 13.4 - Divergent transitions and non-centered priors
+
+Recall the HMC is all about conservation of "energy". When the simulation runs, it expects the starting energy to be the same as the ending energy. When this is not the case, we call this a divergent transition. This mostly due to the issue with discretizing the sampler and how the discretization manifests with steep geometries (poorly). We can fix this by changing the `adapt_delta` or reparameterizing.
+
+Let's look at a simple model:
+
+\begin{align}
+v &\sim \text{Normal}(0,3) \\
+x &\sim \text{Normal}(0, \exp(v))
+\end{align}
+
+```{r}
+#| output: false
+m13.7 <- ulam(alist(
+  v ~ normal(0, 3),
+  x ~ normal(0, exp(v))
+), data=list(N=1), chains=4)
+```
+
+```{r}
+precis(m13.7)
+```
+
+Not great, the trace plot is terrible too:
+
+```{r}
+traceplot(m13.7)
+```
+
+This is of course Neal's funnel. As $v$ approaches zero, the posterior for $x$ gets very steep and hard to sample from. The example above: $x \sim \text{Normal}(0, \exp(v))$ is an example of **centered parameterization**. Really just indicating that $x$ is conditional on one or more other parameters. The **non-centered parameterization** looks like:
+
+\begin{align}
+v &\sim \text{Normal}(0,3) \\
+z &\sim \text{Normal}(0,1) \\
+x &= z\cdot \exp (v)
+\end{align}
+
+Recall that in the text we usually standardize a variable by dividing by the standard deviation and subtracting the mean (the z-score). This is the same procedure. Let's now see that this model fits much better:
+
+```{r}
+#| output: false
+m13.7nc <- ulam(alist(
+  v ~ normal(0, 3),
+  z ~ normal(0,1),
+  gq> real[1]: x <<- z*exp(v)
+), data=list(N=1), chains=4)
+```
+```{r}
+precis(m13.7nc)
+```
+
+```{r}
+post <- extract.samples(m13.7nc) |> as.data.frame() |> select(x,v) |> filter(abs(x) < 3)
+# dens <- MASS::kde2d(post$x, post$v, n = 10, h=4)
+
+post |> sample_n(100) |> plot(col = rgb(0, 0, 0, 0.1), pch = 20,
+xlab = "v", ylab = "x", main = "Posterior")
+
+# contour(dens, col = "firebrick", lwd = 2, add=T)
+```
+
+We still might need to use the centered parameterization (likelihood dominating).
+
+Let's go back to the `m13.4` model and change the `adapt_delta`. 
+
+```{r}
+#| output: false
+m13.4b <- ulam(m13.4, chains=4, cores=4, control=list(adapt_delta=0.99))
+```
+
+Better, but we are hitting maximum treedepth warnings now. Let's go ahead and do the non-centered parameterization.
+
+The model now looks like:
+
+\begin{align}
+L &\sim \text{Binomial}(1,p_i)\\
+\text{logit}(p_i) &= \bar \alpha + z_{\text{ACTOR}[i]} \cdot \sigma_{\alpha} + x_{\text{BLOCK}[i]} \cdot \sigma_\gamma + \beta_{\text{TREATMENT}[i]} \\
+\beta_j &\sim \text{Normal}(0, 0.5)\\
+z_j &\sim \text{Normal}(0, 1)\\
+x_j &\sim \text{Normal}(0, 1)\\
+\bar \alpha &\sim \text{Normal}(0, 1.5) \\
+\sigma_\alpha &\sim \text{Exponential}(1) \\
+\sigma_\gamma &\sim \text{Exponential}(1) \\
+\end{align}
+
+The actor intercepts now look like:
+
+$$\alpha_j = \bar \alpha + z_j \sigma_\alpha$$
+
+and the block intercept is:
+
+$$\gamma_j = x_j \sigma_\gamma$$
+
+Let's now sample:
+
+```{r}
+#| output: false
+
+m13.4nc <- ulam(alist(
+  pulled_left ~ dbinom(1, p),
+  logit(p) <- a_bar + z[actor]*sigma_a + x[block_id]*sigma_g + b[treatment],
+  b[treatment] ~ dnorm(0, 0.5),
+  z[actor] ~ dnorm(0,1),
+  x[block_id] ~ dnorm(0, 1),
+  a_bar ~ dnorm(0, 1.5),
+  sigma_a ~ dexp(1),
+  sigma_g ~ dexp(1),
+  gq> vector[actor]:a <<- a_bar + z*sigma_a,
+  gq> vector[block_id]:g <<- x*sigma_g
+), data=dat_list, chains=4, cores=4, log_lik=T)
+```
+
+Let's now plot the different `neff` for each model:
+
+```{r}
+prec_c <- precis(m13.4, depth=2)
+prec_nc <- precis(m13.4nc, depth=2)
+pars <- c(paste0('a[', 1:7, ']'), paste0('g[', 1:6, ']'),
+          paste0('b[', 1:4, ']'), 'a_bar', 'sigma_a', 'sigma_g')
+neff_table <- cbind(prec_c[pars, 'ess_bulk'],
+                    prec_nc[pars, 'ess_bulk'])
+
+plot(neff_table, xlim=range(neff_table), ylim=range(neff_table), xlab='n_eff (centered)',
+     ylab='n_eff (non-centered', lwd=2)
+abline(a=0,b=1, lty=2)
+```
+
+When should we use the non-centered? Typically, a cluster with low variation, like block in `m13.4`, will perform better with non-centered. Think about the funnel - we won't have to worry about the near zero issue if the $\sigma$ estimated is far from zero. Also, if there is a large number of units inside the cluster, but not much data per unit, non-centered is preferred. Again, this works well when the likelihood doesn't overwhelm the posterior.
+
+We can reparameterize lots of other things too:
+
+\begin{align}
+x &= z\lambda \\
+z &\sim \text{Exponential}(1)
+\end{align}
+
+is the same thing as $x \sim \text{Exponential}(\lambda)$.
+
+## 13.5 - Multilevel posterior predictions
 
