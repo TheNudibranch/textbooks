@@ -20,7 +20,7 @@ We will cover:
 
 There was a small section that had to be removed to meet page requirements. It is now here: [Managing Ordered Sequences with Bisect](https://www.fluentpython.com/extra/ordered-sequences-with-bisect/)
   
-### Built-in Sequences
+## Built-in Sequencess
 
 Sequence types built in C:
 
@@ -80,7 +80,7 @@ print(issubclass(tuple, abc.MutableSequence))
 print(issubclass(list, abc.MutableSequence))
 ```
 
-### List Comprehension and Generator Expressions
+## List Comprehension and Generator Expressions
 
 It's the classic:
 
@@ -142,7 +142,7 @@ print(a := 2)
 
 We can do similar comprehensions with `filter` and `map`, but readability suffers.
 
-### Listcomps versus map and filter
+## Listcomps versus map and filter
 
 Listcomps do everything `map` and `filter` functions can do, without the challenging lambda functions:
 
@@ -161,7 +161,7 @@ asc
 
 More on `filter` and `map` in chapter 7.
 
-### Cartesian Products
+## Cartesian Products
 
 ```{python}
 colors = ['black', 'white']
@@ -180,6 +180,6 @@ print(len(tshirts))
 
 Listcomps are a "one-trick pony". For generating data, it is best to use a genexp. 
 
-### Generator Expressions
+## Generator Expressions
 
 A genexp can save memory because it yields items one by one using the iterator protocol instead of building a whole list just to feed another constructor. Genexp use the same syntax as listcomps but use `()` instead of `[]`. Another note is that genexp are lazy and only evaluate when called. Listcomps are eager and exectue right away. Genexp can also be useful if the sequence generated is potentially infinite.

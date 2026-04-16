@@ -84,7 +84,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#an-array-of-sequences" id="toc-an-array-of-sequences" class="nav-link active" data-scroll-target="#an-array-of-sequences">An Array of Sequences</a>
   <ul class="collapse">
-  <li><a href="#built-in-sequences" id="toc-built-in-sequences" class="nav-link" data-scroll-target="#built-in-sequences">Built-in Sequences</a></li>
+  <li><a href="#built-in-sequencess" id="toc-built-in-sequencess" class="nav-link" data-scroll-target="#built-in-sequencess">Built-in Sequencess</a></li>
   <li><a href="#list-comprehension-and-generator-expressions" id="toc-list-comprehension-and-generator-expressions" class="nav-link" data-scroll-target="#list-comprehension-and-generator-expressions">List Comprehension and Generator Expressions</a></li>
   <li><a href="#listcomps-versus-map-and-filter" id="toc-listcomps-versus-map-and-filter" class="nav-link" data-scroll-target="#listcomps-versus-map-and-filter">Listcomps versus map and filter</a></li>
   <li><a href="#cartesian-products" id="toc-cartesian-products" class="nav-link" data-scroll-target="#cartesian-products">Cartesian Products</a></li>
@@ -129,8 +129,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul></li>
 </ul>
 <p>There was a small section that had to be removed to meet page requirements. It is now here: <a href="https://www.fluentpython.com/extra/ordered-sequences-with-bisect/">Managing Ordered Sequences with Bisect</a></p>
-<section id="built-in-sequences" class="level3">
-<h3 class="anchored" data-anchor-id="built-in-sequences">Built-in Sequences</h3>
+<section id="built-in-sequencess" class="level2">
+<h2 class="anchored" data-anchor-id="built-in-sequencess">Built-in Sequencess</h2>
 <p>Sequence types built in C:</p>
 <ul>
 <li>Container sequences
@@ -172,7 +172,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul></li>
 </ul>
 <p>Recall, the big difference is that mutable objects can have their values change after declaration. i.e.&nbsp;you can change the value of an element of a list but can do that in a tuple:</p>
-<div id="3c51cb78" class="cell" data-execution_count="1">
+<div id="94f2b09c" class="cell" data-execution_count="1">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]</span>
@@ -193,7 +193,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Note: mutable sequences inherit all methods from immutable sequences and implement several additional methods. The full list is on page 24.</p>
-<div id="10eae400" class="cell" data-execution_count="2">
+<div id="90434bd3" class="cell" data-execution_count="2">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> abc</span>
@@ -209,10 +209,10 @@ True</code></pre>
 </div>
 </div>
 </section>
-<section id="list-comprehension-and-generator-expressions" class="level3">
-<h3 class="anchored" data-anchor-id="list-comprehension-and-generator-expressions">List Comprehension and Generator Expressions</h3>
+<section id="list-comprehension-and-generator-expressions" class="level2">
+<h2 class="anchored" data-anchor-id="list-comprehension-and-generator-expressions">List Comprehension and Generator Expressions</h2>
 <p>It’s the classic:</p>
-<div id="8703fff0" class="cell" data-execution_count="3">
+<div id="f39400a7" class="cell" data-execution_count="3">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>symbols <span class="op">=</span> <span class="st">'$c$ao'</span></span>
@@ -233,7 +233,7 @@ True</code></pre>
 </div>
 <p>Coding tip: line breaks are ignored when using <code>[]</code>, <code>()</code>, or <code>{}</code>. So you don’t need to use <code>\</code> for multiline (which actually breaks if there is a space after the <code>\</code>). Also, a trailing comma is ignored when creating a series of comma separate values, so it is best practice to include it even at the end.</p>
 <p>List comprehension, generator expressions, <code>set</code> and <code>dict</code> comprehension has a local scope to hold variables assigned in the <code>for</code> clause. However, variables assigned with the “Walrus Operator” remain accessible after those comprehension or expressions return - unlike local variables in a function. PEP 572 defines the scope of the target of <code>:=</code> as the enclosing function, unless there is a <code>global</code> or <code>nonlocal</code> declaration for that target.</p>
-<div id="8067a17b" class="cell" data-execution_count="4">
+<div id="af3beddf" class="cell" data-execution_count="4">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="st">'ABC'</span></span>
@@ -256,7 +256,7 @@ name 'c' is not defined</code></pre>
 </div>
 </div>
 <p>A little more about the Walrus Operator: it both assigns and returns the variable assigned. This is similar to how you can do <code>if (cnt &lt;- cnt + 1)</code> in R and get the <code>cnt</code> checked in the <code>if</code> statement, because R will always sliently return the object of an assigment.</p>
-<div id="8aee7b73" class="cell" data-execution_count="5">
+<div id="984b9585" class="cell" data-execution_count="5">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>chunk <span class="op">=</span> <span class="bu">file</span>.read(<span class="dv">1024</span>)</span>
@@ -269,7 +269,7 @@ name 'c' is not defined</code></pre>
 </details>
 </div>
 <p>A simpler one:</p>
-<div id="5aaf1151" class="cell" data-execution_count="6">
+<div id="b6bf0bf8" class="cell" data-execution_count="6">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
@@ -286,10 +286,10 @@ name 'c' is not defined</code></pre>
 </div>
 <p>We can do similar comprehensions with <code>filter</code> and <code>map</code>, but readability suffers.</p>
 </section>
-<section id="listcomps-versus-map-and-filter" class="level3">
-<h3 class="anchored" data-anchor-id="listcomps-versus-map-and-filter">Listcomps versus map and filter</h3>
+<section id="listcomps-versus-map-and-filter" class="level2">
+<h2 class="anchored" data-anchor-id="listcomps-versus-map-and-filter">Listcomps versus map and filter</h2>
 <p>Listcomps do everything <code>map</code> and <code>filter</code> functions can do, without the challenging lambda functions:</p>
-<div id="05417a22" class="cell" data-execution_count="7">
+<div id="b7990ebe" class="cell" data-execution_count="7">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>asc <span class="op">=</span> [<span class="bu">ord</span>(s) <span class="cf">for</span> s <span class="kw">in</span> symbols <span class="cf">if</span> <span class="bu">ord</span>(s) <span class="op">&gt;</span> <span class="dv">40</span>]</span>
@@ -312,9 +312,9 @@ name 'c' is not defined</code></pre>
 </div>
 <p>More on <code>filter</code> and <code>map</code> in chapter 7.</p>
 </section>
-<section id="cartesian-products" class="level3">
-<h3 class="anchored" data-anchor-id="cartesian-products">Cartesian Products</h3>
-<div id="ba54b5ed" class="cell" data-execution_count="8">
+<section id="cartesian-products" class="level2">
+<h2 class="anchored" data-anchor-id="cartesian-products">Cartesian Products</h2>
+<div id="550323bd" class="cell" data-execution_count="8">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>colors <span class="op">=</span> [<span class="st">'black'</span>, <span class="st">'white'</span>]</span>
@@ -338,8 +338,8 @@ name 'c' is not defined</code></pre>
 </div>
 <p>Listcomps are a “one-trick pony”. For generating data, it is best to use a genexp.</p>
 </section>
-<section id="generator-expressions" class="level3">
-<h3 class="anchored" data-anchor-id="generator-expressions">Generator Expressions</h3>
+<section id="generator-expressions" class="level2">
+<h2 class="anchored" data-anchor-id="generator-expressions">Generator Expressions</h2>
 <p>A genexp can save memory because it yields items one by one using the iterator protocol instead of building a whole list just to feed another constructor. Genexp use the same syntax as listcomps but use <code>()</code> instead of <code>[]</code>. Another note is that genexp are lazy and only evaluate when called. Listcomps are eager and exectue right away. Genexp can also be useful if the sequence generated is potentially infinite.</p>
 </section>
 </section>

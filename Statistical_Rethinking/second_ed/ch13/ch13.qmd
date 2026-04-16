@@ -460,7 +460,97 @@ is the same thing as $x \sim \text{Exponential}(\lambda)$.
 
 ## 13.5 - Multilevel posterior predictions
 
+We can no longer rely soley on summary tables of means to understand the model. We need to understand how the model behaves in light on new data - counterfactuals. 
+
+### 13.1 Posterior Predictions for the same cluster
+
+Let's look at the chimp data again, for that there are 7 actors. Let's simulate predictions for actor 2:
 
 ```{r}
-2+2
+chimp <- 2
+d_pred <- list(
+  actor = rep(chimp, 4),
+  treatment = 1:4,
+  block_id = rep(1,4)
+)
+p <- link(m13.4, data=d_pred)
+p_mu <- colMeans(p)
+p_ci <- p |> apply(2, PI)
 ```
+
+We could have course done this without the `link` function:
+
+
+```{r}
+post <- extract.samples(m13.4)
+p_link <- function(treatment, actor=1, block_id=1){
+  logodds <- with(post, {
+    a[,actor] + g[,block_id] + b[,treatment]
+  })
+  return(inv_logit(logodds))
+}
+
+p_raw <- vapply(1:4,  p_link, actor=2, block_id=1, FUN.VALUE=numeric(nrow(post$a)))
+p_mu <- colMeans(p_raw)
+p_ci <- p_raw |> apply(2, PI)
+```
+
+### 13.2 Posterior Predictions from new clusters
+
+How we would go about getting the model accuracy for actor 7, if it was never included in the model. We might want to just use $\bar \alpha$, but as we'll see, that uncertainty is much smaller than what we would actually want it to be. 
+
+Now,
+
+```{r}
+p_link_abar <- function(treatment){
+  logodds <- with(post, a_bar + b[,treatment])
+  return(inv_logit(logodds))
+}
+```
+
+Notice that we don't include `block` since we are generalizing to a new blocks, and we assumed that the average block effect is zero.
+
+```{r}
+p_raw <- vapply(1:4, p_link_abar, FUN.VALUE=numeric(nrow(post$a_bar)))
+p_mu <- colMeans(p_raw)
+p_ci <- p_raw |> apply(2, PI)
+
+plot(NULL, xlab='treatment', ylab='Proportion pulled left', ylim=c(0,1), xaxt='n', xlim=c(1,4))
+axis(1, at=1:4, labels=c('R/N', 'L/N', 'R/P', 'L/P'))
+lines(1:4, p_mu)
+shade(p_ci, 1:4)
+```
+
+This is understated though, to see the actual variation among actors we need to simulate $\alpha \sim \text{N}(\bar \alpha, \sigma_{\alpha})$:
+
+
+```{r}
+a_sim <- with(post, rnorm(length(a_bar), a_bar, sigma_a))
+
+p_link_abar <- function(treatment){
+  logodds <- with(post, a_sim + b[,treatment])
+  return(inv_logit(logodds))
+}
+
+p_raw <- vapply(1:4, p_link_abar, FUN.VALUE=numeric(nrow(post$a_bar)))
+p_mu <- colMeans(p_raw)
+p_ci <- p_raw |> apply(2, PI)
+
+plot(NULL, xlab='treatment', ylab='Proportion pulled left', ylim=c(0,1), xaxt='n', xlim=c(1,4))
+axis(1, at=1:4, labels=c('R/N', 'L/N', 'R/P', 'L/P'))
+lines(1:4, p_mu)
+shade(p_ci, 1:4)
+```
+
+So which should we use? It depends. If we want to see the impact of the treatment, we should probably do the first one. If we want to understand the spectrum of possible actors, the second one. But, the second plot has all possible actors placed together - those actors should still all be influenced by the treatment. That is, we should see the zig-zag line.
+
+
+```{r}
+plot(NULL, xlab='treatment', ylab='Proportion pulled left', ylim=c(0,1), xaxt='n', xlim=c(1,4))
+axis(1, at=1:4, labels=c('R/N', 'L/N', 'R/P', 'L/P'))
+for (i in 1:50) lines(1:4, p_raw[i,], col=grau(0.25), lwd=2)
+```
+
+### 13.3
+
+Mister P - multilevel poststratification is a popular framework for reweighting survey response to a national or population. Basically, we have a survey $R$ where we want to measure peoples voting intentions $V$. This might be influenced by things like age $A$. The survey $R$ probably has a different age distribution than the total population so we have to reweight accoridingly. This becomes hairy when $R \leftarrow A \rightarrow R$, but becomes downright impossible when $V \rightarrow R$ as well. Since we won't be able to isolate the effect of $A$ on $V$, which is required to generalize to the total population.
