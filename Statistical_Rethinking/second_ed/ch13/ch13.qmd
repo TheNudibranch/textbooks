@@ -554,3 +554,228 @@ for (i in 1:50) lines(1:4, p_raw[i,], col=grau(0.25), lwd=2)
 ### 13.3
 
 Mister P - multilevel poststratification is a popular framework for reweighting survey response to a national or population. Basically, we have a survey $R$ where we want to measure peoples voting intentions $V$. This might be influenced by things like age $A$. The survey $R$ probably has a different age distribution than the total population so we have to reweight accoridingly. This becomes hairy when $R \leftarrow A \rightarrow R$, but becomes downright impossible when $V \rightarrow R$ as well. Since we won't be able to isolate the effect of $A$ on $V$, which is required to generalize to the total population.
+
+## Excersises 
+
+### M5
+
+Recall model `13.4`:
+
+ \begin{align}
+L &\sim \text{Binomial}(1,p_i)\\
+\text{logit}(p_i) &= \alpha_{\text{ACTOR}[i]} + \gamma_{\text{BLOCK}[i]} + \beta_{\text{TREATMENT}[i]}\\
+\beta_j &\sim \text{Normal}(0, 0.5)\\
+\alpha_j &\sim \text{Normal}(\bar \alpha, \sigma_\alpha)\\
+\gamma_j &\sim \text{Normal}(0, \sigma_\gamma) \\
+\bar \alpha &\sim \text{Normal}(0, 1.5) \\
+\sigma_\alpha &\sim \text{Exponential}(1) \\
+\sigma_\gamma &\sim \text{Exponential}(1) \\
+\end{align}
+
+We'll now change to slightly to have:
+
+\begin{align}
+\gamma_j &\sim \text{Normal}(\bar \gamma, \sigma_\gamma) \\
+\bar \gamma &\sim \text{Normal}(0,1.5) \\
+\end{align}
+
+Essentially, we are just adding a mean term for the adaptive prior for blocks.
+
+```{r}
+#| output: false
+
+data("chimpanzees")
+d <- chimpanzees
+d$treatment <- 1 + d$prosoc_left + 2*d$condition
+
+dat_list <- list(
+  pulled_left = d$pulled_left,
+  actor = d$actor,
+  block_id = d$block,
+  treatment = d$treatment |> as.integer()
+)
+m_h5 <- ulam(alist(
+  pulled_left ~ dbinom(1, p),
+  logit(p) <- a[actor] + g[block_id] + b[treatment],
+  b[treatment] ~ dnorm(0, 0.5),
+  a[actor] ~ dnorm(a_bar, sigma_a),
+  g[block_id] ~ dnorm(g_bar, sigma_g),
+  a_bar ~ dnorm(0, 1.5),
+  g_bar ~ dnorm(0, 1.5),
+  sigma_a ~ dexp(1),
+  sigma_g ~ dexp(1)
+), data=dat_list, chains=4, cores=4, log_lik=T)
+```
+
+I'll leave the full output out, but it looks like we got a lot of divergences when we fit. This is of course becuase the model wants one simple mean that it can perturb. We are back to the left/right leg problem again.
+
+```{r}
+extract.samples(m_h5)[c('g_bar', 'a_bar')] |> as.data.frame() |> cor()
+```
+
+Let's now compare:
+
+```{r}
+compare(m13.4, m_h5)
+```
+
+Looks like it is not significantly better.
+
+### M6
+
+Let's try four different models for the point $y=0$. We'll see the effects of different tails on the mean.
+
+The models are:
+
+**Normal-Normal**
+
+\begin{align}
+y &\sim \text{Normal}(\mu, 1) \\
+\mu &\sim \text{Normal}(10, 1) \\
+\end{align}
+
+**T-Normal**
+
+\begin{align}
+y &\sim \text{Student}(2, \mu, 1) \\
+\mu &\sim \text{Normal}(10, 1) \\
+\end{align}
+
+**Normal-T**
+
+\begin{align}
+y &\sim \text{Normal}(\mu, 1) \\
+\mu &\sim \text{Student}(2, 10, 1) \\
+\end{align}
+
+**T-T**
+
+
+\begin{align}
+y &\sim \text{Student}(2, \mu, 1) \\
+\mu &\sim \text{Student}(2, 10, 1) \\
+\end{align}
+
+Because the rethinking package is throwing an error with this version of cmdstanar, we'll instead use `c(0,0)` for the data.
+
+```{r}
+#| output: false
+
+nn <- ulam(alist(
+  y ~ dnorm(mu, 1),
+  mu ~ dnorm(10, 1)
+), data=list(y = c(0,0)) , cores=4, chains=4, log_lik=T)
+
+tn <- ulam(alist(
+  y ~ dstudent(2, mu, 1),
+  mu ~ dnorm(10, 1)
+), data=list(y = c(0,0)) , cores=4, chains=4, log_lik=T)
+
+nt <- ulam(alist(
+  y ~ dnorm(mu, 1),
+  mu ~ dstudent(2, 10, 1)
+), data=list(y = c(0,0)) , cores=4, chains=4, log_lik=T)
+
+tt <- ulam(alist(
+  y ~ dstudent(2, mu, 1),
+  mu ~ dstudent(2, 10, 1)
+), data=list(y = c(0,0)) , cores=4, chains=4, log_lik=T)
+```
+
+```{r}
+compare(nn, tn, nt, tt)
+```
+
+Looks like the ones that impose a $t$ prior on $\mu$ perform the best. This makes sense as we want $\mu$ to be flexible and able to move with high outlier data for this example. That is, if $\mu$ has a prior with long tails, the likelihood can pull it in. 
+
+
+Now we'll plot all the posteriors:
+
+```{r}
+# 1. Extract posterior samples for mu from each model
+post_nn <- extract.samples(nn)$mu
+post_tn <- extract.samples(tn)$mu
+post_nt <- extract.samples(nt)$mu
+post_tt <- extract.samples(tt)$mu
+
+# 2. Calculate densities
+d_nn <- density(post_nn)
+d_tn <- density(post_tn)
+d_nt <- density(post_nt)
+d_tt <- density(post_tt)
+
+# 3. Setup the plot range
+xlim <- range(c(post_nn, post_tn, post_nt, post_tt))
+ylim <- range(c(d_nn$y, d_tn$y, d_nt$y, d_tt$y))
+
+# 4. Create the base plot
+plot(d_nn, xlab = expression(mu), main = "Posterior Distributions of mu",
+     xlim = xlim, ylim = ylim, lwd = 2, col = "black")
+
+# 5. Add the other three models
+lines(d_tn, lwd = 2, col = "blue")
+lines(d_nt, lwd = 2, col = "red")
+lines(d_tt, lwd = 2, col = "darkgreen")
+
+# 6. Add a legend
+legend("topright", 
+       legend = c("Normal Lik / Normal Prior", 
+                  "Student Lik / Normal Prior", 
+                  "Normal Lik / Student Prior", 
+                  "Student Lik / Student Prior"),
+       col = c("black", "blue", "red", "darkgreen"), 
+       lwd = 2)
+
+# Optional: Add a vertical line at the data mean (0) and prior mean (10)
+abline(v = 0, lty = 2, col = "gray")
+abline(v = 10, lty = 2, col = "gray")
+```
+Looks like the student-t priors for $\mu$ are almost on top of each other. What's interesting is that the TN model moves the least from 10. This is because the liklihood is at its weakest here.
+
+### H2
+
+Let's return to the Trolley problem from chaper 12. This time we'll fit a varying intercept model:
+
+```{r}
+#| output: false
+
+data("Trolley")
+d <- Trolley
+
+dat <- list(
+  R = d$response,
+  A = d$action,
+  I = d$intention,
+  C = d$contact,
+  id = d$id |> as.integer()
+)
+
+# m12.5 <- ulam(alist(
+#   R ~ dordlogit(phi, cutpoints),
+#   phi <- bA*A + bC*C + bI*I,
+#   c(bA, bC, bI) ~ dnorm(0,0.5),
+#   cutpoints ~ dnorm(0,1.5)
+# ), data=dat, chains=4, cores=4, iter=400)
+```
+
+With the addition of the varying intercept:
+
+```{r}
+#| output: false
+
+# m_h2 <- ulam(alist(
+#   R ~ dordlogit(phi, cutpoints),
+#   phi <- bA*A + bC*C + bI*I + b_ID[id],
+#   c(bA, bC, bI) ~ dnorm(0,0.5),
+#   b_ID[id] ~ dnorm(0, sig_ID),
+#   sig_ID ~ dexp(1),
+#   cutpoints ~ dnorm(0,1.5)
+# ), data=dat, chains=4, cores=4, iter=400)
+```
+
+### M3
+
+
+```{r}
+
+```
