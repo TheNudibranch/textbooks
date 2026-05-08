@@ -20,7 +20,7 @@ We will cover:
 
 There was a small section that had to be removed to meet page requirements. It is now here: [Managing Ordered Sequences with Bisect](https://www.fluentpython.com/extra/ordered-sequences-with-bisect/)
   
-## Built-in Sequencess
+# Built-in Sequencess
 
 Sequence types built in C:
 
@@ -45,7 +45,7 @@ Sequence types built in C:
  - `ob_type`: A pointer to the object's type
  - `ob_fval`: A C `double` holding the value of the `float`
  
-On 64-bit python, each of the above field takes 8 bytes. That is why an array of floats is more compact than a tuple of floats. For an array, there is only one object holding the raw values for the floats. For a tuple, there is a separate object for each float in the tuple.
+On 64-bit python, each of the above field takes 8 bytes. That is why an array (not a `list`, but `array.array`) of floats is more compact than a tuple of floats. For an array, there is only one object holding the raw values for the floats. For a tuple, there is a separate object for each float in the tuple.
  
 We can also groups sequences by mutability:
 
@@ -59,6 +59,7 @@ Recall, the big difference is that mutable objects can have their values change 
 ```{python}
 a = [1,2,3]
 a[0] = 4
+from numpy import remainder
 print(a)
 
 b = (1,2,3)
@@ -80,7 +81,7 @@ print(issubclass(tuple, abc.MutableSequence))
 print(issubclass(list, abc.MutableSequence))
 ```
 
-## List Comprehension and Generator Expressions
+# List Comprehension and Generator Expressions
 
 It's the classic:
 
@@ -142,7 +143,7 @@ print(a := 2)
 
 We can do similar comprehensions with `filter` and `map`, but readability suffers.
 
-## Listcomps versus map and filter
+# Listcomps versus map and filter
 
 Listcomps do everything `map` and `filter` functions can do, without the challenging lambda functions:
 
@@ -161,7 +162,7 @@ asc
 
 More on `filter` and `map` in chapter 7.
 
-## Cartesian Products
+# Cartesian Products
 
 ```{python}
 colors = ['black', 'white']
@@ -172,7 +173,7 @@ print(tshirts)
 print(len(colors)*len(sizes))
 print(len(tshirts))
 
-### Same as
+## Same as
 # for color in colors:
 #   for size in sizes:
 #     print((color, sizes))
@@ -180,6 +181,252 @@ print(len(tshirts))
 
 Listcomps are a "one-trick pony". For generating data, it is best to use a genexp. 
 
-## Generator Expressions
+# Generator Expressions
 
 A genexp can save memory because it yields items one by one using the iterator protocol instead of building a whole list just to feed another constructor. Genexp use the same syntax as listcomps but use `()` instead of `[]`. Another note is that genexp are lazy and only evaluate when called. Listcomps are eager and exectue right away. Genexp can also be useful if the sequence generated is potentially infinite.
+
+# Tuples are not just immutable Lists
+
+Tuples can also be used a records with no field names. When doing this, it usually means that the order and the number of items is fixed.
+
+For example:
+
+
+```{python}
+lax_coords = (33.99, -118.408)
+city, year, pop, chg, area = ('Tokyo', 2003, 32_450, 0.66, 8014) # an example of tuple _unpacking_
+traveler_ids = [('USA', '31195855'), ('BRA', 'CE342568'), ('ESP', 'XDA205856')]
+
+for passport in sorted(traveler_ids):
+  print('%s/%s' % passport)
+
+for country, _ in traveler_ids:
+  print(country)
+```
+
+Notice the `%` operator understands tuples and treats each item as a separate field.
+
+Also, be careful with the use of `_` as  a dummy variable. For `match/case` statementes it is treated as a dummy variable.
+
+# Tuples as immutable lists
+
+Two things we get with using a tuple
+
+- Clarity: we know the length will never change
+- Performance: A tuple will use less memory than a list of the same length. It futher allows python to do some operations behind the scenes.
+
+Note that the references in a tuple cannot be deleted or replace. But if they are changed, the tuple will follow that value and sometimes given unexpected results:
+
+
+```{python}
+a = (10, 'alpha', [1,2])
+b = (10, 'alpha', [1,2])
+print(a==b)
+
+b[-1].append(3)
+a==b
+```
+
+We'll go into more detail on what "Hashable" means later, but for now, just know that it means that we cannot change the value. For instance:
+
+
+```{python}
+def fixed(o):
+  try:
+    hash(o)
+  except TypeError:
+    return False
+  return True
+
+tf = (10, 'alpha', (1,2))
+tm = (10, 'alpha', [1,2])
+
+print(fixed(tf))
+print(fixed(tm))
+```
+
+Notes:
+
+- If you call `tuple(t)` on tuple `t`, it will just return a reference to tuple `t`. If intsead you call `list(l)` on list `l`, it will have to make a copy of `l`.
+- `tuple` supports all `list` methods except for those that add or remove items
+  - `tuple` also lacks a `__reversed__` method, but that is just for optimization. You can still call `reversed(t)` on a tuple.
+  - Full list is given on page 34
+
+# Unpacking sequences and iterables
+
+Unpacking works on anything that is iterable, even iterators (although they dont support indexing).
+
+```{python}
+lax_coords = (33.9425, -118.40805)
+lat, lon = lax_coords # unpacking
+lat
+```
+
+You can also use unpacking to swap values of variables: `b, a = a, b`
+
+# using * for unpacking
+
+Another example is using `*` when calling a function:
+
+
+```{python}
+divmod(20, 8)
+```
+
+
+```{python}
+t = (20, 8)
+divmod(*t)
+```
+
+
+```{python}
+quotient, remainder = divmod(*t)
+a = quotient, remainder # pack it back up
+print(type(a))
+```
+
+You've seen `*args` to grab excess assigments in python functions, but you can also use it to grab excess items in unpacking:
+
+
+```{python}
+a, b, *rest = range(5)
+rest # comes as a list
+```
+
+
+```{python}
+a, b, *rest = range(3)
+a, b, *rest
+```
+
+
+```{python}
+try:
+  a, b, rest = range(2)
+except Exception as e:
+  print(e)
+
+a, b, *rest = range(2)
+a, b, rest
+```
+
+Can also it at the start too:
+
+
+```{python}
+*head, a, b = range(5)
+head, a, b
+```
+
+You can also unpack function calls :
+
+
+```{python}
+def fun(a,b,c, *rest):
+  return a, b, c, rest
+
+fun(*[1,2], 3, *range(4,7))
+```
+
+You can also use it for defining lists, tuples, or set literals:
+
+
+```{python}
+*range(4), 4
+```
+
+
+```{python}
+[*range(4), 4]
+```
+
+# Nested unpacking
+
+We can use nesting if the value has the same nesting structure, for instance:
+
+
+```{python}
+a, b, c, (d, e) = (1, 2, 3, (4, 5))
+d
+```
+
+One last tuple thing,  don't forget that when defining tuples with a single item, they must have a trailing comma. Otherwise it just unpacks and becomes that value.
+
+
+```{python}
+a = (4)
+type(a)
+```
+
+
+```{python}
+a = (4,)
+type(a)
+```
+
+# Pattern matching and sequences
+
+Let's say that we have some data coming in that we need to perform an action in response. To, if this data is mixed types, we might use a `match` method:
+
+
+```{python}
+def handle(self, message):
+  match message:
+    case ['BEEPER', frequency, times]:
+      self.beep(times, frequency)
+    case ['NECK', angle]:
+      self.rotate_neck(angle)
+    case ['LED', ident, intensity]:
+      self.leds[ident].set_brightness(ident, intensity)
+    case ['LED', ident, red, green, blue]:
+      self.leds[ident].set_color(ident, red, green, blue)
+    case _: # wildcard and default case
+      raise InvalidCommand(message)
+```
+
+- The expression after `match` is the *subject* which python will try to match in the `case` clause.
+- The first patter matches anything that is a sequence of three items, where the first item is the string `'BEEPER'`
+  - The second and third item can be anything and will be bound to the variables `frequency` and `times`
+  - Also like the first entry here is the *type* of message and the other items are the metadata
+- Similarly, the second pattern must start with `'NECK'` and contain 2 total items (including NECK)
+
+This looks very similar to the C-style `switch/case`, but this Python style also supports *destructuring* - a more advanced form of unpacking.
+
+
+```{python}
+metro_areas = [
+  ('Tokyo', 'JP', 36.933, (35.689722, 139.691667)),
+  ('Delhi NCR', 'IN', 21.935, (28.613889, 77.208889)),
+  ('Mexico City', 'MX', 20.142, (19.433333, -99.133333)),
+  ('New York-Newark', 'US', 20.104, (40.808611, -74.020386)),
+  ('São Paulo', 'BR', 19.649, (-23.547778, -46.635833)),
+]
+
+def main():
+  print(f'{"":15} | {"latitude":>9} | {"longitude":>9}')
+  for record in metro_areas:
+    match record:
+      case [name, _, _, (lat, lon)] if lon <= 0:
+        print(f'{name:15} | {lat:9.4f} | {lon:9.4f}')
+
+main()
+
+# Notice we can use :15 if the f-string to set the width of the space
+```
+
+Let's unpack (lol) above:
+
+- The subject of the match is record
+- case statement has the pattern - in this call all records should match
+  - It also has an optional guard with the `if` keyword
+
+in general, a pattern is matched if:
+
+- The subject is a sequence
+- The subject and the pattern have the same number of sequences
+- Each corresponding item matches, including nested items
+
+For the example pattern `[name, _, _, (lat, lon)]`, there are 4 items and the last item must be a two-item sequence.
+
+Note you can use lists or tuples - to the sequence matching they mean the same thing.

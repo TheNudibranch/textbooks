@@ -82,14 +82,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#an-array-of-sequences" id="toc-an-array-of-sequences" class="nav-link active" data-scroll-target="#an-array-of-sequences">An Array of Sequences</a>
-  <ul class="collapse">
+  <li><a href="#an-array-of-sequences" id="toc-an-array-of-sequences" class="nav-link active" data-scroll-target="#an-array-of-sequences">An Array of Sequences</a></li>
   <li><a href="#built-in-sequencess" id="toc-built-in-sequencess" class="nav-link" data-scroll-target="#built-in-sequencess">Built-in Sequencess</a></li>
   <li><a href="#list-comprehension-and-generator-expressions" id="toc-list-comprehension-and-generator-expressions" class="nav-link" data-scroll-target="#list-comprehension-and-generator-expressions">List Comprehension and Generator Expressions</a></li>
   <li><a href="#listcomps-versus-map-and-filter" id="toc-listcomps-versus-map-and-filter" class="nav-link" data-scroll-target="#listcomps-versus-map-and-filter">Listcomps versus map and filter</a></li>
   <li><a href="#cartesian-products" id="toc-cartesian-products" class="nav-link" data-scroll-target="#cartesian-products">Cartesian Products</a></li>
   <li><a href="#generator-expressions" id="toc-generator-expressions" class="nav-link" data-scroll-target="#generator-expressions">Generator Expressions</a></li>
-  </ul></li>
+  <li><a href="#tuples-are-not-just-immutable-lists" id="toc-tuples-are-not-just-immutable-lists" class="nav-link" data-scroll-target="#tuples-are-not-just-immutable-lists">Tuples are not just immutable Lists</a></li>
+  <li><a href="#tuples-as-immutable-lists" id="toc-tuples-as-immutable-lists" class="nav-link" data-scroll-target="#tuples-as-immutable-lists">Tuples as immutable lists</a></li>
+  <li><a href="#unpacking-sequences-and-iterables" id="toc-unpacking-sequences-and-iterables" class="nav-link" data-scroll-target="#unpacking-sequences-and-iterables">Unpacking sequences and iterables</a></li>
+  <li><a href="#using-for-unpacking" id="toc-using-for-unpacking" class="nav-link" data-scroll-target="#using-for-unpacking">using * for unpacking</a></li>
+  <li><a href="#nested-unpacking" id="toc-nested-unpacking" class="nav-link" data-scroll-target="#nested-unpacking">Nested unpacking</a></li>
+  <li><a href="#pattern-matching-and-sequences" id="toc-pattern-matching-and-sequences" class="nav-link" data-scroll-target="#pattern-matching-and-sequences">Pattern matching and sequences</a></li>
   </ul>
 </nav>
 </div>
@@ -129,8 +133,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul></li>
 </ul>
 <p>There was a small section that had to be removed to meet page requirements. It is now here: <a href="https://www.fluentpython.com/extra/ordered-sequences-with-bisect/">Managing Ordered Sequences with Bisect</a></p>
-<section id="built-in-sequencess" class="level2">
-<h2 class="anchored" data-anchor-id="built-in-sequencess">Built-in Sequencess</h2>
+</section>
+<section id="built-in-sequencess" class="level1">
+<h1>Built-in Sequencess</h1>
 <p>Sequence types built in C:</p>
 <ul>
 <li>Container sequences
@@ -159,7 +164,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>ob_type</code>: A pointer to the object’s type</li>
 <li><code>ob_fval</code>: A C <code>double</code> holding the value of the <code>float</code></li>
 </ul>
-<p>On 64-bit python, each of the above field takes 8 bytes. That is why an array of floats is more compact than a tuple of floats. For an array, there is only one object holding the raw values for the floats. For a tuple, there is a separate object for each float in the tuple.</p>
+<p>On 64-bit python, each of the above field takes 8 bytes. That is why an array (not a <code>list</code>, but <code>array.array</code>) of floats is more compact than a tuple of floats. For an array, there is only one object holding the raw values for the floats. For a tuple, there is a separate object for each float in the tuple.</p>
 <p>We can also groups sequences by mutability:</p>
 <ul>
 <li>Mutable sequences
@@ -172,19 +177,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul></li>
 </ul>
 <p>Recall, the big difference is that mutable objects can have their values change after declaration. i.e.&nbsp;you can change the value of an element of a list but can do that in a tuple:</p>
-<div id="94f2b09c" class="cell" data-execution_count="1">
+<div id="3d0c363a" class="cell" data-execution_count="1">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>a[<span class="dv">0</span>] <span class="op">=</span> <span class="dv">4</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(a)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> (<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  b[<span class="dv">0</span>] <span class="op">=</span> <span class="dv">4</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="bu">print</span>(e)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(b)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> numpy <span class="im">import</span> remainder</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(a)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> (<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  b[<span class="dv">0</span>] <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="bu">print</span>(e)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(b)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>[4, 2, 3]
@@ -193,7 +199,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Note: mutable sequences inherit all methods from immutable sequences and implement several additional methods. The full list is on page 24.</p>
-<div id="90434bd3" class="cell" data-execution_count="2">
+<div id="8961357a" class="cell" data-execution_count="2">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> abc</span>
@@ -209,10 +215,10 @@ True</code></pre>
 </div>
 </div>
 </section>
-<section id="list-comprehension-and-generator-expressions" class="level2">
-<h2 class="anchored" data-anchor-id="list-comprehension-and-generator-expressions">List Comprehension and Generator Expressions</h2>
+<section id="list-comprehension-and-generator-expressions" class="level1">
+<h1>List Comprehension and Generator Expressions</h1>
 <p>It’s the classic:</p>
-<div id="f39400a7" class="cell" data-execution_count="3">
+<div id="a1d55513" class="cell" data-execution_count="3">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>symbols <span class="op">=</span> <span class="st">'$c$ao'</span></span>
@@ -227,13 +233,13 @@ True</code></pre>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>codes <span class="op">=</span> [<span class="bu">ord</span>(symbol) <span class="cf">for</span> symbol <span class="kw">in</span> symbols]</span>
 <span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>codes</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="3">
+<div class="cell-output cell-output-display" data-execution_count="29">
 <pre><code>[36, 99, 36, 97, 111]</code></pre>
 </div>
 </div>
 <p>Coding tip: line breaks are ignored when using <code>[]</code>, <code>()</code>, or <code>{}</code>. So you don’t need to use <code>\</code> for multiline (which actually breaks if there is a space after the <code>\</code>). Also, a trailing comma is ignored when creating a series of comma separate values, so it is best practice to include it even at the end.</p>
 <p>List comprehension, generator expressions, <code>set</code> and <code>dict</code> comprehension has a local scope to hold variables assigned in the <code>for</code> clause. However, variables assigned with the “Walrus Operator” remain accessible after those comprehension or expressions return - unlike local variables in a function. PEP 572 defines the scope of the target of <code>:=</code> as the enclosing function, unless there is a <code>global</code> or <code>nonlocal</code> declaration for that target.</p>
-<div id="af3beddf" class="cell" data-execution_count="4">
+<div id="5629996b" class="cell" data-execution_count="4">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="st">'ABC'</span></span>
@@ -256,7 +262,7 @@ name 'c' is not defined</code></pre>
 </div>
 </div>
 <p>A little more about the Walrus Operator: it both assigns and returns the variable assigned. This is similar to how you can do <code>if (cnt &lt;- cnt + 1)</code> in R and get the <code>cnt</code> checked in the <code>if</code> statement, because R will always sliently return the object of an assigment.</p>
-<div id="984b9585" class="cell" data-execution_count="5">
+<div id="eecabe2a" class="cell" data-execution_count="5">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>chunk <span class="op">=</span> <span class="bu">file</span>.read(<span class="dv">1024</span>)</span>
@@ -269,7 +275,7 @@ name 'c' is not defined</code></pre>
 </details>
 </div>
 <p>A simpler one:</p>
-<div id="b6bf0bf8" class="cell" data-execution_count="6">
+<div id="00acd53c" class="cell" data-execution_count="6">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
@@ -286,10 +292,10 @@ name 'c' is not defined</code></pre>
 </div>
 <p>We can do similar comprehensions with <code>filter</code> and <code>map</code>, but readability suffers.</p>
 </section>
-<section id="listcomps-versus-map-and-filter" class="level2">
-<h2 class="anchored" data-anchor-id="listcomps-versus-map-and-filter">Listcomps versus map and filter</h2>
+<section id="listcomps-versus-map-and-filter" class="level1">
+<h1>Listcomps versus map and filter</h1>
 <p>Listcomps do everything <code>map</code> and <code>filter</code> functions can do, without the challenging lambda functions:</p>
-<div id="b7990ebe" class="cell" data-execution_count="7">
+<div id="1fde8fb1" class="cell" data-execution_count="7">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>asc <span class="op">=</span> [<span class="bu">ord</span>(s) <span class="cf">for</span> s <span class="kw">in</span> symbols <span class="cf">if</span> <span class="bu">ord</span>(s) <span class="op">&gt;</span> <span class="dv">40</span>]</span>
@@ -306,15 +312,15 @@ name 'c' is not defined</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>[99, 97, 111]</code></pre>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="6">
+<div class="cell-output cell-output-display" data-execution_count="32">
 <pre><code>[99, 97, 111]</code></pre>
 </div>
 </div>
 <p>More on <code>filter</code> and <code>map</code> in chapter 7.</p>
 </section>
-<section id="cartesian-products" class="level2">
-<h2 class="anchored" data-anchor-id="cartesian-products">Cartesian Products</h2>
-<div id="550323bd" class="cell" data-execution_count="8">
+<section id="cartesian-products" class="level1">
+<h1>Cartesian Products</h1>
+<div id="89acfd68" class="cell" data-execution_count="8">
 <details open="" class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>colors <span class="op">=</span> [<span class="st">'black'</span>, <span class="st">'white'</span>]</span>
@@ -325,7 +331,7 @@ name 'c' is not defined</code></pre>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(colors)<span class="op">*</span><span class="bu">len</span>(sizes))</span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(tshirts))</span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="co">### Same as</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="co">## Same as</span></span>
 <span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co"># for color in colors:</span></span>
 <span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="co">#   for size in sizes:</span></span>
 <span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="co">#     print((color, sizes))</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -338,10 +344,338 @@ name 'c' is not defined</code></pre>
 </div>
 <p>Listcomps are a “one-trick pony”. For generating data, it is best to use a genexp.</p>
 </section>
-<section id="generator-expressions" class="level2">
-<h2 class="anchored" data-anchor-id="generator-expressions">Generator Expressions</h2>
+<section id="generator-expressions" class="level1">
+<h1>Generator Expressions</h1>
 <p>A genexp can save memory because it yields items one by one using the iterator protocol instead of building a whole list just to feed another constructor. Genexp use the same syntax as listcomps but use <code>()</code> instead of <code>[]</code>. Another note is that genexp are lazy and only evaluate when called. Listcomps are eager and exectue right away. Genexp can also be useful if the sequence generated is potentially infinite.</p>
 </section>
+<section id="tuples-are-not-just-immutable-lists" class="level1">
+<h1>Tuples are not just immutable Lists</h1>
+<p>Tuples can also be used a records with no field names. When doing this, it usually means that the order and the number of items is fixed.</p>
+<p>For example:</p>
+<div id="60532f68" class="cell" data-execution_count="9">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>lax_coords <span class="op">=</span> (<span class="fl">33.99</span>, <span class="op">-</span><span class="fl">118.408</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>city, year, pop, chg, area <span class="op">=</span> (<span class="st">'Tokyo'</span>, <span class="dv">2003</span>, <span class="dv">32_450</span>, <span class="fl">0.66</span>, <span class="dv">8014</span>) <span class="co"># an example of tuple _unpacking_</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>traveler_ids <span class="op">=</span> [(<span class="st">'USA'</span>, <span class="st">'31195855'</span>), (<span class="st">'BRA'</span>, <span class="st">'CE342568'</span>), (<span class="st">'ESP'</span>, <span class="st">'XDA205856'</span>)]</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> passport <span class="kw">in</span> <span class="bu">sorted</span>(traveler_ids):</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="bu">print</span>(<span class="st">'</span><span class="sc">%s</span><span class="st">/</span><span class="sc">%s</span><span class="st">'</span> <span class="op">%</span> passport)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> country, _ <span class="kw">in</span> traveler_ids:</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="bu">print</span>(country)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>BRA/CE342568
+ESP/XDA205856
+USA/31195855
+USA
+BRA
+ESP</code></pre>
+</div>
+</div>
+<p>Notice the <code>%</code> operator understands tuples and treats each item as a separate field.</p>
+<p>Also, be careful with the use of <code>_</code> as a dummy variable. For <code>match/case</code> statementes it is treated as a dummy variable.</p>
+</section>
+<section id="tuples-as-immutable-lists" class="level1">
+<h1>Tuples as immutable lists</h1>
+<p>Two things we get with using a tuple</p>
+<ul>
+<li>Clarity: we know the length will never change</li>
+<li>Performance: A tuple will use less memory than a list of the same length. It futher allows python to do some operations behind the scenes.</li>
+</ul>
+<p>Note that the references in a tuple cannot be deleted or replace. But if they are changed, the tuple will follow that value and sometimes given unexpected results:</p>
+<div id="e0efc689" class="cell" data-execution_count="10">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> (<span class="dv">10</span>, <span class="st">'alpha'</span>, [<span class="dv">1</span>,<span class="dv">2</span>])</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> (<span class="dv">10</span>, <span class="st">'alpha'</span>, [<span class="dv">1</span>,<span class="dv">2</span>])</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(a<span class="op">==</span>b)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>b[<span class="op">-</span><span class="dv">1</span>].append(<span class="dv">3</span>)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>a<span class="op">==</span>b</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>True</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="35">
+<pre><code>False</code></pre>
+</div>
+</div>
+<p>We’ll go into more detail on what “Hashable” means later, but for now, just know that it means that we cannot change the value. For instance:</p>
+<div id="70f96336" class="cell" data-execution_count="11">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fixed(o):</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">try</span>:</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">hash</span>(o)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">except</span> <span class="pp">TypeError</span>:</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">False</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="va">True</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>tf <span class="op">=</span> (<span class="dv">10</span>, <span class="st">'alpha'</span>, (<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>tm <span class="op">=</span> (<span class="dv">10</span>, <span class="st">'alpha'</span>, [<span class="dv">1</span>,<span class="dv">2</span>])</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(fixed(tf))</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(fixed(tm))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>True
+False</code></pre>
+</div>
+</div>
+<p>Notes:</p>
+<ul>
+<li>If you call <code>tuple(t)</code> on tuple <code>t</code>, it will just return a reference to tuple <code>t</code>. If intsead you call <code>list(l)</code> on list <code>l</code>, it will have to make a copy of <code>l</code>.</li>
+<li><code>tuple</code> supports all <code>list</code> methods except for those that add or remove items
+<ul>
+<li><code>tuple</code> also lacks a <code>__reversed__</code> method, but that is just for optimization. You can still call <code>reversed(t)</code> on a tuple.</li>
+<li>Full list is given on page 34</li>
+</ul></li>
+</ul>
+</section>
+<section id="unpacking-sequences-and-iterables" class="level1">
+<h1>Unpacking sequences and iterables</h1>
+<p>Unpacking works on anything that is iterable, even iterators (although they dont support indexing).</p>
+<div id="bd317a74" class="cell" data-execution_count="12">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>lax_coords <span class="op">=</span> (<span class="fl">33.9425</span>, <span class="op">-</span><span class="fl">118.40805</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>lat, lon <span class="op">=</span> lax_coords <span class="co"># unpacking</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>lat</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="37">
+<pre><code>33.9425</code></pre>
+</div>
+</div>
+<p>You can also use unpacking to swap values of variables: <code>b, a = a, b</code></p>
+</section>
+<section id="using-for-unpacking" class="level1">
+<h1>using * for unpacking</h1>
+<p>Another example is using <code>*</code> when calling a function:</p>
+<div id="36a03b73" class="cell" data-execution_count="13">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="bu">divmod</span>(<span class="dv">20</span>, <span class="dv">8</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="38">
+<pre><code>(2, 4)</code></pre>
+</div>
+</div>
+<div id="5b1279b2" class="cell" data-execution_count="14">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> (<span class="dv">20</span>, <span class="dv">8</span>)</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="bu">divmod</span>(<span class="op">*</span>t)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="39">
+<pre><code>(2, 4)</code></pre>
+</div>
+</div>
+<div id="f4b4d64b" class="cell" data-execution_count="15">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>quotient, remainder <span class="op">=</span> <span class="bu">divmod</span>(<span class="op">*</span>t)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> quotient, remainder <span class="co"># pack it back up</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">type</span>(a))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;class 'tuple'&gt;</code></pre>
+</div>
+</div>
+<p>You’ve seen <code>*args</code> to grab excess assigments in python functions, but you can also use it to grab excess items in unpacking:</p>
+<div id="0b8840ac" class="cell" data-execution_count="16">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>a, b, <span class="op">*</span>rest <span class="op">=</span> <span class="bu">range</span>(<span class="dv">5</span>)</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>rest <span class="co"># comes as a list</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="41">
+<pre><code>[2, 3, 4]</code></pre>
+</div>
+</div>
+<div id="2811858f" class="cell" data-execution_count="17">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>a, b, <span class="op">*</span>rest <span class="op">=</span> <span class="bu">range</span>(<span class="dv">3</span>)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>a, b, <span class="op">*</span>rest</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="42">
+<pre><code>(0, 1, 2)</code></pre>
+</div>
+</div>
+<div id="9ad21632" class="cell" data-execution_count="18">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  a, b, rest <span class="op">=</span> <span class="bu">range</span>(<span class="dv">2</span>)</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>  <span class="bu">print</span>(e)</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>a, b, <span class="op">*</span>rest <span class="op">=</span> <span class="bu">range</span>(<span class="dv">2</span>)</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>a, b, rest</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>not enough values to unpack (expected 3, got 2)</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="43">
+<pre><code>(0, 1, [])</code></pre>
+</div>
+</div>
+<p>Can also it at the start too:</p>
+<div id="69b3db71" class="cell" data-execution_count="19">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="op">*</span>head, a, b <span class="op">=</span> <span class="bu">range</span>(<span class="dv">5</span>)</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>head, a, b</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="44">
+<pre><code>([0, 1, 2], 3, 4)</code></pre>
+</div>
+</div>
+<p>You can also unpack function calls :</p>
+<div id="894aa798" class="cell" data-execution_count="20">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fun(a,b,c, <span class="op">*</span>rest):</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> a, b, c, rest</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>fun(<span class="op">*</span>[<span class="dv">1</span>,<span class="dv">2</span>], <span class="dv">3</span>, <span class="op">*</span><span class="bu">range</span>(<span class="dv">4</span>,<span class="dv">7</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="45">
+<pre><code>(1, 2, 3, (4, 5, 6))</code></pre>
+</div>
+</div>
+<p>You can also use it for defining lists, tuples, or set literals:</p>
+<div id="efc0c80c" class="cell" data-execution_count="21">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="op">*</span><span class="bu">range</span>(<span class="dv">4</span>), <span class="dv">4</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="46">
+<pre><code>(0, 1, 2, 3, 4)</code></pre>
+</div>
+</div>
+<div id="a4385fba" class="cell" data-execution_count="22">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>[<span class="op">*</span><span class="bu">range</span>(<span class="dv">4</span>), <span class="dv">4</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="47">
+<pre><code>[0, 1, 2, 3, 4]</code></pre>
+</div>
+</div>
+</section>
+<section id="nested-unpacking" class="level1">
+<h1>Nested unpacking</h1>
+<p>We can use nesting if the value has the same nesting structure, for instance:</p>
+<div id="f8e982c7" class="cell" data-execution_count="23">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>a, b, c, (d, e) <span class="op">=</span> (<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, (<span class="dv">4</span>, <span class="dv">5</span>))</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>d</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="48">
+<pre><code>4</code></pre>
+</div>
+</div>
+<p>One last tuple thing, don’t forget that when defining tuples with a single item, they must have a trailing comma. Otherwise it just unpacks and becomes that value.</p>
+<div id="129121b5" class="cell" data-execution_count="24">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> (<span class="dv">4</span>)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="bu">type</span>(a)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="49">
+<pre><code>int</code></pre>
+</div>
+</div>
+<div id="2cdde9be" class="cell" data-execution_count="25">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> (<span class="dv">4</span>,)</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a><span class="bu">type</span>(a)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="50">
+<pre><code>tuple</code></pre>
+</div>
+</div>
+</section>
+<section id="pattern-matching-and-sequences" class="level1">
+<h1>Pattern matching and sequences</h1>
+<p>Let’s say that we have some data coming in that we need to perform an action in response. To, if this data is mixed types, we might use a <code>match</code> method:</p>
+<div id="e7dcef4c" class="cell" data-execution_count="26">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> handle(<span class="va">self</span>, message):</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">match</span> message:</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>    case [<span class="st">'BEEPER'</span>, frequency, times]:</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.beep(times, frequency)</span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>    case [<span class="st">'NECK'</span>, angle]:</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.rotate_neck(angle)</span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>    case [<span class="st">'LED'</span>, ident, intensity]:</span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.leds[ident].set_brightness(ident, intensity)</span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>    case [<span class="st">'LED'</span>, ident, red, green, blue]:</span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.leds[ident].set_color(ident, red, green, blue)</span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> _: <span class="co"># wildcard and default case</span></span>
+<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a>      <span class="cf">raise</span> InvalidCommand(message)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<ul>
+<li>The expression after <code>match</code> is the <em>subject</em> which python will try to match in the <code>case</code> clause.</li>
+<li>The first patter matches anything that is a sequence of three items, where the first item is the string <code>'BEEPER'</code>
+<ul>
+<li>The second and third item can be anything and will be bound to the variables <code>frequency</code> and <code>times</code></li>
+<li>Also like the first entry here is the <em>type</em> of message and the other items are the metadata</li>
+</ul></li>
+<li>Similarly, the second pattern must start with <code>'NECK'</code> and contain 2 total items (including NECK)</li>
+</ul>
+<p>This looks very similar to the C-style <code>switch/case</code>, but this Python style also supports <em>destructuring</em> - a more advanced form of unpacking.</p>
+<div id="346496b9" class="cell" data-execution_count="27">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>metro_areas <span class="op">=</span> [</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>  (<span class="st">'Tokyo'</span>, <span class="st">'JP'</span>, <span class="fl">36.933</span>, (<span class="fl">35.689722</span>, <span class="fl">139.691667</span>)),</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>  (<span class="st">'Delhi NCR'</span>, <span class="st">'IN'</span>, <span class="fl">21.935</span>, (<span class="fl">28.613889</span>, <span class="fl">77.208889</span>)),</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>  (<span class="st">'Mexico City'</span>, <span class="st">'MX'</span>, <span class="fl">20.142</span>, (<span class="fl">19.433333</span>, <span class="op">-</span><span class="fl">99.133333</span>)),</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>  (<span class="st">'New York-Newark'</span>, <span class="st">'US'</span>, <span class="fl">20.104</span>, (<span class="fl">40.808611</span>, <span class="op">-</span><span class="fl">74.020386</span>)),</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>  (<span class="st">'São Paulo'</span>, <span class="st">'BR'</span>, <span class="fl">19.649</span>, (<span class="op">-</span><span class="fl">23.547778</span>, <span class="op">-</span><span class="fl">46.635833</span>)),</span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-9"><a href="#cb54-9" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
+<span id="cb54-10"><a href="#cb54-10" aria-hidden="true" tabindex="-1"></a>  <span class="bu">print</span>(<span class="ss">f'</span><span class="sc">{</span><span class="st">""</span><span class="sc">:15}</span><span class="ss"> | </span><span class="sc">{</span><span class="st">"latitude"</span><span class="sc">:&gt;9}</span><span class="ss"> | </span><span class="sc">{</span><span class="st">"longitude"</span><span class="sc">:&gt;9}</span><span class="ss">'</span>)</span>
+<span id="cb54-11"><a href="#cb54-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> record <span class="kw">in</span> metro_areas:</span>
+<span id="cb54-12"><a href="#cb54-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">match</span> record:</span>
+<span id="cb54-13"><a href="#cb54-13" aria-hidden="true" tabindex="-1"></a>      case [name, _, _, (lat, lon)] <span class="cf">if</span> lon <span class="op">&lt;=</span> <span class="dv">0</span>:</span>
+<span id="cb54-14"><a href="#cb54-14" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f'</span><span class="sc">{</span>name<span class="sc">:15}</span><span class="ss"> | </span><span class="sc">{</span>lat<span class="sc">:9.4f}</span><span class="ss"> | </span><span class="sc">{</span>lon<span class="sc">:9.4f}</span><span class="ss">'</span>)</span>
+<span id="cb54-15"><a href="#cb54-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-16"><a href="#cb54-16" aria-hidden="true" tabindex="-1"></a>main()</span>
+<span id="cb54-17"><a href="#cb54-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-18"><a href="#cb54-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Notice we can use :15 if the f-string to set the width of the space</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                |  latitude | longitude
+Mexico City     |   19.4333 |  -99.1333
+New York-Newark |   40.8086 |  -74.0204
+São Paulo       |  -23.5478 |  -46.6358</code></pre>
+</div>
+</div>
+<p>Let’s unpack (lol) above:</p>
+<ul>
+<li>The subject of the match is record</li>
+<li>case statement has the pattern - in this call all records should match
+<ul>
+<li>It also has an optional guard with the <code>if</code> keyword</li>
+</ul></li>
+</ul>
+<p>in general, a pattern is matched if:</p>
+<ul>
+<li>The subject is a sequence</li>
+<li>The subject and the pattern have the same number of sequences</li>
+<li>Each corresponding item matches, including nested items</li>
+</ul>
+<p>For the example pattern <code>[name, _, _, (lat, lon)]</code>, there are 4 items and the last item must be a two-item sequence.</p>
+<p>Note you can use lists or tuples - to the sequence matching they mean the same thing.</p>
 </section>
 
 </main>
