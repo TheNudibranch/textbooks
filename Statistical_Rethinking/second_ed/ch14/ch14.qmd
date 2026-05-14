@@ -10,8 +10,10 @@ toc: true
 #| code-fold: true
 
 library(rethinking)
-# library(dagitty)
+library(dagitty)
 library(tidyverse)
+library(cmdstanr)
+# rstudioapi::getActiveDocumentContext()$path |> dirname() |> setwd()
 ```
 
 ## 14.0
@@ -88,7 +90,7 @@ cafe_id <- rep(1:N_cafes, each=N_visits)
 
 mu <- a_cafe[cafe_id] + b_cafe[cafe_id]*afternoon
 sigma <- 0.5
-wait <- rnorm(mu, sigma)
+wait <- rnorm(length(mu), mu, sigma)
 d <- data.frame(cafe=cafe_id, afternoon=afternoon, wait=wait)
 str(d)
 ```
@@ -143,42 +145,9 @@ Let's now fit the model:
 ```
 
 ```{r}
-library(cmdstanr)
+#| output: false
 
-stan_code <- "
-data {
-  int<lower=1> N;
-  int<lower=1> N_cafe;
-  array[N] int<lower=1, upper=N_cafe> cafe;
-  vector[N] afternoon;
-  vector[N] wait;
-}
-parameters {
-  vector[2] mu_ab;
-  array[N_cafe] vector[2] ab_cafe;
-  vector<lower=0>[2] sigma_cafe;
-  corr_matrix[2] Rho;
-  real<lower=0> sigma;
-}
-model {
-  mu_ab[1] ~ normal(5, 2);
-  mu_ab[2] ~ normal(-1, 0.5);
-  sigma_cafe ~ exponential(1);
-  sigma ~ exponential(1);
-  Rho ~ lkj_corr(2);
-
-  matrix[2,2] S = quad_form_diag(Rho, sigma_cafe);
-  for (j in 1:N_cafe)
-    ab_cafe[j] ~ multi_normal(mu_ab, S);
-
-  vector[N] mu;
-  for (i in 1:N)
-    mu[i] = ab_cafe[cafe[i]][1] + ab_cafe[cafe[i]][2] * afternoon[i];
-  wait ~ normal(mu, sigma);
-}
-"
-
-mod <- cmdstan_model(write_stan_file(stan_code))
+mod <- cmdstan_model('mod_14.1.stan')
 
 fit <- mod$sample(
   data = list(
@@ -190,9 +159,48 @@ fit <- mod$sample(
   ),
   chains = 4,
   parallel_chains = 4,
-  refresh = 500
+  refresh = 500,
+  iter_warmup = 1e3, iter_sampling=1e3
 )
-
-fit$summary(c("mu_ab", "sigma_cafe", "sigma", "Rho"))
 ```
 
+```{r}
+fit$summary('Rho') |> print(n=100)
+```
+
+Let's see what the prior tension is for the correlation matrix:
+
+
+```{r}
+mod_rho <- fit$draws('Rho[2,1]', format='df') %>% pull('Rho[2,1]')
+dens(mod_rho)
+R <- rlkjcorr(1e4, K=2, eta=2)
+dens(R[,1,2], add=T, lty=2)
+```
+
+Now let's plot the estimates and their shrinkage:
+
+```{r}
+full_draws <- fit$draws(format='df') %>% select(-starts_with('.'))
+```
+```{r}
+# compute unpooled estimates directly from data
+a1 <- sapply( 1:N_cafes , function(i) mean(wait[cafe_id==i & afternoon==0]) )
+b1 <- sapply( 1:N_cafes , function(i) mean(wait[cafe_id==i & afternoon==1]) ) - a1
+
+# extract posterior means of partially pooled estimates
+
+
+a2 <- full_draws %>% select(starts_with('ab_cafe')) %>% select(ends_with('1]')) %>% colMeans()
+b2 <- full_draws %>% select(starts_with('ab_cafe'))  %>% select(ends_with('2]')) %>% colMeans()
+# plot both and connect with lines
+plot( a1 , b1 , xlab="intercept" , ylab="slope" ,
+  pch=16 , col=rangi2 , ylim=c( min(b1)-0.1 , max(b1)+0.1 ) ,
+  xlim=c( min(a1)-0.1 , max(a1)+0.1 ) )
+points( a2 , b2 , pch=1 )
+
+for ( i in 1:N_cafes ) lines( c(a1[i],a2[i]) , c(b1[i],b2[i]))
+
+mu_est <- full_draws %>% select(starts_with('mu_ab')) %>% colMeans()
+rho_est <- full_draws %>% select(starts_with('Rho[1,2]')) %>% unlist() %>% mean()
+```
