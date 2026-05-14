@@ -1,0 +1,198 @@
+---
+title: "Rethinking - Chapter 14"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+```{r}
+#| output: false
+#| code-fold: true
+
+library(rethinking)
+# library(dagitty)
+library(tidyverse)
+```
+
+## 14.0
+
+Consider the simple model:
+
+$$\mu_i = \alpha_{\text{CAFE}_i} + \beta_{\text{CAFE}_i} A_i$$
+
+where $A_i$ is an indicator variable for if we are in the afternoon. If we are modeling wait times are cafes, and we have the above model, it is basically telling us the average wait time for $A_i = 1 $ the afternoon, or $A_i = 0$, the morning. So the intercept ($\alpha$) is the average wait time in the morning, and the slope is the difference to get to the afternoon wait time ($\text{Afternoon} = \alpha + \beta$) 
+
+The thing is, there is probably some correlation between these two wait times. Cafes that are busy in the morning are usually busy in the afternoon. So we can actually model this correlation in our varying intercept/slope model. 
+
+## 14.1 - Varying Slopes by Construction
+
+Let's define some data that we can simulate from:
+
+```{r}
+a <- 3.5 # average morning wait time
+b <- -1  # average difference between afternoon wait time
+sigma_a <- 1 # std dev in intercepts
+sigma_b <- 0.5 # std dev in slopes
+rho <- -0.7 # correlation between slope and intercept
+```
+
+The covariance matrix is defined as:
+
+\begin{bmatrix}
+\sigma^2_\alpha & \sigma_\alpha \sigma_\beta \rho \\
+\sigma_\alpha \sigma_\beta \rho & \sigma^2_\beta \\
+\end{bmatrix}
+
+```{r}
+cov_ab <- sigma_a * sigma_b * rho
+Sigma <- matrix(c(sigma_a^2, cov_ab, cov_ab, sigma_b^2), ncol=2)
+
+N_cafes <- 20
+set.seed(5)
+
+vary_effects <- MASS::mvrnorm(N_cafes, c(a,b), Sigma)
+
+a_cafe <- vary_effects[,1]
+b_cafe <- vary_effects[,2]
+
+plot(a_cafe, b_cafe, col=rangi2, xlab='Intercepts', ylab='slopes')
+
+# overlay population distribution
+for (l in c(0.1, 0.3, 0.5, 0.8, 0.99)){
+  lines(ellipse::ellipse(Sigma, centre=c(a,b), level=l),
+        col=col.alpha('black', 0.2))
+}
+```
+
+Quick detour into the def of covariance:
+
+We all know $\text{cov}(x,y) = E(xy) - E(x)E(y)$. So this is really just the difference between the average product and the product of the averages. We could of course center $x$ and $y$ such that $\text{cov}(x,y) = E(xy)$. We can do the same with the variances too. Now, where does $\rho$ come from? $\rho$ is the ratio of the covariance to the maximum that the covariance could theoretically ever be: $\sqrt{\text{var}(x) \text{var}(y)}$.
+
+Where does this come from? Well if $y = \beta x$, for some scalar $\beta$ (can be anything), then the covariance is at its maximum. Think about it this way, $x$ would be a **perfect** predictor of $y$. There is no noise, they aren't independent, in fact, they are as dependent as possible!
+
+So if $y=  \beta x$ and we center, then $\text{cov}(x,y) = E(xy) = \beta E(x^2)$ and $\text{var}(x) \text{var}(y) = E(x^2) E(y^2) = \beta^2E(x^2)^2$. Then $\text{cov}(x,y) = \sqrt{\text{var}(x) \text{var}(y)}$ - the max covariance. So we define $\rho = \text{cov}(x,y) / \sqrt{\text{var}(x) \text{var}(y)}$
+
+```{r}
+a1 <- rnorm(100)
+a2 <- a1 * 1.2
+all.equal(cov(a1,a2), sqrt(var(a1)*var(a2)))
+```
+
+Now let's have the robot go and visit cafes 10 times each - 5 in the morning and 5 in the afternoon:
+
+```{r}
+set.seed(22)
+N_visits <- 10
+afternoon <- rep(0:1, N_visits*N_cafes/2)
+cafe_id <- rep(1:N_cafes, each=N_visits)
+
+mu <- a_cafe[cafe_id] + b_cafe[cafe_id]*afternoon
+sigma <- 0.5
+wait <- rnorm(mu, sigma)
+d <- data.frame(cafe=cafe_id, afternoon=afternoon, wait=wait)
+str(d)
+```
+
+Let's now build out the full model to estimate:
+
+\begin{align}
+W_i &\sim \text{Normal}(\mu_i, \sigma) \\
+\mu_i &= \alpha_{\text{CAFE}_i} + \beta_{\text{CAFE}_i} A_i \\ \\
+\begin{bmatrix}
+\alpha_{\text{CAFE}} \\
+\beta_{\text{CAFE}}
+\end{bmatrix}
+ &\sim \text{MVNormal}(\begin{bmatrix}
+\alpha \\
+\beta
+\end{bmatrix}, S ) \\ \\
+S &= 
+\begin{pmatrix}
+\sigma_\alpha & 0 \\
+0 & \sigma_\beta
+\end{pmatrix}
+R 
+\begin{pmatrix}
+\sigma_\alpha & 0 \\
+0 & \sigma_\beta
+\end{pmatrix}
+\end{align}
+
+For the correlation matrix $R$, we'll use the typical LKJcorr prior. Specifically one where $\eta = 2$. Recall that is $\eta = 1$, we are completely flat and allow equal weighting to all correlations between -1 and 1. For $\eta = 2$, we are skeptical about large correlations:
+
+```{r}
+for (e in c(1,2,4)){
+  R <- rlkjcorr(1e4, K=2, eta=e)
+  if (e == 1) dens(R[,1,2], xlab='correlation', ylim=c(0,1.3)) else dens(R[,1,2], add=T)
+}
+```
+
+Let's now fit the model:
+
+```{r}
+# m14.1 <- ulam(alist(
+#   wait ~ normal(mu, sigma),
+#   mu <- a_cafe[cafe] + b_cafe[cafe] * afternoon,
+#   c(a_cafe, b_cafe) ~ multi_normal(c(a,b), Rho, sigma_cafe),
+#   a ~ normal(5,2),
+#   b ~ normal(-1,0.5),
+#   sigma_cafe ~ exponential(1),
+#   sigma ~ exponential(1),
+#   Rho ~ lkj_corr(2)
+# ), data=d, chains=4, cores=4)
+```
+
+```{r}
+library(cmdstanr)
+
+stan_code <- "
+data {
+  int<lower=1> N;
+  int<lower=1> N_cafe;
+  array[N] int<lower=1, upper=N_cafe> cafe;
+  vector[N] afternoon;
+  vector[N] wait;
+}
+parameters {
+  vector[2] mu_ab;
+  array[N_cafe] vector[2] ab_cafe;
+  vector<lower=0>[2] sigma_cafe;
+  corr_matrix[2] Rho;
+  real<lower=0> sigma;
+}
+model {
+  mu_ab[1] ~ normal(5, 2);
+  mu_ab[2] ~ normal(-1, 0.5);
+  sigma_cafe ~ exponential(1);
+  sigma ~ exponential(1);
+  Rho ~ lkj_corr(2);
+
+  matrix[2,2] S = quad_form_diag(Rho, sigma_cafe);
+  for (j in 1:N_cafe)
+    ab_cafe[j] ~ multi_normal(mu_ab, S);
+
+  vector[N] mu;
+  for (i in 1:N)
+    mu[i] = ab_cafe[cafe[i]][1] + ab_cafe[cafe[i]][2] * afternoon[i];
+  wait ~ normal(mu, sigma);
+}
+"
+
+mod <- cmdstan_model(write_stan_file(stan_code))
+
+fit <- mod$sample(
+  data = list(
+    N       = nrow(d),
+    N_cafe  = max(d$cafe),
+    cafe    = d$cafe,
+    afternoon = d$afternoon,
+    wait    = d$wait
+  ),
+  chains = 4,
+  parallel_chains = 4,
+  refresh = 500
+)
+
+fit$summary(c("mu_ab", "sigma_cafe", "sigma", "Rho"))
+```
+
