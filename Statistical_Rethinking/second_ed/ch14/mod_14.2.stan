@@ -59,4 +59,9 @@ generated quantities {
   matrix[N_tid, N_tid] Rho_block;
   Rho_actor = multiply_lower_tri_self_transpose(L_Rho_actor);
   Rho_block = multiply_lower_tri_self_transpose(L_Rho_block);
+
+  vector[N] log_lik;
+  for (n in 1:N) {
+    log_lik[n] = bernoulli_logit_lpmf(L[n] | g[tid[n]] + alpha[actor[n], tid[n]] + beta[block_id[n], tid[n]]);
+  }
 }

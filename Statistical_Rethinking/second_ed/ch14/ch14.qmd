@@ -263,6 +263,20 @@ L_i &\sim \text{Binomial}(1, p_i) \\
 This is basicallly a big interaction effects model. We are allowing the effect of each actor to varying by treatment, within each block. So there is a total of $4 + 7\cdot 4 + 6 \cdot 4 = 56$ params. 
 
 
+I think it makes sense to start the actor to aid in the understanding. For each actor, we want to estimate some mean vector that perturbs the intercept specifcally for them. This mean vector is drawn from a super population of actors that have similar mean vectors. We can use this shard information since some actors have more observations in some treatments then others. It feels weird because we are leaving behind the nice intercept/slope defintion, but it is all the same really. We have some effect, per treatment, that varies on the actor level. Perfect for a multi-level model for regularization.
+
+For the actor, the hyper-prior looks something like:
+$$
+\begin{bmatrix}
+\alpha_{j,1} \\ \alpha_{j,2} \\ \alpha_{j,3} \\ \alpha_{j,4}
+\end{bmatrix} \sim \text{MVNormal} \left (
+\begin{bmatrix}
+0 \\ 0 \\ 0 \\ 0
+\end{bmatrix},
+S_{\text{ACTOR}}
+  \right)
+$$
+
 ```{r}
 data(chimpanzees)
 d <- chimpanzees
@@ -295,6 +309,7 @@ We'll of course use Stan to fit:
 
 
 ```{r}
+#| output: false
 dat$N <- d |> nrow()
 dat$N_actor <- dat$actor |> n_distinct()
 dat$N_block <- dat$block_id |> n_distinct()
@@ -304,3 +319,21 @@ dat$N_tid <- dat$tid |> n_distinct()
 mod <- cmdstan_model('mod_14.2.stan')
 fit <- mod$sample(dat, chains=4, iter_warmup=1e3, iter_sampling=1e3, refresh=500, parallel_chains=4)
 ```
+
+Richie talks about reparm which we have already done in the Stan code. The reparam trick comes from the fact that we are declaring a standard normal matrix and then mutliplying by the covariance matrix to get back to the "original" distribution. Again, effectively decoupling the mean from the variance.
+
+Now, recall that we had roughly 56 params, plus the 8 standard deviations and 12 correlation params equals 76. If we look at the p_loo, we'll see it is much lower:
+
+
+```{r}
+f_loo <- fit$draws('log_lik', format='matrix') |> loo::loo()
+f_loo
+```
+
+This is because if the high degree of shrinkage the model imposes. Seen a different way, look at the high sigma values:
+
+```{r}
+fit$summary(c('sigma_actor', 'sigma_block'))
+```
+
+## 14.3 - Instruments and Causal Designs

@@ -114,6 +114,7 @@ window.Quarto = {
   <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">14.0</a></li>
   <li><a href="#varying-slopes-by-construction" id="toc-varying-slopes-by-construction" class="nav-link" data-scroll-target="#varying-slopes-by-construction">14.1 - Varying Slopes by Construction</a></li>
   <li><a href="#advanced-varying-slopes" id="toc-advanced-varying-slopes" class="nav-link" data-scroll-target="#advanced-varying-slopes">14.2 - Advanced Varying Slopes</a></li>
+  <li><a href="#instruments-and-causal-designs" id="toc-instruments-and-causal-designs" class="nav-link" data-scroll-target="#instruments-and-causal-designs">14.3 - Instruments and Causal Designs</a></li>
   </ul>
 </nav>
 </div>
@@ -449,6 +450,115 @@ R
 L_i &amp;\sim \text{Binomial}(1, p_i) \\
 \text{logit}(p_i) &amp;= \gamma_{\text{TID}_i} + \alpha_{\text{ACTOR}_i,\text{TID}_i} + \beta_{\text{BLOCK}_i,\text{TID}_i}
 \end{align}\]</span></p>
+<p>This is basicallly a big interaction effects model. We are allowing the effect of each actor to varying by treatment, within each block. So there is a total of <span class="math inline">\(4 + 7\cdot 4 + 6 \cdot 4 = 56\)</span> params.</p>
+<p>I think it makes sense to start the actor to aid in the understanding. For each actor, we want to estimate some mean vector that perturbs the intercept specifcally for them. This mean vector is drawn from a super population of actors that have similar mean vectors. We can use this shard information since some actors have more observations in some treatments then others. It feels weird because we are leaving behind the nice intercept/slope defintion, but it is all the same really. We have some effect, per treatment, that varies on the actor level. Perfect for a multi-level model for regularization.</p>
+<p>For the actor, the hyper-prior looks something like: <span class="math display">\[
+\begin{bmatrix}
+\alpha_{j,1} \\ \alpha_{j,2} \\ \alpha_{j,3} \\ \alpha_{j,4}
+\end{bmatrix} \sim \text{MVNormal} \left (
+\begin{bmatrix}
+0 \\ 0 \\ 0 \\ 0
+\end{bmatrix},
+S_{\text{ACTOR}}
+  \right)
+\]</span></p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(chimpanzees)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> chimpanzees</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>block_id <span class="ot">&lt;-</span> d<span class="sc">$</span>block</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>treatment <span class="ot">&lt;-</span> <span class="dv">1</span>L <span class="sc">+</span> d<span class="sc">$</span>prosoc_left <span class="sc">+</span> <span class="dv">2</span>L<span class="sc">*</span>d<span class="sc">$</span>condition</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">L =</span> d<span class="sc">$</span>pulled_left,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">tid =</span> d<span class="sc">$</span>treatment,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">actor =</span> d<span class="sc">$</span>actor,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">block_id =</span> <span class="fu">as.integer</span>(d<span class="sc">$</span>block_id) )</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>dat <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> <span class="fu">apply</span>(<span class="dv">2</span>, n_distinct)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>       L      tid    actor block_id 
+       2        4        7        6 </code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># m14.2 &lt;- ulam(alist(</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   L ~ dbinom(1,p),</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   logit(p) &lt;- g[tid] + alpha[actor,tid] + beta[block_id,tid],</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   # adaptive priors</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   vector[4]:alpha[actor] ~ multi_normal(0,Rho_actor,sigma_actor),</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   vector[4]:beta[block_id] ~ multi_normal(0,Rho_block,sigma_block),</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   # fixed priors</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="co">#   g[tid] ~ dnorm(0,1),</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="co">#   sigma_actor ~ dexp(1),</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="co">#   Rho_actor ~ dlkjcorr(4),</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="co">#   sigma_block ~ dexp(1),</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="co">#   Rho_block ~ dlkjcorr(4)</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="co">#   ) , data=dat , chains=4 , cores=4 )</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>We’ll of course use Stan to fit:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>dat<span class="sc">$</span>N <span class="ot">&lt;-</span> d <span class="sc">|&gt;</span> <span class="fu">nrow</span>()</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>dat<span class="sc">$</span>N_actor <span class="ot">&lt;-</span> dat<span class="sc">$</span>actor <span class="sc">|&gt;</span> <span class="fu">n_distinct</span>()</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>dat<span class="sc">$</span>N_block <span class="ot">&lt;-</span> dat<span class="sc">$</span>block_id <span class="sc">|&gt;</span> <span class="fu">n_distinct</span>()</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>dat<span class="sc">$</span>N_tid <span class="ot">&lt;-</span> dat<span class="sc">$</span>tid <span class="sc">|&gt;</span> <span class="fu">n_distinct</span>()</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="fu">cmdstan_model</span>(<span class="st">'mod_14.2.stan'</span>)</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> mod<span class="sc">$</span><span class="fu">sample</span>(dat, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">iter_warmup=</span><span class="fl">1e3</span>, <span class="at">iter_sampling=</span><span class="fl">1e3</span>, <span class="at">refresh=</span><span class="dv">500</span>, <span class="at">parallel_chains=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>Richie talks about reparm which we have already done in the Stan code. The reparam trick comes from the fact that we are declaring a standard normal matrix and then mutliplying by the covariance matrix to get back to the “original” distribution. Again, effectively decoupling the mean from the variance.</p>
+<p>Now, recall that we had roughly 56 params, plus the 8 standard deviations and 12 correlation params equals 76. If we look at the p_loo, we’ll see it is much lower:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>f_loo <span class="ot">&lt;-</span> fit<span class="sc">$</span><span class="fu">draws</span>(<span class="st">'log_lik'</span>, <span class="at">format=</span><span class="st">'matrix'</span>) <span class="sc">|&gt;</span> loo<span class="sc">::</span><span class="fu">loo</span>()</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>f_loo</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Computed from 4000 by 504 log-likelihood matrix.
+
+         Estimate   SE
+elpd_loo   -274.2  9.9
+p_loo        28.5  1.5
+looic       548.4 19.8
+------
+MCSE of elpd_loo is 0.1.
+MCSE and ESS estimates assume independent draws (r_eff=1).
+
+All Pareto k estimates are good (k &lt; 0.7).
+See help('pareto-k-diagnostic') for details.</code></pre>
+</div>
+</div>
+<p>This is because if the high degree of shrinkage the model imposes. Seen a different way, look at the high sigma values:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">$</span><span class="fu">summary</span>(<span class="fu">c</span>(<span class="st">'sigma_actor'</span>, <span class="st">'sigma_block'</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 10
+  variable        mean median    sd   mad     q5   q95  rhat ess_bulk ess_tail
+  &lt;chr&gt;          &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;
+1 sigma_actor[1] 1.41   1.31  0.507 0.428 0.763  2.36   1.00    2197.    3017.
+2 sigma_actor[2] 0.914  0.842 0.410 0.349 0.382  1.66   1.00    2322.    2824.
+3 sigma_actor[3] 1.86   1.76  0.581 0.493 1.11   2.93   1.00    3078.    3364.
+4 sigma_actor[4] 1.58   1.46  0.628 0.509 0.816  2.76   1.00    3378.    2777.
+5 sigma_block[1] 0.418  0.344 0.336 0.302 0.0322 1.04   1.00    2020.    2566.
+6 sigma_block[2] 0.429  0.361 0.341 0.307 0.0361 1.07   1.00    1851.    2118.
+7 sigma_block[3] 0.294  0.228 0.260 0.211 0.0215 0.794  1.00    2900.    2121.
+8 sigma_block[4] 0.470  0.400 0.366 0.348 0.0359 1.15   1.00    2385.    2817.</code></pre>
+</div>
+</div>
+</section>
+<section id="instruments-and-causal-designs" class="level2">
+<h2 class="anchored" data-anchor-id="instruments-and-causal-designs">14.3 - Instruments and Causal Designs</h2>
 </section>
 
 </main>
