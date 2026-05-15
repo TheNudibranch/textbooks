@@ -203,4 +203,104 @@ for ( i in 1:N_cafes ) lines( c(a1[i],a2[i]) , c(b1[i],b2[i]))
 
 mu_est <- full_draws %>% select(starts_with('mu_ab')) %>% colMeans()
 rho_est <- full_draws %>% select(starts_with('Rho[1,2]')) %>% unlist() %>% mean()
+sig_cafe <- full_draws %>% select(starts_with('sigma_cafe')) %>% colMeans()
+Sigma <- diag(sig_cafe) %*% matrix(c(1, rho_est, rho_est, 1), ncol=2) %*% diag(sig_cafe)
+
+for (l in c(0.1, 0.3, 0.5, 0.8, 0.99)){
+  lines(ellipse::ellipse(Sigma, centre=mu_est, level=l),
+        col=col.alpha('black', 0.2))
+}
+```
+
+The blue points in the plot are the observed values and the open points are the shruken ones. Now lets display it on the outcome scale of wait times:
+
+
+```{r}
+# convert varying effects to waiting times
+wait_morning_1 <- (a1)
+wait_afternoon_1 <- (a1 + b1)
+wait_morning_2 <- (a2)
+wait_afternoon_2 <- (a2 + b2)
+
+# plot both and connect with lines
+plot( wait_morning_1 , wait_afternoon_1 , xlab="morning wait" ,
+  ylab="afternoon wait" , pch=16 , col=rangi2 ,
+  ylim=c( min(wait_afternoon_1)-0.1 , max(wait_afternoon_1)+0.1 ) ,
+  xlim=c( min(wait_morning_1)-0.1 , max(wait_morning_1)+0.1 ) )
+points( wait_morning_2 , wait_afternoon_2 , pch=1 )
+
+for ( i in 1:N_cafes )
+  lines( c(wait_morning_1[i],wait_morning_2[i]) ,
+         c(wait_afternoon_1[i],wait_afternoon_2[i]) )
+abline( a=0 , b=1 , lty=2 )
+
+# we'll simulate the wait times to get contours to keep the data generating persepctive
+  # To truely undertand the uncertainty we should probably sample from the hyperparams too
+  # But we'll keep those fixed to keep it clean
+
+v <- MASS::mvrnorm(1e4, mu_est, Sigma)
+v[,2] <- v[,1] + v[,2] #calculate afternoon wait time
+Sigma2 <- cov(v)
+mu_est2 <- colMeans(v)
+
+for (l in c(0.1, 0.3, 0.5, 0.8, 0.99)){
+  lines(ellipse::ellipse(Sigma2, centre=mu_est2, level=l),
+        col=col.alpha('black', 0.2))
+}
+```
+
+The thing to catch here is that the shrinkage on the parameter scale has naturally made its way into shrinkage on the outcome scale.
+
+## 14.2 - Advanced Varying Slopes
+
+Recall the chimp problem from lat chapter. We had different actors in different blocks with different treatments. Lots of effects to keep track of:
+
+\begin{align}
+L_i &\sim \text{Binomial}(1, p_i) \\
+\text{logit}(p_i) &= \gamma_{\text{TID}_i} + \alpha_{\text{ACTOR}_i,\text{TID}_i} + \beta_{\text{BLOCK}_i,\text{TID}_i}
+\end{align}
+
+This is basicallly a big interaction effects model. We are allowing the effect of each actor to varying by treatment, within each block. So there is a total of $4 + 7\cdot 4 + 6 \cdot 4 = 56$ params. 
+
+
+```{r}
+data(chimpanzees)
+d <- chimpanzees
+d$block_id <- d$block
+d$treatment <- 1L + d$prosoc_left + 2L*d$condition
+dat <- list(
+  L = d$pulled_left,
+  tid = d$treatment,
+  actor = d$actor,
+  block_id = as.integer(d$block_id) )
+
+dat %>% as.data.frame() %>% apply(2, n_distinct)
+
+# m14.2 <- ulam(alist(
+#   L ~ dbinom(1,p),
+#   logit(p) <- g[tid] + alpha[actor,tid] + beta[block_id,tid],
+#   # adaptive priors
+#   vector[4]:alpha[actor] ~ multi_normal(0,Rho_actor,sigma_actor),
+#   vector[4]:beta[block_id] ~ multi_normal(0,Rho_block,sigma_block),
+#   # fixed priors
+#   g[tid] ~ dnorm(0,1),
+#   sigma_actor ~ dexp(1),
+#   Rho_actor ~ dlkjcorr(4),
+#   sigma_block ~ dexp(1),
+#   Rho_block ~ dlkjcorr(4)
+#   ) , data=dat , chains=4 , cores=4 )
+```
+
+We'll of course use Stan to fit:
+
+
+```{r}
+dat$N <- d |> nrow()
+dat$N_actor <- dat$actor |> n_distinct()
+dat$N_block <- dat$block_id |> n_distinct()
+dat$N_tid <- dat$tid |> n_distinct()
+
+
+mod <- cmdstan_model('mod_14.2.stan')
+fit <- mod$sample(dat, chains=4, iter_warmup=1e3, iter_sampling=1e3, refresh=500, parallel_chains=4)
 ```

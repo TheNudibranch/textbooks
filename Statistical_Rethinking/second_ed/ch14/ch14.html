@@ -113,6 +113,7 @@ window.Quarto = {
   <ul>
   <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">14.0</a></li>
   <li><a href="#varying-slopes-by-construction" id="toc-varying-slopes-by-construction" class="nav-link" data-scroll-target="#varying-slopes-by-construction">14.1 - Varying Slopes by Construction</a></li>
+  <li><a href="#advanced-varying-slopes" id="toc-advanced-varying-slopes" class="nav-link" data-scroll-target="#advanced-varying-slopes">14.2 - Advanced Varying Slopes</a></li>
   </ul>
 </nav>
 </div>
@@ -228,7 +229,7 @@ window.Quarto = {
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> a_cafe[cafe_id] <span class="sc">+</span> b_cafe[cafe_id]<span class="sc">*</span>afternoon</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>sigma <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>wait <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(mu, sigma)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>wait <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="fu">length</span>(mu), mu, sigma)</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">cafe=</span>cafe_id, <span class="at">afternoon=</span>afternoon, <span class="at">wait=</span>wait)</span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(d)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
@@ -236,7 +237,7 @@ window.Quarto = {
 <pre><code>'data.frame':   200 obs. of  3 variables:
  $ cafe     : int  1 1 1 1 1 1 1 1 1 1 ...
  $ afternoon: int  0 1 0 1 0 1 0 1 0 1 ...
- $ wait     : num  -0.0121 2.9852 1.5078 0.7928 0.291 ...</code></pre>
+ $ wait     : num  3.97 3.86 4.73 2.76 4.12 ...</code></pre>
 </div>
 </div>
 <p>Let’s now build out the full model to estimate:</p>
@@ -310,33 +311,144 @@ R
 <span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  ),</span>
 <span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">chains =</span> <span class="dv">4</span>,</span>
 <span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">parallel_chains =</span> <span class="dv">4</span>,</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">refresh =</span> <span class="dv">500</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">refresh =</span> <span class="dv">500</span>,</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">iter_warmup =</span> <span class="fl">1e3</span>, <span class="at">iter_sampling=</span><span class="fl">1e3</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">$</span><span class="fu">summary</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">$</span><span class="fu">summary</span>(<span class="st">'Rho'</span>) <span class="sc">|&gt;</span> <span class="fu">print</span>(<span class="at">n=</span><span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 50 × 10
-   variable         mean   median      sd    mad      q5     q95  rhat ess_bulk
-   &lt;chr&gt;           &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;
- 1 lp__         -46.5    -47.3    16.1    19.1   -71.5   -21.2    1.04     96.6
- 2 mu_ab[1]       0.372    0.367   0.0990  0.106   0.228   0.538  1.04    134. 
- 3 mu_ab[2]       0.0714   0.0754  0.162   0.147  -0.206   0.347  1.03    198. 
- 4 ab_cafe[1,1]   0.400    0.388   0.163   0.141   0.161   0.693  1.01    348. 
- 5 ab_cafe[2,1]   0.395    0.381   0.156   0.136   0.174   0.671  1.02    317. 
- 6 ab_cafe[3,1]   0.358    0.350   0.154   0.134   0.123   0.613  1.02    280. 
- 7 ab_cafe[4,1]   0.359    0.350   0.150   0.136   0.135   0.612  1.03    242. 
- 8 ab_cafe[5,1]   0.410    0.390   0.182   0.148   0.151   0.745  1.01    389. 
- 9 ab_cafe[6,1]   0.410    0.392   0.163   0.142   0.191   0.716  1.02    268. 
-10 ab_cafe[7,1]   0.370    0.363   0.161   0.135   0.115   0.638  1.00    603. 
-# ℹ 40 more rows
-# ℹ 1 more variable: ess_tail &lt;dbl&gt;</code></pre>
+<pre><code># A tibble: 4 × 10
+  variable   mean median    sd   mad     q5    q95  rhat ess_bulk ess_tail
+  &lt;chr&gt;     &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;
+1 Rho[1,1]  1      1     0     0      1      1     NA         NA       NA 
+2 Rho[2,1] -0.505 -0.528 0.181 0.181 -0.763 -0.182  1.00    1857.    2518.
+3 Rho[1,2] -0.505 -0.528 0.181 0.181 -0.763 -0.182  1.00    1857.    2518.
+4 Rho[2,2]  1      1     0     0      1      1     NA         NA       NA </code></pre>
 </div>
 </div>
+<p>Let’s see what the prior tension is for the correlation matrix:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>mod_rho <span class="ot">&lt;-</span> fit<span class="sc">$</span><span class="fu">draws</span>(<span class="st">'Rho[2,1]'</span>, <span class="at">format=</span><span class="st">'df'</span>) <span class="sc">%&gt;%</span> <span class="fu">pull</span>(<span class="st">'Rho[2,1]'</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dens</span>(mod_rho)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>R <span class="ot">&lt;-</span> <span class="fu">rlkjcorr</span>(<span class="fl">1e4</span>, <span class="at">K=</span><span class="dv">2</span>, <span class="at">eta=</span><span class="dv">2</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="fu">dens</span>(R[,<span class="dv">1</span>,<span class="dv">2</span>], <span class="at">add=</span>T, <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch14_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Now let’s plot the estimates and their shrinkage:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>full_draws <span class="ot">&lt;-</span> fit<span class="sc">$</span><span class="fu">draws</span>(<span class="at">format=</span><span class="st">'df'</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span><span class="fu">starts_with</span>(<span class="st">'.'</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Dropping 'draws_df' class as required metadata was removed.</code></pre>
+</div>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># compute unpooled estimates directly from data</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>a1 <span class="ot">&lt;-</span> <span class="fu">sapply</span>( <span class="dv">1</span><span class="sc">:</span>N_cafes , <span class="cf">function</span>(i) <span class="fu">mean</span>(wait[cafe_id<span class="sc">==</span>i <span class="sc">&amp;</span> afternoon<span class="sc">==</span><span class="dv">0</span>]) )</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>b1 <span class="ot">&lt;-</span> <span class="fu">sapply</span>( <span class="dv">1</span><span class="sc">:</span>N_cafes , <span class="cf">function</span>(i) <span class="fu">mean</span>(wait[cafe_id<span class="sc">==</span>i <span class="sc">&amp;</span> afternoon<span class="sc">==</span><span class="dv">1</span>]) ) <span class="sc">-</span> a1</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="co"># extract posterior means of partially pooled estimates</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>a2 <span class="ot">&lt;-</span> full_draws <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">starts_with</span>(<span class="st">'ab_cafe'</span>)) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">ends_with</span>(<span class="st">'1]'</span>)) <span class="sc">%&gt;%</span> <span class="fu">colMeans</span>()</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>b2 <span class="ot">&lt;-</span> full_draws <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">starts_with</span>(<span class="st">'ab_cafe'</span>))  <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">ends_with</span>(<span class="st">'2]'</span>)) <span class="sc">%&gt;%</span> <span class="fu">colMeans</span>()</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="co"># plot both and connect with lines</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>( a1 , b1 , <span class="at">xlab=</span><span class="st">"intercept"</span> , <span class="at">ylab=</span><span class="st">"slope"</span> ,</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">pch=</span><span class="dv">16</span> , <span class="at">col=</span>rangi2 , <span class="at">ylim=</span><span class="fu">c</span>( <span class="fu">min</span>(b1)<span class="sc">-</span><span class="fl">0.1</span> , <span class="fu">max</span>(b1)<span class="sc">+</span><span class="fl">0.1</span> ) ,</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">xlim=</span><span class="fu">c</span>( <span class="fu">min</span>(a1)<span class="sc">-</span><span class="fl">0.1</span> , <span class="fu">max</span>(a1)<span class="sc">+</span><span class="fl">0.1</span> ) )</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>( a2 , b2 , <span class="at">pch=</span><span class="dv">1</span> )</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ( i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N_cafes ) <span class="fu">lines</span>( <span class="fu">c</span>(a1[i],a2[i]) , <span class="fu">c</span>(b1[i],b2[i]))</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>mu_est <span class="ot">&lt;-</span> full_draws <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">starts_with</span>(<span class="st">'mu_ab'</span>)) <span class="sc">%&gt;%</span> <span class="fu">colMeans</span>()</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>rho_est <span class="ot">&lt;-</span> full_draws <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">starts_with</span>(<span class="st">'Rho[1,2]'</span>)) <span class="sc">%&gt;%</span> <span class="fu">unlist</span>() <span class="sc">%&gt;%</span> <span class="fu">mean</span>()</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>sig_cafe <span class="ot">&lt;-</span> full_draws <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">starts_with</span>(<span class="st">'sigma_cafe'</span>)) <span class="sc">%&gt;%</span> <span class="fu">colMeans</span>()</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>Sigma <span class="ot">&lt;-</span> <span class="fu">diag</span>(sig_cafe) <span class="sc">%*%</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, rho_est, rho_est, <span class="dv">1</span>), <span class="at">ncol=</span><span class="dv">2</span>) <span class="sc">%*%</span> <span class="fu">diag</span>(sig_cafe)</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l <span class="cf">in</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.8</span>, <span class="fl">0.99</span>)){</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(ellipse<span class="sc">::</span><span class="fu">ellipse</span>(Sigma, <span class="at">centre=</span>mu_est, <span class="at">level=</span>l),</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">col=</span><span class="fu">col.alpha</span>(<span class="st">'black'</span>, <span class="fl">0.2</span>))</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch14_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The blue points in the plot are the observed values and the open points are the shruken ones. Now lets display it on the outcome scale of wait times:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># convert varying effects to waiting times</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>wait_morning_1 <span class="ot">&lt;-</span> (a1)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>wait_afternoon_1 <span class="ot">&lt;-</span> (a1 <span class="sc">+</span> b1)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>wait_morning_2 <span class="ot">&lt;-</span> (a2)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>wait_afternoon_2 <span class="ot">&lt;-</span> (a2 <span class="sc">+</span> b2)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co"># plot both and connect with lines</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>( wait_morning_1 , wait_afternoon_1 , <span class="at">xlab=</span><span class="st">"morning wait"</span> ,</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">ylab=</span><span class="st">"afternoon wait"</span> , <span class="at">pch=</span><span class="dv">16</span> , <span class="at">col=</span>rangi2 ,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">ylim=</span><span class="fu">c</span>( <span class="fu">min</span>(wait_afternoon_1)<span class="sc">-</span><span class="fl">0.1</span> , <span class="fu">max</span>(wait_afternoon_1)<span class="sc">+</span><span class="fl">0.1</span> ) ,</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">xlim=</span><span class="fu">c</span>( <span class="fu">min</span>(wait_morning_1)<span class="sc">-</span><span class="fl">0.1</span> , <span class="fu">max</span>(wait_morning_1)<span class="sc">+</span><span class="fl">0.1</span> ) )</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>( wait_morning_2 , wait_afternoon_2 , <span class="at">pch=</span><span class="dv">1</span> )</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ( i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N_cafes )</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>( <span class="fu">c</span>(wait_morning_1[i],wait_morning_2[i]) ,</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>         <span class="fu">c</span>(wait_afternoon_1[i],wait_afternoon_2[i]) )</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>( <span class="at">a=</span><span class="dv">0</span> , <span class="at">b=</span><span class="dv">1</span> , <span class="at">lty=</span><span class="dv">2</span> )</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a><span class="co"># we'll simulate the wait times to get contours to keep the data generating persepctive</span></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># To truely undertand the uncertainty we should probably sample from the hyperparams too</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># But we'll keep those fixed to keep it clean</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> MASS<span class="sc">::</span><span class="fu">mvrnorm</span>(<span class="fl">1e4</span>, mu_est, Sigma)</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>v[,<span class="dv">2</span>] <span class="ot">&lt;-</span> v[,<span class="dv">1</span>] <span class="sc">+</span> v[,<span class="dv">2</span>] <span class="co">#calculate afternoon wait time</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>Sigma2 <span class="ot">&lt;-</span> <span class="fu">cov</span>(v)</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>mu_est2 <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(v)</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l <span class="cf">in</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.8</span>, <span class="fl">0.99</span>)){</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(ellipse<span class="sc">::</span><span class="fu">ellipse</span>(Sigma2, <span class="at">centre=</span>mu_est2, <span class="at">level=</span>l),</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>        <span class="at">col=</span><span class="fu">col.alpha</span>(<span class="st">'black'</span>, <span class="fl">0.2</span>))</span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ch14_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The thing to catch here is that the shrinkage on the parameter scale has naturally made its way into shrinkage on the outcome scale.</p>
+</section>
+<section id="advanced-varying-slopes" class="level2">
+<h2 class="anchored" data-anchor-id="advanced-varying-slopes">14.2 - Advanced Varying Slopes</h2>
+<p>Recall the chimp problem from lat chapter. We had different actors in different blocks with different treatments. Lots of effects to keep track of:</p>
+<p><span class="math display">\[\begin{align}
+L_i &amp;\sim \text{Binomial}(1, p_i) \\
+\text{logit}(p_i) &amp;= \gamma_{\text{TID}_i} + \alpha_{\text{ACTOR}_i,\text{TID}_i} + \beta_{\text{BLOCK}_i,\text{TID}_i}
+\end{align}\]</span></p>
 </section>
 
 </main>
