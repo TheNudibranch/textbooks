@@ -10,7 +10,7 @@ toc: true
 #| code-fold: true
 
 library(rethinking)
-library(dagitty)
+# library(dagitty)
 library(tidyverse)
 library(cmdstanr)
 # rstudioapi::getActiveDocumentContext()$path |> dirname() |> setwd()
@@ -337,3 +337,143 @@ fit$summary(c('sigma_actor', 'sigma_block'))
 ```
 
 ## 14.3 - Instruments and Causal Designs
+
+Introduce IVs, they are a new tool in the toolkit for identifying causal effects. Let's we want education's effect on wages: $E \rightarrow W$. But there is a backdoor path with a confounder $U$: $E \leftarrow U \rightarrow W$. Now, we if have a variable $Q$ that acts as a natural experiment on $E$, then we can use it to determine the causal effect on $W$. But it must statisfy the follow:
+
+- Independent of $U$, $(Q \perp\!\!\!\perp U)$
+- Not independent of $E$
+- $Q$ cannot influence $W$, except though $E$ (exclusion criteria)
+
+Naively, we might think we can just include $Q$ in the model, but look at the path: $Q \rightarrow E \leftarrow U \rightarrow W$. Since are conditioning on $E$, it becomes a collider and $E$ can be even more confounded. In this case, we would call $Q$ a bias amplifier. 
+
+Let's simulate some data before we get to the nitty-gritty. We'll have $Q$ be birth quarter which used to correspond to the amount of schooling a student might get:
+
+```{r}
+N <- 500
+U_sim <- rnorm(N)
+Q_sim <- sample(1:4, size=N, replace=T)
+E_sim <- rnorm(N, U_sim + Q_sim)
+W_sim <- rnorm(N, U_sim + 0*E_sim)
+dat_sim <- list(
+  W = standardize(W_sim),
+  E = standardize(E_sim),
+  Q = standardize(Q_sim)
+)
+```
+For the sake of showing effects, we have set the effect of education on wages to be zero. But the instrument does influence education and education alone. It is also true that a higher value for $Q$ yields a higher value for $E$. Let's try three different models. First, a naive regression:
+
+```{r}
+m14.4 <- quap(alist(
+  W ~ dnorm(mu, sigma),
+  mu <- aW + bEW*E,
+  aW ~ dnorm(0, 0.2),
+  bEW ~ dnorm(0, 0.5),
+  sigma ~ dexp(1)
+), data=dat_sim)
+
+precis(m14.4)
+```
+
+Ordinary confounding. Let's now add $Q$ to the model:
+
+```{r}
+m14.5 <- quap(alist(
+  W ~ dnorm(mu, sigma),
+  mu <- aW + bEW*E + bQW*Q,
+  aW ~ dnorm(0, 0.2),
+  bEW ~ dnorm(0, 0.5),
+  bQW ~ dnorm(0, 0.5),
+  sigma ~ dexp(1)
+), data=dat_sim)
+
+precis(m14.5)
+```
+
+Wow - even worse. 
+
+To get this correctly, we need to model the data generating process explicitly. That is, a separate model for education, and one for wages.
+
+Wages looks like:
+
+\begin{align}
+W_i &\sim \text{Normal}(\mu_{W,i}, \sigma_W) \\
+\mu_{W,i} &= \alpha_W + \beta_{EW} E_i + U_i \\
+\end{align}
+
+and education looks like:
+
+\begin{align}
+E_i &\sim \text{Normal}(\mu_{E,i}, \sigma_E) \\
+\mu_{E,i} &= \alpha_E + \beta_{QE} Q_i + U_i \\
+\end{align}
+
+Finally, we have $Q_i \sim \text{Categorical}(0.25, 0.25,0.25,0.25)$ and $U_i\sim \text{Normal}(0,1)$ for the instrument and confounder, respectively. 
+
+To handle the confounder, we will average over it and model the covariance between $W$ and $E$:
+
+\begin{align}
+\begin{matrix}
+W_i \\ E_i
+\end{matrix}
+& \sim \text{MVNormal}([\mu_{W,i}, \mu_{E,i}], S) \\
+\mu_{W,i} &= \alpha_W + \beta_{EW} E_i \\
+\mu_{E,i} &= \alpha_E + \beta_{QE} Q_i
+\end{align}
+
+It might feel weird to see $E$ as both an observed variable and covariate for the $W$ regression equation, but there is nothing illegal aboout this. Also, the covariance matrix here is to capture the correlation that might be present in the residuals of predicting $E$ and $W$, through $U$. You can think of this as: if the error on $E$ increases, so will the error on $W$. Why? Because that most likely correlates to a high $U$ that contributed to that individual residual.
+
+Let's now model it:
+
+```{r}
+# m14.6 <- ulam(
+#   alist(
+#     c(W,E) ~ multi_normal( c(muW,muE) , Rho , Sigma ),
+#     muW <- aW + bEW*E,
+#     muE <- aE + bQE*Q,
+#     c(aW,aE) ~ normal( 0 , 0.2 ),
+#     c(bEW,bQE) ~ normal( 0 , 0.5 ),
+#     Rho ~ lkj_corr( 2 ),
+#     Sigma ~ exponential( 1 )
+#   ), data=dat_sim , chains=4 , cores=4 )
+# 
+# precis( m14.6 , depth=3 )
+```
+
+```{r}
+#| output: false
+
+mod <- cmdstan_model('mod_14.6.stan')
+dat_sim$N <- dat_sim$Q |> length()
+fit <- mod$sample(dat_sim, chains=4, iter_warmup=1e3, iter_sampling=1e3, refresh=500, parallel_chains=4)
+```
+```{r}
+fit$summary(c('aE', 'aW', 'bQE', 'bEW', 'Rho[1,2]'))
+```
+
+Notice that $\beta_{EW}$ is now straddling zero. 
+
+Let's try with some different simulation params:
+
+```{r}
+#| output: false
+
+N <- 500
+U_sim <- rnorm(N)
+Q_sim <- sample(1:4, size=N, replace=T)
+E_sim <- rnorm(N, U_sim + Q_sim)
+W_sim <- rnorm(N, -U_sim + 0.2*E_sim)
+dat_sim <- list(
+  W = standardize(W_sim),
+  E = standardize(E_sim),
+  Q = standardize(Q_sim),
+  N = N
+)
+
+fit <- mod$sample(dat_sim, chains=4, iter_warmup=1e3, iter_sampling=1e3, refresh=500, parallel_chains=4)
+```
+
+```{r}
+fit$summary(c('aE', 'aW', 'bQE', 'bEW', 'Rho[1,2]'))
+```
+
+Notice now that there is a negative correlation between the residuals. This is because $U$ positively influences $E$, but negatively influences $W$. 
