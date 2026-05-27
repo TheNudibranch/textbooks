@@ -10,7 +10,7 @@ toc: true
 #| code-fold: true
 
 library(rethinking)
-# library(dagitty)
+library(dagitty)
 library(tidyverse)
 library(cmdstanr)
 # rstudioapi::getActiveDocumentContext()$path |> dirname() |> setwd()
@@ -412,9 +412,9 @@ Finally, we have $Q_i \sim \text{Categorical}(0.25, 0.25,0.25,0.25)$ and $U_i\si
 To handle the confounder, we will average over it and model the covariance between $W$ and $E$:
 
 \begin{align}
-\begin{matrix}
+\begin{pmatrix}
 W_i \\ E_i
-\end{matrix}
+\end{pmatrix}
 & \sim \text{MVNormal}([\mu_{W,i}, \mu_{E,i}], S) \\
 \mu_{W,i} &= \alpha_W + \beta_{EW} E_i \\
 \mu_{E,i} &= \alpha_E + \beta_{QE} Q_i
@@ -477,3 +477,93 @@ fit$summary(c('aE', 'aW', 'bQE', 'bEW', 'Rho[1,2]'))
 ```
 
 Notice now that there is a negative correlation between the residuals. This is because $U$ positively influences $E$, but negatively influences $W$. 
+
+We can also use `dagitty` to help us find instrument variables, if they are present in the DAG:
+
+
+```{r}
+dagIV <- dagitty("dag{Q -> E <- U -> W <- E}")
+instrumentalVariables(dagIV, exposure="E", outcome='W')
+```
+
+Some final thoughts:
+
+- People sometimes use 2SLS (2-stage least squares) for estimating IV
+  - Process where we regress $Q$ onto $X$, then take the predicted values from that equation and feed them into the regression of $\hat X$ onto $Y$
+  - This makes some strong assumptions and requires large sample sizes to get reliable estaimtes (check F-stat from first stage)
+- Use mediator variables to get causal estimates
+  - consider the DAG $X \rightarrow Z \rightarrow Y \leftarrow U \rightarrow X$
+  - Clearly $Z$ is un-confounded by $U$, therefore we can use it to get the causal estimate of $X$ on $Y$
+- Regresssion Discontinuity Design
+  - Consider a decision that is based on a continuous GPA
+  - There will be students who just fall above and those that just fall below this "arbitrary" cut point
+  - We can use this to estimate the causal effect by fitting two separate regressions - one before and one after the decision point
+
+## 14.4 - Social relations and correlated varying effects
+
+Consider the `kl_dyads` and `kl_households` datasets. The first is a dataset of households from Nicaragua where these households have given gifts between one another. The variables `giftsAB` and `giftsBA` are the gifts in each direction within each dyad. A dyad here is a pair of households. 
+
+```{r}
+data(KosterLeckie)
+```
+
+The model for $A \rightarrow B$ will look like such:
+
+\begin{align}
+y_{A \rightarrow B} & \sim \text{Poisson}(\lambda_{AB}) \\ 
+\log \lambda_{AB} &= \alpha + g_A + r_B + d_{AB}
+\end{align}
+
+Where $g_A$ is the household $A$ specific tendancy to give, $r_B$ is the household specific tendancy to receive, and $d_{AB}$ is the dyad specific effect of $A$ to $B$.
+
+There is of course another model for $B\rightarrow A$
+
+\begin{align}
+y_{B \rightarrow A} & \sim \text{Poisson}(\lambda_{BA}) \\ 
+\log \lambda_{BA} &= \alpha + g_B + r_A + d_{BA}
+\end{align}
+
+We will use a bivariate normal to represent the adaptive prior on the $g$ and $r$ effects:
+
+$$
+\begin{pmatrix} g_i\\ r_i \end{pmatrix} 
+\sim 
+\text{MVNormal}(0, \begin{pmatrix} \sigma_g^2 & \sigma_g \sigma_r \rho_{gr} \\ \sigma_g \sigma_r \rho_{gr} & \sigma_r^2  \end{pmatrix})
+$$
+
+We'll do something similar for the dyad effects:
+
+$$
+\begin{pmatrix} d_{ij}\\ d_{ji} \end{pmatrix} 
+\sim 
+\text{MVNormal}(0, \begin{pmatrix} \sigma_d^2 & \sigma_d^2 \rho_{d} \\ \sigma_d^2 \rho_{d}  & \sigma_d^2  \end{pmatrix})
+$$
+
+Notice that we are using the same variance $\sigma_d$ here. That is because the labels in each dyad are arbitrary, and it should matter if it is 1 to 2 or 2 to 1. That is, it isn't meaningful which household comes first. But we do want to estimate the correlation.To interpret: if $\rho_d$ is positive, then if one household gives more within a dyad, then so too does the other.
+
+Let's go ahead and run our Stan model:
+
+
+```{r}
+#| output: false
+kl_data <- list(
+  n = nrow(kl_dyads),
+  n_households = max(kl_dyads$hidB),
+  did = kl_dyads$did,
+  hidA = kl_dyads$hidA,
+  hidB = kl_dyads$hidB,
+  giftsAB = kl_dyads$giftsAB,
+  giftsBA = kl_dyads$giftsBA
+)
+
+mod <- cmdstan_model('mod_14.7.stan')
+fit <- mod$sample(kl_data, chains=4, iter_warmup=1e3, iter_sampling=1e3, refresh=500, parallel_chains=4)
+```
+
+
+```{r}
+fit$summary(c('Rho_gr[1,2]', 'Rho_d[1,2]', 'sigma_gr'))
+```
+
+The negative correlation of `Rho_gr` implies the individuals that give more, tend to receive less. It also looks like, based on `sigma_gr`, that rates of giving are more variable than rates of receiving.
+

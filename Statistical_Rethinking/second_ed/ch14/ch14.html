@@ -115,6 +115,7 @@ window.Quarto = {
   <li><a href="#varying-slopes-by-construction" id="toc-varying-slopes-by-construction" class="nav-link" data-scroll-target="#varying-slopes-by-construction">14.1 - Varying Slopes by Construction</a></li>
   <li><a href="#advanced-varying-slopes" id="toc-advanced-varying-slopes" class="nav-link" data-scroll-target="#advanced-varying-slopes">14.2 - Advanced Varying Slopes</a></li>
   <li><a href="#instruments-and-causal-designs" id="toc-instruments-and-causal-designs" class="nav-link" data-scroll-target="#instruments-and-causal-designs">14.3 - Instruments and Causal Designs</a></li>
+  <li><a href="#social-relations-and-correlated-varying-effects" id="toc-social-relations-and-correlated-varying-effects" class="nav-link" data-scroll-target="#social-relations-and-correlated-varying-effects">14.4 - Social relations and correlated varying effects</a></li>
   </ul>
 </nav>
 </div>
@@ -559,6 +560,275 @@ See help('pareto-k-diagnostic') for details.</code></pre>
 </section>
 <section id="instruments-and-causal-designs" class="level2">
 <h2 class="anchored" data-anchor-id="instruments-and-causal-designs">14.3 - Instruments and Causal Designs</h2>
+<p>Introduce IVs, they are a new tool in the toolkit for identifying causal effects. Let’s we want education’s effect on wages: <span class="math inline">\(E \rightarrow W\)</span>. But there is a backdoor path with a confounder <span class="math inline">\(U\)</span>: <span class="math inline">\(E \leftarrow U \rightarrow W\)</span>. Now, we if have a variable <span class="math inline">\(Q\)</span> that acts as a natural experiment on <span class="math inline">\(E\)</span>, then we can use it to determine the causal effect on <span class="math inline">\(W\)</span>. But it must statisfy the follow:</p>
+<ul>
+<li>Independent of <span class="math inline">\(U\)</span>, <span class="math inline">\((Q \perp\!\!\!\perp U)\)</span></li>
+<li>Not independent of <span class="math inline">\(E\)</span></li>
+<li><span class="math inline">\(Q\)</span> cannot influence <span class="math inline">\(W\)</span>, except though <span class="math inline">\(E\)</span> (exclusion criteria)</li>
+</ul>
+<p>Naively, we might think we can just include <span class="math inline">\(Q\)</span> in the model, but look at the path: <span class="math inline">\(Q \rightarrow E \leftarrow U \rightarrow W\)</span>. Since are conditioning on <span class="math inline">\(E\)</span>, it becomes a collider and <span class="math inline">\(E\)</span> can be even more confounded. In this case, we would call <span class="math inline">\(Q\)</span> a bias amplifier.</p>
+<p>Let’s simulate some data before we get to the nitty-gritty. We’ll have <span class="math inline">\(Q\)</span> be birth quarter which used to correspond to the amount of schooling a student might get:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>U_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>Q_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="at">size=</span>N, <span class="at">replace=</span>T)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>E_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, U_sim <span class="sc">+</span> Q_sim)</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>W_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, U_sim <span class="sc">+</span> <span class="dv">0</span><span class="sc">*</span>E_sim)</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>dat_sim <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">W =</span> <span class="fu">standardize</span>(W_sim),</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">E =</span> <span class="fu">standardize</span>(E_sim),</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">Q =</span> <span class="fu">standardize</span>(Q_sim)</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>For the sake of showing effects, we have set the effect of education on wages to be zero. But the instrument does influence education and education alone. It is also true that a higher value for <span class="math inline">\(Q\)</span> yields a higher value for <span class="math inline">\(E\)</span>. Let’s try three different models. First, a naive regression:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>m14<span class="fl">.4</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  W <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> aW <span class="sc">+</span> bEW<span class="sc">*</span>E,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  aW <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.2</span>),</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  bEW <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat_sim)</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m14<span class="fl">.4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>               mean         sd        5.5%      94.5%
+aW    -1.076748e-07 0.03967720 -0.06341193 0.06341171
+bEW    4.192764e-01 0.04039030  0.35472491 0.48382790
+sigma  9.052009e-01 0.02860232  0.85948882 0.95091289</code></pre>
+</div>
+</div>
+<p>Ordinary confounding. Let’s now add <span class="math inline">\(Q\)</span> to the model:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>m14<span class="fl">.5</span> <span class="ot">&lt;-</span> <span class="fu">quap</span>(<span class="fu">alist</span>(</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  W <span class="sc">~</span> <span class="fu">dnorm</span>(mu, sigma),</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> aW <span class="sc">+</span> bEW<span class="sc">*</span>E <span class="sc">+</span> bQW<span class="sc">*</span>Q,</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  aW <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.2</span>),</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  bEW <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  bQW <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dexp</span>(<span class="dv">1</span>)</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>), <span class="at">data=</span>dat_sim)</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="fu">precis</span>(m14<span class="fl">.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>               mean         sd        5.5%       94.5%
+aW    -1.849290e-08 0.03852488 -0.06157022  0.06157018
+bEW    5.887188e-01 0.04980699  0.50911760  0.66831997
+bQW   -2.741814e-01 0.04980633 -0.35378155 -0.19458130
+sigma  8.778830e-01 0.02772587  0.83357169  0.92219428</code></pre>
+</div>
+</div>
+<p>Wow - even worse.</p>
+<p>To get this correctly, we need to model the data generating process explicitly. That is, a separate model for education, and one for wages.</p>
+<p>Wages looks like:</p>
+<p><span class="math display">\[\begin{align}
+W_i &amp;\sim \text{Normal}(\mu_{W,i}, \sigma_W) \\
+\mu_{W,i} &amp;= \alpha_W + \beta_{EW} E_i + U_i \\
+\end{align}\]</span></p>
+<p>and education looks like:</p>
+<p><span class="math display">\[\begin{align}
+E_i &amp;\sim \text{Normal}(\mu_{E,i}, \sigma_E) \\
+\mu_{E,i} &amp;= \alpha_E + \beta_{QE} Q_i + U_i \\
+\end{align}\]</span></p>
+<p>Finally, we have <span class="math inline">\(Q_i \sim \text{Categorical}(0.25, 0.25,0.25,0.25)\)</span> and <span class="math inline">\(U_i\sim \text{Normal}(0,1)\)</span> for the instrument and confounder, respectively.</p>
+<p>To handle the confounder, we will average over it and model the covariance between <span class="math inline">\(W\)</span> and <span class="math inline">\(E\)</span>:</p>
+<p><span class="math display">\[\begin{align}
+\begin{pmatrix}
+W_i \\ E_i
+\end{pmatrix}
+&amp; \sim \text{MVNormal}([\mu_{W,i}, \mu_{E,i}], S) \\
+\mu_{W,i} &amp;= \alpha_W + \beta_{EW} E_i \\
+\mu_{E,i} &amp;= \alpha_E + \beta_{QE} Q_i
+\end{align}\]</span></p>
+<p>It might feel weird to see <span class="math inline">\(E\)</span> as both an observed variable and covariate for the <span class="math inline">\(W\)</span> regression equation, but there is nothing illegal aboout this. Also, the covariance matrix here is to capture the correlation that might be present in the residuals of predicting <span class="math inline">\(E\)</span> and <span class="math inline">\(W\)</span>, through <span class="math inline">\(U\)</span>. You can think of this as: if the error on <span class="math inline">\(E\)</span> increases, so will the error on <span class="math inline">\(W\)</span>. Why? Because that most likely correlates to a high <span class="math inline">\(U\)</span> that contributed to that individual residual.</p>
+<p>Let’s now model it:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># m14.6 &lt;- ulam(</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   alist(</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="co">#     c(W,E) ~ multi_normal( c(muW,muE) , Rho , Sigma ),</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="co">#     muW &lt;- aW + bEW*E,</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="co">#     muE &lt;- aE + bQE*Q,</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="co">#     c(aW,aE) ~ normal( 0 , 0.2 ),</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="co">#     c(bEW,bQE) ~ normal( 0 , 0.5 ),</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="co">#     Rho ~ lkj_corr( 2 ),</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="co">#     Sigma ~ exponential( 1 )</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="co">#   ), data=dat_sim , chains=4 , cores=4 )</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a><span class="co"># precis( m14.6 , depth=3 )</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="fu">cmdstan_model</span>(<span class="st">'mod_14.6.stan'</span>)</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>dat_sim<span class="sc">$</span>N <span class="ot">&lt;-</span> dat_sim<span class="sc">$</span>Q <span class="sc">|&gt;</span> <span class="fu">length</span>()</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> mod<span class="sc">$</span><span class="fu">sample</span>(dat_sim, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">iter_warmup=</span><span class="fl">1e3</span>, <span class="at">iter_sampling=</span><span class="fl">1e3</span>, <span class="at">refresh=</span><span class="dv">500</span>, <span class="at">parallel_chains=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">$</span><span class="fu">summary</span>(<span class="fu">c</span>(<span class="st">'aE'</span>, <span class="st">'aW'</span>, <span class="st">'bQE'</span>, <span class="st">'bEW'</span>, <span class="st">'Rho[1,2]'</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 10
+  variable      mean    median     sd    mad      q5    q95  rhat ess_bulk
+  &lt;chr&gt;        &lt;dbl&gt;     &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;
+1 aE        0.000210  0.000166 0.0336 0.0336 -0.0550 0.0561  1.00    3788.
+2 aW       -0.000370 -0.000342 0.0415 0.0410 -0.0680 0.0664  1.00    4161.
+3 bQE       0.618     0.618    0.0354 0.0341  0.559  0.676   1.00    4148.
+4 bEW       0.147     0.149    0.0667 0.0662  0.0322 0.252   1.00    2155.
+5 Rho[1,2]  0.366     0.367    0.0606 0.0625  0.269  0.464   1.00    2256.
+# ℹ 1 more variable: ess_tail &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<p>Notice that <span class="math inline">\(\beta_{EW}\)</span> is now straddling zero.</p>
+<p>Let’s try with some different simulation params:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>U_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N)</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>Q_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="at">size=</span>N, <span class="at">replace=</span>T)</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>E_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, U_sim <span class="sc">+</span> Q_sim)</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>W_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="sc">-</span>U_sim <span class="sc">+</span> <span class="fl">0.2</span><span class="sc">*</span>E_sim)</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>dat_sim <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">W =</span> <span class="fu">standardize</span>(W_sim),</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">E =</span> <span class="fu">standardize</span>(E_sim),</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">Q =</span> <span class="fu">standardize</span>(Q_sim),</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> N</span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> mod<span class="sc">$</span><span class="fu">sample</span>(dat_sim, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">iter_warmup=</span><span class="fl">1e3</span>, <span class="at">iter_sampling=</span><span class="fl">1e3</span>, <span class="at">refresh=</span><span class="dv">500</span>, <span class="at">parallel_chains=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">$</span><span class="fu">summary</span>(<span class="fu">c</span>(<span class="st">'aE'</span>, <span class="st">'aW'</span>, <span class="st">'bQE'</span>, <span class="st">'bEW'</span>, <span class="st">'Rho[1,2]'</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 10
+  variable      mean    median     sd    mad      q5     q95  rhat ess_bulk
+  &lt;chr&gt;        &lt;dbl&gt;     &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;
+1 aE       -0.000311  0.000487 0.0347 0.0340 -0.0580  0.0562  1.00    2675.
+2 aW       -0.000537 -0.000693 0.0471 0.0471 -0.0779  0.0771  1.00    2519.
+3 bQE       0.617     0.617    0.0341 0.0339  0.561   0.672   1.00    2929.
+4 bEW       0.264     0.260    0.0755 0.0744  0.146   0.391   1.00    1818.
+5 Rho[1,2] -0.475    -0.476    0.0560 0.0554 -0.567  -0.383   1.00    1751.
+# ℹ 1 more variable: ess_tail &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<p>Notice now that there is a negative correlation between the residuals. This is because <span class="math inline">\(U\)</span> positively influences <span class="math inline">\(E\)</span>, but negatively influences <span class="math inline">\(W\)</span>.</p>
+<p>We can also use <code>dagitty</code> to help us find instrument variables, if they are present in the DAG:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>dagIV <span class="ot">&lt;-</span> <span class="fu">dagitty</span>(<span class="st">"dag{Q -&gt; E &lt;- U -&gt; W &lt;- E}"</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">instrumentalVariables</span>(dagIV, <span class="at">exposure=</span><span class="st">"E"</span>, <span class="at">outcome=</span><span class="st">'W'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code> Q</code></pre>
+</div>
+</div>
+<p>Some final thoughts:</p>
+<ul>
+<li>People sometimes use 2SLS (2-stage least squares) for estimating IV
+<ul>
+<li>Process where we regress <span class="math inline">\(Q\)</span> onto <span class="math inline">\(X\)</span>, then take the predicted values from that equation and feed them into the regression of <span class="math inline">\(\hat X\)</span> onto <span class="math inline">\(Y\)</span></li>
+<li>This makes some strong assumptions and requires large sample sizes to get reliable estaimtes (check F-stat from first stage)</li>
+</ul></li>
+<li>Use mediator variables to get causal estimates
+<ul>
+<li>consider the DAG <span class="math inline">\(X \rightarrow Z \rightarrow Y \leftarrow U \rightarrow X\)</span></li>
+<li>Clearly <span class="math inline">\(Z\)</span> is un-confounded by <span class="math inline">\(U\)</span>, therefore we can use it to get the causal estimate of <span class="math inline">\(X\)</span> on <span class="math inline">\(Y\)</span></li>
+</ul></li>
+<li>Regresssion Discontinuity Design
+<ul>
+<li>Consider a decision that is based on a continuous GPA</li>
+<li>There will be students who just fall above and those that just fall below this “arbitrary” cut point</li>
+<li>We can use this to estimate the causal effect by fitting two separate regressions - one before and one after the decision point</li>
+</ul></li>
+</ul>
+</section>
+<section id="social-relations-and-correlated-varying-effects" class="level2">
+<h2 class="anchored" data-anchor-id="social-relations-and-correlated-varying-effects">14.4 - Social relations and correlated varying effects</h2>
+<p>Consider the <code>kl_dyads</code> and <code>kl_households</code> datasets. The first is a dataset of households from Nicaragua where these households have given gifts between one another. The variables <code>giftsAB</code> and <code>giftsBA</code> are the gifts in each direction within each dyad. A dyad here is a pair of households.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(KosterLeckie)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>The model for <span class="math inline">\(A \rightarrow B\)</span> will look like such:</p>
+<p><span class="math display">\[\begin{align}
+y_{A \rightarrow B} &amp; \sim \text{Poisson}(\lambda_{AB}) \\
+\log \lambda_{AB} &amp;= \alpha + g_A + r_B + d_{AB}
+\end{align}\]</span></p>
+<p>Where <span class="math inline">\(g_A\)</span> is the household <span class="math inline">\(A\)</span> specific tendancy to give, <span class="math inline">\(r_B\)</span> is the household specific tendancy to receive, and <span class="math inline">\(d_{AB}\)</span> is the dyad specific effect of <span class="math inline">\(A\)</span> to <span class="math inline">\(B\)</span>.</p>
+<p>There is of course another model for <span class="math inline">\(B\rightarrow A\)</span></p>
+<p><span class="math display">\[\begin{align}
+y_{B \rightarrow A} &amp; \sim \text{Poisson}(\lambda_{BA}) \\
+\log \lambda_{BA} &amp;= \alpha + g_B + r_A + d_{BA}
+\end{align}\]</span></p>
+<p>We will use a bivariate normal to represent the adaptive prior on the <span class="math inline">\(g\)</span> and <span class="math inline">\(r\)</span> effects:</p>
+<p><span class="math display">\[
+\begin{pmatrix} g_i\\ r_i \end{pmatrix}
+\sim
+\text{MVNormal}(0, \begin{pmatrix} \sigma_g^2 &amp; \sigma_g \sigma_r \rho_{gr} \\ \sigma_g \sigma_r \rho_{gr} &amp; \sigma_r^2  \end{pmatrix})
+\]</span></p>
+<p>We’ll do something similar for the dyad effects:</p>
+<p><span class="math display">\[
+\begin{pmatrix} d_{ij}\\ d_{ji} \end{pmatrix}
+\sim
+\text{MVNormal}(0, \begin{pmatrix} \sigma_d^2 &amp; \sigma_d^2 \rho_{d} \\ \sigma_d^2 \rho_{d}  &amp; \sigma_d^2  \end{pmatrix})
+\]</span></p>
+<p>Notice that we are using the same variance <span class="math inline">\(\sigma_d\)</span> here. That is because the labels in each dyad are arbitrary, and it should matter if it is 1 to 2 or 2 to 1. That is, it isn’t meaningful which household comes first. But we do want to estimate the correlation.To interpret: if <span class="math inline">\(\rho_d\)</span> is positive, then if one household gives more within a dyad, then so too does the other.</p>
+<p>Let’s go ahead and run our Stan model:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>kl_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> <span class="fu">nrow</span>(kl_dyads),</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_households =</span> <span class="fu">max</span>(kl_dyads<span class="sc">$</span>hidB),</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">did =</span> kl_dyads<span class="sc">$</span>did,</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">hidA =</span> kl_dyads<span class="sc">$</span>hidA,</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">hidB =</span> kl_dyads<span class="sc">$</span>hidB,</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">giftsAB =</span> kl_dyads<span class="sc">$</span>giftsAB,</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">giftsBA =</span> kl_dyads<span class="sc">$</span>giftsBA</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="fu">cmdstan_model</span>(<span class="st">'mod_14.7.stan'</span>)</span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> mod<span class="sc">$</span><span class="fu">sample</span>(kl_data, <span class="at">chains=</span><span class="dv">4</span>, <span class="at">iter_warmup=</span><span class="fl">1e3</span>, <span class="at">iter_sampling=</span><span class="fl">1e3</span>, <span class="at">refresh=</span><span class="dv">500</span>, <span class="at">parallel_chains=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">$</span><span class="fu">summary</span>(<span class="fu">c</span>(<span class="st">'Rho_gr[1,2]'</span>, <span class="st">'Rho_d[1,2]'</span>, <span class="st">'sigma_gr'</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 10
+  variable      mean median     sd    mad     q5     q95  rhat ess_bulk ess_tail
+  &lt;chr&gt;        &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;
+1 Rho_gr[1,2] -0.408 -0.423 0.201  0.203  -0.716 -0.0429  1.00    1831.    2211.
+2 Rho_d[1,2]   0.880  0.883 0.0337 0.0330  0.821  0.930   1.00    1480.    2334.
+3 sigma_gr[1]  0.833  0.819 0.135  0.128   0.636  1.08    1.00    1444.    2127.
+4 sigma_gr[2]  0.422  0.414 0.0919 0.0880  0.287  0.586   1.00    1477.    2085.</code></pre>
+</div>
+</div>
+<p>The negative correlation of <code>Rho_gr</code> implies the individuals that give more, tend to receive less. It also looks like, based on <code>sigma_gr</code>, that rates of giving are more variable than rates of receiving.</p>
 </section>
 
 </main>
