@@ -567,3 +567,208 @@ fit$summary(c('Rho_gr[1,2]', 'Rho_d[1,2]', 'sigma_gr'))
 
 The negative correlation of `Rho_gr` implies the individuals that give more, tend to receive less. It also looks like, based on `sigma_gr`, that rates of giving are more variable than rates of receiving.
 
+Let's plot the receiving effects so we can see the covariance structure:
+
+```{r}
+sub_draws <- fit$draws(format='df') %>% select(-starts_with('.')) %>% select('a', starts_with('gr'))
+n_hh <- 25
+g <- matrix(nrow=nrow(sub_draws), ncol=n_hh)
+r <- matrix(nrow=nrow(sub_draws), ncol=n_hh)
+for (i in 1:n_hh){
+  g[,i] <- sub_draws$a + sub_draws %>% pull(paste0('gr[', i, ',1]'))
+  r[,i] <- sub_draws$a + sub_draws %>% pull(paste0('gr[', i, ',2]'))
+}
+Eg_mu <- apply( exp(g) , 2 , mean )
+Er_mu <- apply( exp(r) , 2 , mean )
+```
+We can observe the uncertainty for the first household:
+
+```{r}
+plot(exp(g[,1]), exp(r[,1]), pch='.', xlab='Giving', ylab='Receiving', main='HH 1')
+```
+
+Let's go ahead and visualize the uncertainty contours for each of our households we've pulled:
+
+```{r}
+plot( NULL , xlim=c(0,8.6) , ylim=c(0,8.6) , xlab="generalized giving" ,
+  ylab="generalized receiving" , lwd=1.5 )
+abline(a=0,b=1,lty=2)
+
+library(ellipse)
+for ( i in 1:25 ) {
+  Sigma <- cov( cbind( g[,i] , r[,i] ) )
+  Mu <- c( mean(g[,i]) , mean(r[,i]) )
+  for ( l in c(0.5) ) {
+    el <- ellipse( Sigma , centre=Mu , level=l )
+    lines( exp(el) , col=col.alpha("black",0.5) )
+  }
+}
+points(Eg_mu ,Er_mu , pch=21, bg="white",lwd=1.5)
+```
+
+Note that every ellipse here is the uncertainty around the individual HH's giving and receiving parameter. The dashed line shows where giving and receiving would be equal. Again, this is not the population distribution, this a HHs specific effect.
+
+Let's look at the dyad specific effects. From the `Rho_d[1,2]`, we know that there is roughly a 0.88 correlation for the population distribution
+
+```{r}
+dy1 <- fit$draws(format='df') %>% select(starts_with('d')) %>% select(ends_with(',1]')) %>% colMeans()
+dy2 <- fit$draws(format='df') %>% select(starts_with('d')) %>% select(ends_with(',2]')) %>% colMeans()
+plot(dy1, dy2)
+abline(h=0,lty=2)
+abline(v=0, lty=2)
+abline(a=0,b=1,lty=2)
+```
+
+Just a quick note on the dyads here. The model implicitly learns that d[1,1] encodes $A \rightarrow B$ since it always shows up with $g_A$ and $r_B$ in the model equation. It feels weird that we are making the diagonal of the covariance matrix to be equal, but this is really just a structural constraint that we have no reason to believe that $A \rightarrow B$ should be any stronger than $B \rightarrow A$ in general. The model still learns the direction and it still creates separate parameters for $d_{AB}$ and $d_{BA}$. It just feels a little different since we constrain the population distribution to hold their marginal variances to the same value. But, the actual parameters are free to vary. Plus, it may feel weird since we are using the same unique dyad coding for $A \rightarrow B$ and $B \rightarrow A$ (both directions), making it feel like there should be some sort of data relation between the two. But its really the model that separates the two implicitly.
+
+## 14.5 - Continuous categories and the Gaussian process
+
+It's a different mindset, but we can think of a Gaussian processes as continuous groupings instead of discrete objects, where there is some sense of distance (not always physical) between objects.
+
+Let's go back to the Oceanic Islander example data from before. Clearly, there is some notion of distance here, and it has influence on the different tools that a society might have.
+
+```{r}
+data("islandsDistMatrix")
+Dmat <- islandsDistMatrix
+colnames(Dmat) <- c("Ml","Ti","SC","Ya","Fi","Tr","Ch","Mn","To","Ha")
+round(Dmat,1)
+```
+
+We'll use the distance matrix above to measure a similarity in technology exposure.
+
+Recall the original model from ch 11. Note that the lambda structure is domain specific. $\alpha$ here acts as an intercept:
+
+\begin{align}
+T_i &\sim \text{Poisson}(\lambda_i) \\
+\lambda_i &= \alpha P_i^\beta / \gamma
+\end{align}
+
+We now want to add a varying intercept parameter that varies by `society`:
+
+\begin{align}
+T_i &\sim \text{Poisson}(\lambda_i) \\
+\lambda_i &= \exp(k_{\text{society}[i]}) P_i^\beta / \gamma
+\end{align}
+
+where:
+
+\begin{align}
+\begin{bmatrix} k_1 \\ k_2 \\ k_3 \\ \vdots \\ k_{10} \end{bmatrix} &\sim \text{MVNormal}(\vec{0},K) \\
+K_{ij} &= \eta^2 \exp(-\rho^2 D^2_{ij}) + \delta_{ij}\sigma^2
+\end{align}
+
+This is the heart of the GP - the multivariate prior for the intercepts. Let's break down the equation for $K$:
+
+- $\eta^2$ is the maximum that the covariance is allowed to be between any two societies $i$ and $j$
+- $\delta_{ij}$ is just the classic identity function that returns 1 if $i=j$ and 0 otherwise
+- $\sigma^2$ is the extra variance that might need to be present because the distance function is 0 for that case
+  - Basically just quantifying the noise for the $i=j$ case
+  - We don't need it for this model though since we only have one observation per society
+- $\exp(-\rho^2 D^2_{ij})$ is the actual distance function
+  - Basically the Gaussian kernel 
+  - $\rho$ here is analagous to the Gaussian precision. If it is large, then the covariance declines rapidly
+  - We square because of convention, but also because it allows for covariance to drop quicker as distance increases
+
+
+We'll plot the square and non-square below. Notice that it falls slower, but as the distance increase it begins to drop very quickly.
+
+```{r}
+curve(exp(-x), 0, 4, lty=2)
+curve(exp(-x^2), add=T, 0, 4)
+```
+
+The last thing to do is define priors on $\rho^2$ and $\eta^2$, where both must be positive:
+
+\begin{align}
+\eta^2 &\sim \text{Exponential}(2) \\ 
+\rho^2 &\sim \text{Exponential}(0.5)
+\end{align}
+
+Let's now go ahead and fit the model:
+
+```{r}
+#| output: false
+
+data(Kline2)# loadtheordinarydata,nowwithcoordinates
+d<-Kline2
+d$society<-1:10 #index observations
+
+dat_list<- list(
+  T=d$total_tools,
+  P=d$population,
+  society=d$society,
+  Dmat=islandsDistMatrix,
+  n_societies = length(d$society)
+)
+
+mod <- cmdstan_model('mod_14.8.stan')
+fit <- mod$sample(dat_list, chains=4, iter_warmup=1e3, iter_sampling=1e3, refresh=500, parallel_chains=4)
+```
+```{r}
+fit$summary(c('k'))
+```
+
+Here's another way to look at GP - they are a prior over the function space. What function? Well, the function that maps distance to some sort of linear effect in our link function. So for different parameters that govern the GP, we have essentially a population distribution of functions that is over the possible distance functions.
+
+Let's first see what the covariance function looks like. This is not a function space, but instead the covariance space that implies a function space. The function space is just drawing function functions from the same `x_seq`, but instead plugging in the covariance space with a mean 0:
+
+```{r}
+etasq <- fit$draws('etasq', format='df')$etasq
+rhosq <- fit$draws('rhosq', format='df')$rhosq
+
+plot( NULL , xlab="distance (thousand km)" , ylab="covariance" , xlim=c(0,10) , ylim=c(0,0.6), main='Gaussian Process Posterior' )
+x_seq <- seq(0, 10, length.out=100)
+pmcov <- vapply(x_seq, \(x) etasq * exp(-rhosq*x^2), numeric(length(etasq)))
+pmcov_mu <- colMeans(pmcov)
+
+lines( x_seq , pmcov_mu , lwd=2 )
+
+# plot 50 functions sampled from posterior
+for (i in 1:50){
+  curve( etasq[i]*exp(-rhosq[i]*x^2) , add=TRUE ,
+      col=col.alpha("black",0.3) )
+}
+```
+
+So it looks like the covariance function decays rapidly once we get out past 4,000 km. Let's show the implied correlation between societies from this GP:
+
+```{r}
+#compute posteriormediancovarianceamongsocieties
+K <- matrix(0,nrow=10,ncol=10)
+for( i in 1:10)
+  for(j in 1:10 )
+    K[i,j]<-median(etasq) * exp(-median(rhosq)*islandsDistMatrix[i,j]^2)
+
+diag(K)<-median(etasq) + 0.01
+
+# convert to correlation matrix
+Rho<-round( cov2cor(K),2)
+# add row/col names for convenience
+colnames(Rho)<-c("Ml","Ti","SC","Ya","Fi","Tr","Ch","Mn","To","Ha")
+rownames(Rho)<-colnames(Rho)
+Rho
+```
+
+Note that the societies in the upper left are all highly correlated as they are very close to each other. Hawaii on the other hand is quite far from other islands.
+
+Let's plot these islands:
+
+```{r}
+# scale point size to logpop
+psize <- d$logpop / max(d$logpop)
+psize <- exp(psize*1.5)-2
+# plot raw data and labels
+plot( d$lon2 , d$lat , xlab="longitude" , ylab="latitude" ,
+  col=rangi2 , cex=psize , pch=16 , xlim=c(-50,30) )
+labels <- as.character(d$culture)
+text( d$lon2 , d$lat , labels=labels , cex=0.7 , pos=c(2,4,3,3,4,1,3,2,4,2) )
+
+# overlay lines shaded by Rho
+for( i in 1:10 )
+  for ( j in 1:10 )
+    if ( i < j )
+      lines( c( d$lon2[i],d$lon2[j] ) , c( d$lat[i],d$lat[j] ) ,
+            lwd=2 , col=col.alpha("black",Rho[i,j]^2) )
+```
+
+The line colors are the strength of the correlations. Darker colors indicate stronger correlations.
