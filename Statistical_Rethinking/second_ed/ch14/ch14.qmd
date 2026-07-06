@@ -91,6 +91,7 @@ cafe_id <- rep(1:N_cafes, each=N_visits)
 mu <- a_cafe[cafe_id] + b_cafe[cafe_id]*afternoon
 sigma <- 0.5
 wait <- rnorm(length(mu), mu, sigma)
+og_wait <- wait
 d <- data.frame(cafe=cafe_id, afternoon=afternoon, wait=wait)
 str(d)
 ```
@@ -162,6 +163,7 @@ fit <- mod$sample(
   refresh = 500,
   iter_warmup = 1e3, iter_sampling=1e3
 )
+fit_og_cafe <- fit
 ```
 
 ```{r}
@@ -1037,4 +1039,355 @@ for(i in 1:30) curve(etasq[i]*exp(-rhosq[i]*x) ,add=TRUE,col=rangi2)
 ```
 
 It looks like there really isn't a lot of covariation for brain size. This is the beauty of having the model learn the correlation too - it can inform whether there is or isn't something going on. Where as before we forced it to say that there was correlation between species.
+
+## Exercises
+
+### M1
+
+Repeat the simulation of the robot cafe with $\rho$ set to 0:
+
+```{r}
+a <- 3.5 # average morning wait time
+b <- -1  # average difference between afternoon wait time
+sigma_a <- 1 # std dev in intercepts
+sigma_b <- 0.5 # std dev in slopes
+rho <- 0 # correlation between slope and intercept
+
+cov_ab <- sigma_a * sigma_b * rho
+Sigma <- matrix(c(sigma_a^2, cov_ab, cov_ab, sigma_b^2), ncol=2)
+
+N_cafes <- 20
+set.seed(5)
+
+vary_effects <- MASS::mvrnorm(N_cafes, c(a,b), Sigma)
+
+a_cafe <- vary_effects[,1]
+b_cafe <- vary_effects[,2]
+
+plot(a_cafe, b_cafe, col=rangi2, xlab='Intercepts', ylab='slopes', asp=1)
+
+# overlay population distribution
+for (l in c(0.1, 0.3, 0.5, 0.8, 0.99)){
+  lines(ellipse::ellipse(Sigma, centre=c(a,b), level=l),
+        col=col.alpha('black', 0.2))
+}
+```
+
+Now generate the data:
+
+```{r}
+set.seed(22)
+N_visits <- 10
+afternoon <- rep(0:1, N_visits*N_cafes/2)
+cafe_id <- rep(1:N_cafes, each=N_visits)
+
+mu <- a_cafe[cafe_id] + b_cafe[cafe_id]*afternoon
+sigma <- 0.5
+wait <- rnorm(length(mu), mu, sigma)
+d <- data.frame(cafe=cafe_id, afternoon=afternoon, wait=wait)
+```
+
+And finally fit the model:
+
+```{r}
+#| output: false
+
+mod <- cmdstan_model('mod_14.1.stan')
+
+fit <- mod$sample(
+  data = list(
+    N       = nrow(d),
+    N_cafe  = max(d$cafe),
+    cafe    = d$cafe,
+    afternoon = d$afternoon,
+    wait    = d$wait
+  ),
+  chains = 4,
+  parallel_chains = 4,
+  refresh = 500,
+  iter_warmup = 1e3, iter_sampling=1e3
+)
+```
+Now let's look at the posterior:
+
+```{r}
+sprintf('New rho: %s\nOG Rho: %s', fit$summary('Rho[1,2]')$mean |> round(4), fit_og_cafe$summary('Rho[1,2]')$mean |> round(4)) |> cat()
+```
+
+
+```{r}
+full_draws <- fit$draws(format='df') %>% select(-starts_with('.'))
+
+# compute unpooled estimates directly from data
+a1 <- sapply( 1:N_cafes , function(i) mean(wait[cafe_id==i & afternoon==0]) )
+b1 <- sapply( 1:N_cafes , function(i) mean(wait[cafe_id==i & afternoon==1]) ) - a1
+
+# extract posterior means of partially pooled estimates
+
+par(mfrow=c(1,2))
+
+a2 <- full_draws %>% select(starts_with('ab_cafe')) %>% select(ends_with('1]')) %>% colMeans()
+b2 <- full_draws %>% select(starts_with('ab_cafe'))  %>% select(ends_with('2]')) %>% colMeans()
+# plot both and connect with lines
+plot( a1 , b1 , xlab="intercept" , ylab="slope" ,
+  pch=16 , col=rangi2 , ylim=c( min(b1)-0.1 , max(b1)+0.1 ) ,
+  xlim=c( min(a1)-0.1 , max(a1)+0.1 ) )
+points( a2 , b2 , pch=1 )
+
+for ( i in 1:N_cafes ) lines( c(a1[i],a2[i]) , c(b1[i],b2[i]))
+
+mu_est <- full_draws %>% select(starts_with('mu_ab')) %>% colMeans()
+rho_est <- full_draws %>% select(starts_with('Rho[1,2]')) %>% unlist() %>% mean()
+sig_cafe <- full_draws %>% select(starts_with('sigma_cafe')) %>% colMeans()
+Sigma <- diag(sig_cafe) %*% matrix(c(1, rho_est, rho_est, 1), ncol=2) %*% diag(sig_cafe)
+
+for (l in c(0.1, 0.3, 0.5, 0.8, 0.99)){
+  lines(ellipse::ellipse(Sigma, centre=mu_est, level=l),
+        col=col.alpha('black', 0.2))
+}
+
+############ OG Cafe Data
+full_draws <- fit_og_cafe$draws(format='df') %>% select(-starts_with('.'))
+
+# compute unpooled estimates directly from data
+a1 <- sapply( 1:N_cafes , function(i) mean(og_wait[cafe_id==i & afternoon==0]) )
+b1 <- sapply( 1:N_cafes , function(i) mean(og_wait[cafe_id==i & afternoon==1]) ) - a1
+
+# extract posterior means of partially pooled estimates
+
+
+a2 <- full_draws %>% select(starts_with('ab_cafe')) %>% select(ends_with('1]')) %>% colMeans()
+b2 <- full_draws %>% select(starts_with('ab_cafe'))  %>% select(ends_with('2]')) %>% colMeans()
+# plot both and connect with lines
+plot( a1 , b1 , xlab="intercept" , ylab="slope" ,
+  pch=16 , col=rangi2 , ylim=c( min(b1)-0.1 , max(b1)+0.1 ) ,
+  xlim=c( min(a1)-0.1 , max(a1)+0.1 ) )
+points( a2 , b2 , pch=1 )
+
+for ( i in 1:N_cafes ) lines( c(a1[i],a2[i]) , c(b1[i],b2[i]))
+
+mu_est <- full_draws %>% select(starts_with('mu_ab')) %>% colMeans()
+rho_est <- full_draws %>% select(starts_with('Rho[1,2]')) %>% unlist() %>% mean()
+sig_cafe <- full_draws %>% select(starts_with('sigma_cafe')) %>% colMeans()
+Sigma <- diag(sig_cafe) %*% matrix(c(1, rho_est, rho_est, 1), ncol=2) %*% diag(sig_cafe)
+
+for (l in c(0.1, 0.3, 0.5, 0.8, 0.99)){
+  lines(ellipse::ellipse(Sigma, centre=mu_est, level=l),
+        col=col.alpha('black', 0.2))
+}
+
+```
+
+Posterior distribution shifts to concentric circles now.
+
+### M2
+
+Let's fit the cafe data again, but instead of using the multi-variate Gaussian, we'll do the simple mutli-level approach:
+
+```{r}
+a <- 3.5 # average morning wait time
+b <- -1  # average difference between afternoon wait time
+sigma_a <- 1 # std dev in intercepts
+sigma_b <- 0.5 # std dev in slopes
+rho <- 0.5 # correlation between slope and intercept
+
+cov_ab <- sigma_a * sigma_b * rho
+Sigma <- matrix(c(sigma_a^2, cov_ab, cov_ab, sigma_b^2), ncol=2)
+
+N_cafes <- 20
+set.seed(5)
+
+vary_effects <- MASS::mvrnorm(N_cafes, c(a,b), Sigma)
+
+a_cafe <- vary_effects[,1]
+b_cafe <- vary_effects[,2]
+
+set.seed(22)
+N_visits <- 10
+afternoon <- rep(0:1, N_visits*N_cafes/2)
+cafe_id <- rep(1:N_cafes, each=N_visits)
+
+mu <- a_cafe[cafe_id] + b_cafe[cafe_id]*afternoon
+sigma <- 0.5
+wait <- rnorm(length(mu), mu, sigma)
+d <- data.frame(cafe=cafe_id, afternoon=afternoon, wait=wait)
+```
+
+The original model where we use a multivaraite heirarchy:
+
+```{r}
+#| output: false
+
+mod <- cmdstan_model('mod_14.1_w_lik.stan')
+
+fit_multi <- mod$sample(
+  data = list(
+    N       = nrow(d),
+    N_cafe  = max(d$cafe),
+    cafe    = d$cafe,
+    afternoon = d$afternoon,
+    wait    = d$wait
+  ),
+  chains = 4,
+  parallel_chains = 4,
+  refresh = 500,
+  iter_warmup = 1e3, iter_sampling=1e3
+)
+
+mod <- cmdstan_model('mod_14.1_no_multi.stan')
+
+fit_uni <- mod$sample(
+  data = list(
+    N       = nrow(d),
+    N_cafe  = max(d$cafe),
+    cafe    = d$cafe,
+    afternoon = d$afternoon,
+    wait    = d$wait
+  ),
+  chains = 4,
+  parallel_chains = 4,
+  refresh = 500,
+  iter_warmup = 1e3, iter_sampling=1e3
+)
+```
+
+Looks like adding the correlation parameter here didn't improve the inference much, probably because the cafes were well informed by their own independent information.
+
+```{r}
+f_multi_loo <- fit_multi$draws('log_lik', format='matrix') |> loo::loo()
+f_uni_loo <- fit_uni$draws('log_lik', format='matrix') |> loo::loo()
+
+loo::loo_compare(f_uni_loo, f_multi_loo)
+```
+Similar story for $p$ as well, the effective number of paramters is roughly the same.
+
+```{r}
+rbind(f_uni_loo$estimates['p_loo',], f_multi_loo$estimates['p_loo', ])
+```
+
+
+### H1
+
+
+Let's look at the Bangladesh fertility data. We want to fit a varying intercept and slope (for `urban`) by `district_id`.
+
+```{r}
+#| output: false
+data("bangladesh")
+d <- bangladesh
+
+dat <- list(
+  N = nrow(d),
+  N_district = max(d$district),
+  district_id = d$district,
+  urban = d$urban,
+  use_contraception = d$use.contraception
+)
+
+mod <- cmdstan_model('mod_14.h1.stan')
+fit <- mod$sample(
+  data = dat,
+  chains = 4,
+  parallel_chains = 4,
+  refresh = 500,
+  iter_warmup = 1e3, iter_sampling=1e3
+)
+```
+
+
+```{r}
+# Check to see if there are districts that are both urban and non-urban
+d %>% group_by(district) %>% summarise(perc_urban = mean(urban)) %>% pull(perc_urban) %>% summary()
+```
+
+
+```{r}
+fit$summary('Rho[1,2]')
+```
+
+Very strong negative correlation. Let's inspect the mean for each district's slope and intercept:
+
+```{r}
+dis_int <- fit$draws(format='df') |> select(-starts_with('.')) |> select(starts_with('ab_district')) |> select(ends_with(',1]')) |> colMeans()
+dis_slope <- fit$draws(format='df') |> select(-starts_with('.')) |> select(starts_with('ab_district')) |> select(ends_with(',2]')) |> colMeans()
+plot(dis_int, dis_slope, xlab='Intercept', ylab='slope', pch=16)
+
+```
+
+```{r}
+# Get posterior mean intercepts and slopes by district
+dis_int <- fit$draws(format = 'df') |>
+  select(starts_with('ab_district')) |>
+  select(ends_with(',1]')) |>
+  colMeans()
+
+dis_slope <- fit$draws(format = 'df') |>
+  select(starts_with('ab_district')) |>
+  select(ends_with(',2]')) |>
+  colMeans()
+
+# Predicted probability for each observation
+d$pred_prob <- plogis(dis_int[d$district] + dis_slope[d$district] * d$urban)
+
+# Boxplot stratified by urban
+boxplot(pred_prob ~ urban, data = d,
+        names = c("Rural", "Urban"),
+        xlab = "Urban", ylab = "Predicted P(contraception use)",
+        col = c("lightblue", "salmon"),
+        main = "Predicted Contraception Use by Urban/Rural")
+
+# Actual proportions
+actual <- tapply(d$use.contraception, d$urban, mean)
+points(1:2, actual, pch = 18, cex = 2, col = "black")
+legend("topleft", legend = "Actual proportion", pch = 18, pt.cex = 1)
+```
+
+So in this case, the slope is really just the perturbation to the intercept when urban = 1. That is, it is really just the effect of urban. Therefore it makes sense that there is a negative correlation because the intercept and slope are tied together. If one goes up, the other must go down to adjust. 
+
+It also points to the difference in urban and rural here - we expect the difference between the two to be quite large. So if the Urban intercept (the slope) is quite large, we want to intercept (rural) to be smaller in comparison. 
+
+### H4
+
+Use data `Oxboys`, a data set of 26 individuals with their height measured at different ages. We'll fit a heirarchical model, clustered by subject, that has a varying slope (age) and intercept.
+
+```{r}
+#| output: false
+data("Oxboys")
+d <- Oxboys
+
+dat <- list(
+  N = nrow(d),
+  N_subject = max(d$Subject),
+  subject_id = d$Subject,
+  age = d$age,
+  height = d$height
+)
+
+mod <- cmdstan_model('mod_14.h4.stan')
+fit <- mod$sample(
+  data = dat,
+  chains = 4,
+  parallel_chains = 4,
+  refresh = 500,
+  iter_warmup = 1e3, iter_sampling=1e3
+)
+```
+
+```{r}
+fit$summary('Rho[1,2]')
+```
+
+```{r}
+sub_int <- fit$draws(format='df') |> select(-starts_with('.')) |> select(starts_with('ab_subject')) |> select(ends_with(',1]')) |> colMeans()
+sub_slope <- fit$draws(format='df') |> select(-starts_with('.')) |> select(starts_with('ab_subject')) |> select(ends_with(',2]')) |> colMeans()
+plot(sub_int, sub_slope, xlab='Intercept', ylab='slope', pch=16)
+```
+
+Makes sense that there is a positive relation here - if a subject has higher starting height, they are most likey a faster grower.
+
+```{r}
+fit$summary('sigma_subject')
+```
+
+Also makes sense that there is more variation in the starting height (I know its not really starting height, its the height at mean age, but the interpretation is scale invariant).
 
