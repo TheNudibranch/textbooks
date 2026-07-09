@@ -1346,6 +1346,8 @@ So in this case, the slope is really just the perturbation to the intercept when
 
 It also points to the difference in urban and rural here - we expect the difference between the two to be quite large. So if the Urban intercept (the slope) is quite large, we want to intercept (rural) to be smaller in comparison. 
 
+One other point, the data seems to favor extremes. If the urban effect of a particular district is a standout, so should be the rural.  
+
 ### H4
 
 Use data `Oxboys`, a data set of 26 individuals with their height measured at different ages. We'll fit a heirarchical model, clustered by subject, that has a varying slope (age) and intercept.
