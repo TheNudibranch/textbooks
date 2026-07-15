@@ -1,0 +1,489 @@
+---
+title: "Rethinking - Chapter 15"
+format: 
+  html:
+    code-fold: show
+toc: true
+---
+```{r}
+#| output: false
+#| code-fold: true
+
+library(rethinking)
+library(dagitty)
+library(tidyverse)
+library(cmdstanr)
+# rstudioapi::getActiveDocumentContext()$path |> dirname() |> setwd()
+```
+
+## 15.0
+
+Consider Bertrand's paradox, but in this instance with pancakes. We have three pancakes, one with two burnt sides (BB), one with one unburnt side (BU), and one that is unburnt (UU). THe question is: given that we have a pancake that is burnt facing up, what is the probability that the side underneath is burnt too. You can solve this with the simple Bayes rule, but it is even simpler than that. Just count the sides. Conditional on the burnt side facing up, we know that there are *three* possible sides. Two of those are burnt, so the probability is 2/3. Here is a quick sim:
+
+```{r}
+# simulate a pancake and return randomly ordered sides
+sim_pancake <- function() {
+  pancake <- sample(1:3,1)
+  sides <- matrix(c(1,1,1,0,0,0),2,3)[,pancake]
+  sample(sides)
+}
+
+# sim 10,000 pancakes
+pancakes <- replicate( 1e4 , sim_pancake() )
+up <- pancakes[1,]
+down <- pancakes[2,]
+# compute proportion 1/1 (BB) out of all 1/1 and 1/0
+num_11_10 <- sum( up==1 )
+num_11 <- sum( up==1 & down==1 )
+num_11/num_11_10
+```
+
+This is really just a brute force computation of our assumptions. We didn't get fancy, we just let the computer do the work for us. This is how we will be solving the rest of the chapter.
+
+## 15.1 - Measurement Error
+
+Recall from Ch. 5 the marriage and divorce problem. Those variables were measured with considerable standard error:
+
+```{r}
+data(WaffleDivorce)
+d <- WaffleDivorce
+# points
+plot( d$Divorce ~ d$MedianAgeMarriage , ylim=c(4,15) , xlab="Median age marriage" , ylab="Divorce rate" )
+
+# standard errors
+for ( i in 1:nrow(d) ) {
+  ci <- d$Divorce[i] + c(-1,1)*d$Divorce.SE[i]
+  x <- d$MedianAgeMarriage[i]
+  lines( c(x,x) , ci )
+}
+```
+
+Consider the following DAG:
+
+
+```{r}
+dag <- dagitty('dag {
+  A      [pos="0.5,0.1"]
+  M      [pos="0.2,0.5"]
+  D_true [latent, pos="0.8,0.5"]
+  D_obs  [pos="0.8,0.9"]
+  e_D    [latent, pos="1.0,0.9"]
+
+  A      -> M
+  A      -> D_true
+  M      -> D_true
+  D_true -> D_obs
+  e_D    -> D_obs
+}')
+drawdag(dag)
+```
+
+Most regressions would just use $D_{\text{obs}}$ even though it is noisy. But consider that we might be introducing systematic bias if the measurement error is correlated with a variable of interest. For example, if we were using log population (which is directly correlated with the measurement error).
+
+To incorporate this process into the model, we'll instead have $D_{\text{obs}, i} \sim \text{Normal}(D_{\text{true},i}, D_{\text{se,i}})$. Note that for every observed data point, we know how a parameter $D_{\text{true,i}}$ that we are estimating.
+
+The full model looks like:
+
+\begin{align}
+D_{\text{obs},i} &\sim \text{Normal}(D_{\text{true},i},\, D_{\text{se},i}) \\
+D_{\text{true},i} &\sim \text{Normal}(\mu_i,\, \sigma) \\
+\mu_i &= \alpha + \beta_A A_i + \beta_M M_i \\
+\alpha &\sim \text{Normal}(0,\, 0.2) \\
+\beta_A &\sim \text{Normal}(0,\, 0.5) \\
+\beta_M &\sim \text{Normal}(0,\, 0.5) \\
+\sigma &\sim \text{Exponential}(1)
+\end{align}
+
+There is a bi-directional flow of information. The uncertainty in the measurement influences the regression parameters, and the regression parameters influence the uncertainty in the measurement error. There will be some helpful shrinkage here.
+
+Let's go ahead and fit this model:
+
+```{r}
+#| output: false
+dlist <- list(
+  N     = nrow(d),
+  D_obs = standardize(d$Divorce),
+  D_se  = d$Divorce.SE / sd(d$Divorce), # Need to divide by the same sd that we used to standardize D_obs or else it wont make sense
+  A     = standardize(d$MedianAgeMarriage),
+  M     = standardize(d$Marriage)
+)
+
+mod <- cmdstan_model("mod_15.1.stan")
+
+fit <- mod$sample(
+  data            = dlist,
+  seed            = 123,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 1000,
+  refresh=500
+)
+```
+
+```{r}
+fit$summary(c('alpha', 'beta_A', 'beta_M', 'sigma'))
+```
+
+Note that $\beta_A$ is roughly half of what is was in chapter 5. This can be explained if we look at the extremes for age of marriage amongst states. They tended to have larger measurement error, and as a result the model didn't treat them as it would a state with a lower measurement of error. Thus, those outlier states didn't contribute *as much* as states with lower measurement error.
+
+```{r}
+draws <- fit$draws(format = "df")
+
+D_true_cols <- paste0("D_true[", seq_len(dlist$N), "]")
+D_true_mean <- colMeans(draws[, D_true_cols])
+
+alpha_draws  <- draws$alpha
+beta_A_draws <- draws$beta_A
+
+# ── Naive OLS (ignores measurement error) ─────────────────────────────────────
+df_naive  <- data.frame(D_obs = dlist$D_obs, A = dlist$A, M = dlist$M)
+naive_fit <- lm(D_obs ~ A + M, data = df_naive)
+
+# ── Prediction grid ───────────────────────────────────────────────────────────
+A_seq <- seq(min(dlist$A) - 0.15, max(dlist$A) + 0.15, length.out = 100)
+
+# ME model: posterior mean + 89% CI over mu
+mu_me_mat  <- outer(alpha_draws, rep(1, length(A_seq))) +
+              outer(beta_A_draws, A_seq)
+mu_me_mean <- colMeans(mu_me_mat)
+mu_me_ci   <- apply(mu_me_mat, 2, quantile, probs = c(0.055, 0.945))
+
+# Naive model: 89% frequentist CI
+naive_pred <- predict(naive_fit,
+                      newdata  = data.frame(A = A_seq, M=mean(dlist$M)),
+                      interval = "confidence",
+                      level    = 0.89)
+
+# ── Figure 15.2 ───────────────────────────────────────────────────────────────
+par(mfrow = c(1, 2), mar = c(4, 4, 1.5, 1))
+
+# Left panel — shrinkage as a function of measurement error
+shrinkage <- D_true_mean - dlist$D_obs
+
+plot(dlist$D_se, shrinkage,
+     xlab = "Divorce rate, standard error",
+     ylab = "D_est - D_obs",
+     pch  = 19, col = rangi2)
+abline(h = 0, lty = 2, col = "gray50")
+
+# Right panel — regression comparison
+plot(dlist$A, dlist$D_obs,
+     xlab = "Median age marriage (std)",
+     ylab = "Divorce rate (std)",
+     pch  = 1, col  = col.alpha("black", 0.5))
+
+# Naive regression — dashed gray
+shade(t(naive_pred[, c("lwr", "upr")]), A_seq,
+      col = col.alpha("black", 0.15))
+lines(A_seq, naive_pred[, "fit"], lty = 2, col = "gray40", lwd = 2)
+
+# ME regression — blue
+shade(mu_me_ci, A_seq, col = col.alpha("steelblue", 0.3))
+lines(A_seq, mu_me_mean, col = "steelblue", lwd = 2)
+
+# Segments: D_obs → posterior D_true mean, then posterior mean points
+for (i in seq_len(dlist$N)) {
+  segments(x0  = dlist$A[i], y0 = dlist$D_obs[i],
+           x1  = dlist$A[i], y1 = D_true_mean[i],
+           col = col.alpha("steelblue", 0.7))
+}
+points(dlist$A, D_true_mean, pch = 19, col = "steelblue")
+```
+
+Take a look at the plot above. It shows that as divorce rate standard error increased, so did our shrinkage of those estimates. You can also see the slight tilt in the regression line for when measurement error is taken into account. Our slope is less negative (blue line).
+
+We could of course also consider the case where there is measurement error on a predictor. Consider the DAG:
+
+```{r}
+dag <- dagitty('dag {
+  A      [pos="0.5,0.1"]
+  M_true [latent, pos="0.2,0.5"]
+  D_true [latent, pos="0.8,0.5"]
+  M_obs  [pos="0.2,0.9"]
+  D_obs  [pos="0.8,0.9"]
+  e_M    [latent, pos="0.0,0.9"]
+  e_D    [latent, pos="1.0,0.9"]
+
+  A      -> M_true
+  A      -> D_true
+  M_true -> D_true
+  M_true -> M_obs
+  e_M    -> M_obs
+  D_true -> D_obs
+  e_D    -> D_obs
+}')
+
+drawdag(dag)
+```
+
+We are making an assumption that the errors aren't correlated, but that is not always the case. Our model now becomes:
+
+\begin{align}
+D_{\text{obs},i} &\sim \text{Normal}(D_{\text{true},i},\, D_{\text{se},i}) \\
+D_{\text{true},i} &\sim \text{Normal}(\mu_i,\, \sigma) \\
+\mu_i &= \alpha + \beta_A A_i + \beta_M M_{\text{true},i} \\
+M_{\text{obs},i} &\sim \text{Normal}(M_{\text{true},i},\, M_{\text{se},i}) \\
+M_{\text{true},i} &\sim \text{Normal}(0,\, 1) \\
+\alpha &\sim \text{Normal}(0,\, 0.2) \\
+\beta_A &\sim \text{Normal}(0,\, 0.5) \\
+\beta_M &\sim \text{Normal}(0,\, 0.5) \\
+\sigma &\sim \text{Exponential}(1)
+\end{align}
+
+Notice that we are using $M_{\text{true}}$ in the regression equation, not $M_{\text{obs}}$. Let's go ahead and fit:
+
+```{r}
+dlist <- list(
+  N     = nrow(d),
+  D_obs = as.numeric(standardize(d$Divorce)),
+  D_se  = d$Divorce.SE  / sd(d$Divorce),
+  M_obs = as.numeric(standardize(d$Marriage)),
+  M_se  = d$Marriage.SE / sd(d$Marriage),
+  A     = as.numeric(standardize(d$MedianAgeMarriage))
+)
+
+mod <- cmdstan_model("mod_15.2.stan")
+
+fit <- mod$sample(
+  data            = dlist,
+  seed            = 123,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 1000,
+  refresh         = 500
+)
+
+```
+
+```{r}
+fit$summary(c("alpha", "beta_A", "beta_M", "sigma"))
+```
+
+Looks like the coefficient values haven't shifted much. But, from a generative standpoint, our estimates for $M$ has changed substantially:
+
+```{r}
+#| fig-width: 10
+#| fig-height: 7
+#| fig-align: center
+
+draws <- fit$draws(format = "df")
+
+M_true_cols <- paste0("M_true[", seq_len(dlist$N), "]")
+D_true_cols <- paste0("D_true[", seq_len(dlist$N), "]")
+M_true_map  <- colMeans(draws[, M_true_cols])
+D_true_map  <- colMeans(draws[, D_true_cols])
+
+par(mfrow = c(1, 2), mar = c(4, 4, 1.5, 1))
+
+# Left: M shrinkage
+plot(dlist$M_obs, M_true_map,
+     xlab = "Marriage rate, observed (std)",
+     ylab = "Marriage rate, MAP estimate (std)",
+     pch  = 19, col = rangi2,
+     xlim = range(dlist$M_obs) + c(-0.1, 0.1),
+     ylim = range(dlist$M_obs) + c(-0.1, 0.1))
+abline(a = 0, b = 1, lty = 2, col = "gray50")
+for (i in seq_len(dlist$N)) {
+  segments(x0 = dlist$M_obs[i], y0 = dlist$M_obs[i],
+           x1 = dlist$M_obs[i], y1 = M_true_map[i],
+           col = col.alpha("black", 0.5))
+}
+
+# Right: observed vs estimated (M, D) pairs
+plot(NULL,
+     xlim = range(c(dlist$M_obs, M_true_map)) + c(-0.1, 0.1),
+     ylim = range(c(dlist$D_obs, D_true_map)) + c(-0.1, 0.1),
+     xlab = "Marriage rate (std)",
+     ylab = "Divorce rate (std)")
+
+# Segments connecting observed to estimated for each state
+for (i in seq_len(dlist$N)) {
+  segments(x0 = dlist$M_obs[i], y0 = dlist$D_obs[i],
+           x1 = M_true_map[i],  y1 = D_true_map[i],
+           col = col.alpha("black", 0.4))
+}
+
+# Observed pairs (open circles)
+points(dlist$M_obs, dlist$D_obs,
+       pch = 1, col = col.alpha("black", 0.7))
+
+# Estimated pairs (filled, blue)
+points(M_true_map, D_true_map,
+       pch = 19, col = rangi2)
+
+legend("topright",
+       legend = c("Observed", "MAP estimate"),
+       pch    = c(1, 19),
+       col    = c(col.alpha("black", 0.7), rangi2),
+       bty    = "n")
+```
+
+The take home with this experiment: don't throw away information. If you have some quantity that shows the uncertainty around the mean use it.
+
+Now, consider the following DAG:
+
+```{r}
+dag <- dagitty('dag {
+  A      [pos="0.5,0.1"]
+  M_true [latent, pos="0.2,0.5"]
+  D_true [latent, pos="0.8,0.5"]
+  M_obs  [pos="0.2,0.9"]
+  D_obs  [pos="0.8,0.9"]
+  e_M    [latent, pos="0.35,0.75"]
+  e_D    [latent, pos="0.65,0.75"]
+  P      [pos="0.5,0.55"]
+
+  A      -> M_true
+  A      -> D_true
+  M_true -> D_true
+  M_true -> M_obs
+  e_M    -> M_obs
+  D_true -> D_obs
+  e_D    -> D_obs
+  P      -> e_M
+  P      -> e_D
+}')
+
+drawdag(dag)
+```
+
+This might be the case where there is a confounding variable that influences by $e_M$ and $e_D$. This means that failing to condition on $P$ with introducing confounding into our model. So conditioning on $D_{\text{obs}}$ and $M_{\text{obs}}$ introduces and backdoor.
+
+It might also be the case where a covariate actually impacts the measurement error of the target variable. If, for instance, we were less certain about divorce rates if the state had lower marriage rates. Which might make sense since we will have lower divorces to measure, contributing to higher measurement error. Here is the DAG:
+
+```{r}
+dag <- dagitty('dag {
+  A      [pos="0.5,0.1"]
+  M_true [latent, pos="0.2,0.5"]
+  D_true [latent, pos="0.8,0.5"]
+  M_obs  [pos="0.2,0.9"]
+  D_obs  [pos="0.8,0.9"]
+  e_M    [latent, pos="0.35,0.75"]
+  e_D    [latent, pos="0.65,0.75"]
+
+  A      -> M_true
+  A      -> D_true
+  M_true -> D_true
+  M_true      -> e_D
+  M_true -> M_obs
+  e_M    -> M_obs
+  D_true -> D_obs
+  e_D    -> D_obs
+}')
+
+drawdag(dag)
+```
+
+
+Now consider this DAG:
+
+```{r}
+dag <- dagitty('dag {
+  e_A    [latent, pos="0.0,0.5"]
+  A_obs  [pos="0.3,0.5"]
+  A_true [latent, pos="0.6,0.5"]
+  M      [pos="0.9,0.3"]
+  D      [pos="0.9,0.7"]
+
+  e_A    -> A_obs
+  A_true -> A_obs
+  A_true -> M
+  A_true -> D
+}')
+drawdag(dag)
+```
+
+If we naively regress $M$ and $A_{\text{obs}}$ on $D$, then it will show that $M$ is a strong causal relationship with $D$. But this is because of the backdoor that is created and that $M$ contains some information about $A_{\text{true}}$.
+
+```{r}
+N <- 500
+A <- rnorm(N)
+M <- rnorm(N, -A)
+D <- rnorm(N, A)
+A_obs <- rnorm(N, A)
+
+lm(D ~ A_obs + M) |> summary()
+```
+
+We see that $M$ is strongly predictive of $D$. But if we condition on $A$:
+
+```{r}
+lm(D ~ A + M) |> summary()
+```
+
+It all loads onto $A$.
+
+## 15.2 - Measurement Error
+
+Consider a simple scenario where a student does homework for grade $H$, and performs based on how much they $S$. We then introduce a variable $D$ that is a binary variable indicating if a dog ate the student's homework. This would be the following:
+
+$S \rightarrow H_{\text{true}} \rightarrow H_{\text{obs}} \leftarrow D$$
+
+This would be simple to estimate the distribution of $H_{\text{true}}$ since $D$ is essentially at random. We could even ignore $D$ in our analysis since it doesn't given us any information about the latent homework score. Plus, $H_{\text{obs}}$ here acts as a collider.
+
+Now if we add an arrow: $S \rightarrow D$, which says that studying influences whether the dog will eat the homework, then we will need to incorporate $D$ in the regression model. But this won't always help us if we say are in a scenario where a student has to be better than average to show any improvement in homework score. But, we say that if a student studys more than average, the dog will eat the homework.
+
+Let's start with the original DAG, but now consider adding $H_{\text{true}} \leftarrow X \rightarrow D$. Where $X$ is the noisiness of the house. If the house is very noisy, then the dog is more likely to eat the homework and the grade is likely to suffer, regardless of how much studying is done.
+
+Let's simulate:
+
+```{r}
+N <- 1e3
+X <- rnorm(N)
+S <- rnorm(X)
+H_true <- rbinom(N, size=10, inv_logit(2 + S - 2*X)) 
+D <- ifelse(X > 1, 1, 0)
+H_obs <- H_true
+H_obs[D == 1] <- NA
+```
+
+Now let's fit a simple model where we pretend we have the full data:
+
+```{r}
+#| output: false
+
+mod <- cmdstan_model('mod_15.3.stan')
+#  H  ~ binomial_logit(10, a + bS * S);
+fit <- mod$sample(
+  data            = list(N=N, H=H_true, S=S),
+  seed            = 123,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 1000,
+  refresh         = 500
+)
+```
+
+```{r}
+fit$summary(c('bS', 'a'))
+```
+
+The bias we see here ($\beta_S$ should be 1) is due to *omitted variable bias*. It gets even more exaggerated in the GLM case because of the ceiling and floor effects induced by the link function.
+
+Let's now used the observed data:
+
+```{r}
+#| output: false
+
+#  H  ~ binomial_logit(10, a + bS * S);
+fit <- mod$sample(
+  data            = list(N=sum(1-D), H=H_true[D==0], S=S[D==0]),
+  seed            = 123,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 1000,
+  refresh         = 500
+)
+```
+
+```{r}
+fit$summary(c('bS', 'a'))
+```
+
+The estimate looks a bit better! Why? Because the noisy house was the factor that contributed to poor homework performance. And we are essentially slicing the data such that the noise isn't loud enough to engage the dog to eat the homework. This quiets the omitted variable bias. This is also obviously not a universal property. If we instead had `D <- ifelse(abs(X) < 1, 0)`, this wouldn't work since we would still have to contend with the ceiling/floor effects.
+
+Let's now consider a final DAG. Maintain the same initial single path that we started with, but now add: $H_{\text{true}} \rightarrow D$. This is saying that the latent grade of the homework somehow influences whether the dog will eat it or not. We are stuck, because there is nothing we can do to close the backdoor path $S \rightarrow H_{\text{true}} \rightarrow D \rightarrow  H_{\text{obs}}$. The missing variable causes its own missingness. 
