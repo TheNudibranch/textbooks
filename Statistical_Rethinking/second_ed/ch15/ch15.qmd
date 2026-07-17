@@ -487,3 +487,355 @@ fit$summary(c('bS', 'a'))
 The estimate looks a bit better! Why? Because the noisy house was the factor that contributed to poor homework performance. And we are essentially slicing the data such that the noise isn't loud enough to engage the dog to eat the homework. This quiets the omitted variable bias. This is also obviously not a universal property. If we instead had `D <- ifelse(abs(X) < 1, 0)`, this wouldn't work since we would still have to contend with the ceiling/floor effects.
 
 Let's now consider a final DAG. Maintain the same initial single path that we started with, but now add: $H_{\text{true}} \rightarrow D$. This is saying that the latent grade of the homework somehow influences whether the dog will eat it or not. We are stuck, because there is nothing we can do to close the backdoor path $S \rightarrow H_{\text{true}} \rightarrow D \rightarrow  H_{\text{obs}}$. The missing variable causes its own missingness. 
+
+### 15.2.2 Imputing Primates
+
+Recall the primate milk example where we modeled energy in milk $K$ from neocortex percent $B$ and body mass $M$. The DAG looked like $M \rightarrow K \leftarrow B$ with a confounding observed variable $U$: $M \leftarrow U \rightarrow B$.
+
+Further, recall that we didn't observe all of $B$, we instead had missing cases that gave us $B^*$. There are a lot of reasons that we might not observe some $B$ values. It could be randomly missing (MCAR), it would be that $M$ influences missingness, or it could be that $B$ itself influences $B^*$.
+
+For now though, let's create a simple missing data model:
+
+\begin{align}
+K_i &\sim \text{Normal}(\mu_i,\, \sigma) \\
+\mu_i &= \alpha + \beta_B B_i + \beta_M \log M_i \\
+B_i &\sim \text{Normal}(\nu,\, \sigma_B) \\
+\alpha &\sim \text{Normal}(0,\, 0.5) \\
+\beta_B &\sim \text{Normal}(0,\, 0.5) \\
+\beta_M &\sim \text{Normal}(0,\, 0.5) \\
+\sigma &\sim \text{Exponential}(1) \\
+\nu &\sim \text{Normal}(0.5,\, 1) \\
+\sigma_B &\sim \text{Exponential}(1)
+\end{align}
+
+For $B_i$, the $\text{Normal}(\nu,\, \sigma_B)$ line becomes a likelihood when the data is present, and a prior when it is not. So we can use the data we do have to inform the parameters for $\nu$ and $\sigma_B$.
+
+```{r}
+#| output: false
+mod <- cmdstan_model('mod_15.5.stan')
+
+data(milk)
+d <- milk
+
+d$K     <- as.numeric(standardize(d$kcal.per.g))
+d$B     <- as.numeric(standardize(d$neocortex.perc/100))  # NAs retained
+d$log_M <- as.numeric(standardize(log(d$mass)))
+
+obs_idx  <- which(!is.na(d$B))
+miss_idx <- which( is.na(d$B))
+
+dlist <- list(
+  N        = nrow(d),
+  N_obs    = length(obs_idx),
+  N_miss   = length(miss_idx),
+  obs_idx  = obs_idx,
+  miss_idx = miss_idx,
+  B_obs    = d$B[obs_idx],
+  K        = d$K,
+  log_M    = d$log_M
+)
+
+fit <- mod$sample(
+  data            = dlist,
+  seed            = 123,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 1000,
+  refresh         = 500,
+  show_messages = F, show_exceptions = F
+)
+```
+
+```{r}
+fit$summary(c("alpha", "beta_B", "beta_M", "sigma", "nu", "sigma_B"))
+```
+
+Now let's fit using only the complete cases:
+
+```{r}
+mod <- cmdstan_model('mod_15.6.stan')
+
+dlist_cc <- list(
+  N     = length(obs_idx),
+  B     = d$B[obs_idx],
+  K     = d$K[obs_idx],
+  log_M = d$log_M[obs_idx]
+)
+
+fit_cc  <- mod$sample(
+  data = dlist_cc, seed = 123,
+  chains = 4, parallel_chains = 4,
+  iter_warmup = 1000, iter_sampling = 1000, refresh = 0,
+  show_messages = F, show_exceptions = F
+)
+
+draws_cc  <- fit_cc$draws(format  = "df")
+draws_imp <- fit$draws(format = "df")
+
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
+
+params <- list(
+  list(col = "beta_B", lab = expression(beta[B])),
+  list(col = "beta_M", lab = expression(beta[M]))
+)
+
+for (p in params) {
+  cc_vals  <- draws_cc[[p$col]]
+  imp_vals <- draws_imp[[p$col]]
+
+  xlim <- range(c(cc_vals, imp_vals))
+
+  plot(density(imp_vals), col = "steelblue", lwd = 2,
+       xlim = xlim, main = p$lab,
+       xlab = "Coefficient value", ylab = "Density")
+  lines(density(cc_vals), col = "black", lwd = 2, lty = 2)
+  abline(v = 0, lty = 3, col = "gray60")
+
+  legend("topright",
+         legend = c("Imputation", "Complete cases"),
+         col    = c("steelblue", "black"),
+         lty    = c(1, 2), lwd = 2, bty = "n")
+}
+```
+
+You see that for the imputation case our coefficient posteriors are tighter.
+
+Let's plot the CI for the imputed points against the other covariate and target:
+
+```{r}
+# Extract B_miss draws → matrix (n_draws × N_miss)
+B_miss_cols <- paste0("B_miss[", seq_along(miss_idx), "]")
+B_miss_mat  <- as.matrix(draws_imp[, B_miss_cols])
+
+B_impute_mu <- colMeans(B_miss_mat)
+B_impute_ci <- apply(B_miss_mat, 2, PI)   # 2 × N_miss, 89% interval
+
+# Full B vector (NAs at miss_idx) for plotting observed points
+B_full <- d$B   # standardized neocortex, NAs intact
+
+par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
+
+# ── Plot 1: neocortex (B) vs kcal (K) ────────────────────────────────────────
+plot(B_full, d$K,
+     pch  = 16, col  = rangi2,
+     xlab = "neocortex percent (std)",
+     ylab = "kcal milk (std)")
+
+Ki <- d$K[miss_idx]
+points(B_impute_mu, Ki)
+for (i in seq_along(miss_idx)) {
+  lines(B_impute_ci[, i], rep(Ki[i], 2))
+}
+
+# ── Plot 2: log body mass (M) vs neocortex (B) ───────────────────────────────
+plot(d$log_M, B_full,
+     pch  = 16, col  = rangi2,
+     xlab = "log body mass (std)",
+     ylab = "neocortex percent (std)")
+
+Mi <- d$log_M[miss_idx]
+points(Mi, B_impute_mu)
+for (i in seq_along(miss_idx)) {
+  lines(rep(Mi[i], 2), B_impute_ci[, i])
+}
+```
+
+Notice that there is some sort of linear relationship between the imputed $B$ and $K$, this is because information is shared between the imputed and observed $B$ values. But if we look at the relationship with $M$, there is no correlation even thogh we know that there is. To remedy this, we will change the prior for $B$ to be:
+
+$$(M_i, B_i) \sim \text{MVNormal}((\mu_M, \mu_B), S)$$
+
+```{r}
+mod <- cmdstan_model('mod_15.7.stan')
+
+fit <- mod$sample(
+  data            = dlist,
+  seed            = 123,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 1000,
+  refresh         = 500,
+  show_messages = F, show_exceptions = F
+)
+fit$summary(c("alpha", "beta_B", "beta_M", "sigma", "Rho[1,2]"))
+```
+
+Let's see how this effected our posteriors for the imputed values:
+
+```{r}
+draws_imp <- fit$draws(format = "df")
+
+# Extract B_miss draws → matrix (n_draws × N_miss)
+B_miss_cols <- paste0("B_miss[", seq_along(miss_idx), "]")
+B_miss_mat  <- as.matrix(draws_imp[, B_miss_cols])
+
+B_impute_mu <- colMeans(B_miss_mat)
+B_impute_ci <- apply(B_miss_mat, 2, PI)   # 2 × N_miss, 89% interval
+
+# Full B vector (NAs at miss_idx) for plotting observed points
+B_full <- d$B   # standardized neocortex, NAs intact
+
+par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
+
+# ── Plot 1: neocortex (B) vs kcal (K) ────────────────────────────────────────
+plot(B_full, d$K,
+     pch  = 16, col  = rangi2,
+     xlab = "neocortex percent (std)",
+     ylab = "kcal milk (std)")
+
+Ki <- d$K[miss_idx]
+points(B_impute_mu, Ki)
+for (i in seq_along(miss_idx)) {
+  lines(B_impute_ci[, i], rep(Ki[i], 2))
+}
+
+# ── Plot 2: log body mass (M) vs neocortex (B) ───────────────────────────────
+plot(d$log_M, B_full,
+     pch  = 16, col  = rangi2,
+     xlab = "log body mass (std)",
+     ylab = "neocortex percent (std)")
+
+Mi <- d$log_M[miss_idx]
+points(Mi, B_impute_mu)
+for (i in seq_along(miss_idx)) {
+  lines(rep(Mi[i], 2), B_impute_ci[, i])
+}
+```
+
+### 15.2.3 - Moralizing gods
+
+A god is a moralizing god if it punishes the wicked and rewards the just. Let's look at some data that sees how societies advance given their different types of gods:
+
+```{r}
+data("Moralizing_gods")
+d <- Moralizing_gods
+str(d)
+```
+The data looks at different region's (polity) population sizes at different years. It also states whether the society believed in moralizing gods and whether literacy (writing) was present.
+
+```{r}
+table(d$moralizing_gods, useNA = 'always')
+```
+Lots of missing values and barely any non-moralizing gods. 
+
+```{r}
+symbol <- ifelse( d$moralizing_gods==1 , 16 , 1 )
+symbol <- ifelse( is.na(d$moralizing_gods) , 4 , symbol )
+color <- ifelse( is.na(d$moralizing_gods) , "black" , rangi2 )
+plot( d$year , d$population , pch=symbol , col=color , xlab="Time (year)" , ylab="Population size" , lwd=1.5 )
+```
+
+Looks like we are biased in regards to our missingness - most missingness is from BC. So very much non-random.
+
+```{r}
+table(gods=d$moralizing_gods, literacy=d$writing, useNA='always')
+```
+
+There is really not much we can do with this scenario. If we made the assumption that "moralizing gods" was MCAR, we would be obviously be wrong given the table and plot above. If we consider the optimistic DAG: $P \leftarrow G \rightarrow G^* \leftarrow R_G \leftarrow W \leftarrow P $, where $R_G$ is influenced by $W$, we might try to condition on $W$ to remove the bias of missingness. But this is like conditioning on a post-treatment effect since $W$ is directly impacted by $P$. 
+
+## 15.3 - Categorical errors and discrete absences
+
+Discrete random variables are hard to sample from, making missing data that is discrete a bit of a pain to work with. But no worries, we can just marginalize them out. Consider an example where the number of cats at a house effects the amount of singing a bird produces. And within a minute of singing, we want to count the number of different notes present in the song. But we are unable to observe the number of cats for 20% of houses. The DAG might look something like: 
+
+$$R_C \rightarrow C^* \leftarrow C \rightarrow N$$
+
+Where $C^*$ is the indicator (cats or no cats) we can actually observe at a given house. The process might look something like:
+
+\begin{align}
+N_i &\sim \text{Poisson}(\lambda_i) \\
+\log \lambda_i &= \alpha + \beta C_i \\
+C_i &\sim \text{Bernoulli}(\kappa) \\
+R_{C,i} &\sim \text{Bernoulli}(\rho)
+\end{align}
+
+```{r}
+set.seed(9)
+N_houses <- 100L
+alpha <- 5
+beta <- (-3)
+k <- 0.5
+r <- 0.2
+
+cat <- rbern( N_houses , k )
+notes <- rpois( N_houses , alpha + beta*cat )
+R_C <- rbern( N_houses , r )
+cat_obs <- cat
+cat_obs[R_C==1] <- (-9L)
+
+dat <- list(
+  notes = notes,
+  cat = cat_obs,
+  RC = R_C,
+  N = as.integer(N_houses) )
+```
+
+Here we set $C^*=-9$ if $R_C = 1$. 
+
+Let's think about the probability of $N$: $P(N_i)$. It is really the average over the different possible values of $C$, such that:
+
+$$P(N_i) = P(C_i = 1) \cdot P(N_i|C_i=1) + P(C_i = 0) \cdot P(N_i|C_i=0)$$
+
+```{r}
+mod <- cmdstan_model("mod_15.8.stan")
+
+fit <- mod$sample(
+  data            = dat,
+  seed            = 123,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 1000,
+  refresh         = 500,
+  show_messages = F, show_exceptions = F
+)
+
+fit$summary(c("a", "b", "k"))
+```
+
+Looks like the parameters are pretty spot on with what we might expect.
+
+Now, how do we recover the value for $C_i$ given our posteriors? By Bayes rule of course:
+
+$$\Pr(C_i = 1 \mid N_i) = \frac{\Pr(N_i \mid C_i = 1)\,\Pr(C_i = 1)}{\Pr(N_i \mid C_i = 1)\,\Pr(C_i = 1) + \Pr(N_i \mid C_i = 0)\,\Pr(C_i = 0)}$$
+
+We actually already have this in our generated quantities block:
+
+```{r}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+draws     <- fit$draws(format = "df")
+p_cat_cols <- paste0("p_cat[", 1:dat$N, "]")
+p_cat_mean <- colMeans(draws[, p_cat_cols])
+
+par(mfrow = c(1, 2), mar = c(4, 4, 1.5, 1))
+
+# Left: posterior Pr(cat=1) vs true cat
+plot(p_cat_mean, cat,
+     xlab = "Pr(cat present | notes)",
+     ylab = "True cat",
+     pch  = ifelse(dat$RC == 1, 1, 19),
+     col  = ifelse(dat$RC == 1, "gray40", rangi2))
+abline(v = 0.5, lty = 2, col = "gray60")
+legend("topleft",
+       legend = c("Observed", "Missing"),
+       pch    = c(19, 1),
+       col    = c(rangi2, "gray40"),
+       bty    = "n")
+
+# Right: notes vs Pr(cat=1)
+plot(notes, p_cat_mean,
+     xlab = "Notes sung",
+     ylab = "Pr(cat present | notes)",
+     pch  = ifelse(dat$RC == 1, 1, 19),
+     col  = ifelse(dat$RC == 1, "gray40", rangi2),
+     ylim = c(0, 1))
+abline(h = 0.5, lty = 2, col = "gray60")
+legend("topright",
+       legend = c("Observed", "Missing"),
+       pch    = c(19, 1),
+       col    = c(rangi2, "gray40"),
+       bty    = "n")
+```
+
