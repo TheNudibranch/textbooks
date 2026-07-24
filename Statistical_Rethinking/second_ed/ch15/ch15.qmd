@@ -119,6 +119,7 @@ fit <- mod$sample(
   iter_sampling   = 1000,
   refresh=500
 )
+fit_divorce_og <- fit
 ```
 
 ```{r}
@@ -545,6 +546,7 @@ fit <- mod$sample(
   refresh         = 500,
   show_messages = F, show_exceptions = F
 )
+fit_primate_og <- fit
 ```
 
 ```{r}
@@ -839,3 +841,175 @@ legend("topright",
        bty    = "n")
 ```
 
+## Exercises 
+
+### M2
+
+Recall the primate milk example from before. We'll use a beta distribution for $B$ instead of a normal, but really we should have used a copula with a beta and normal marginal. Make sure to set the lower and upper bounds in the missing data vector.
+
+```{r}
+mod <- cmdstan_model('mod_15.m2.stan')
+
+data(milk)
+d <- milk
+
+d$K     <- as.numeric(standardize(d$kcal.per.g))
+d$B     <- as.numeric(d$neocortex.perc/100)  # NAs retained
+d$log_M <- as.numeric(standardize(log(d$mass)))
+
+obs_idx  <- which(!is.na(d$B))
+miss_idx <- which( is.na(d$B))
+
+dlist <- list(
+  N        = nrow(d),
+  N_obs    = length(obs_idx),
+  N_miss   = length(miss_idx),
+  obs_idx  = obs_idx,
+  miss_idx = miss_idx,
+  B_obs    = d$B[obs_idx],
+  K        = d$K,
+  log_M    = d$log_M
+)
+
+fit_m2 <- mod$sample(
+  data            = dlist,
+  seed            = 123,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 1000,
+  refresh         = 500,
+  show_messages = F, show_exceptions = F
+)
+```
+```{r}
+B_og <- fit_primate_og$draws('B_miss', format='df') |> select(-starts_with('.')) 
+B_og <- B_og * sd(d$neocortex.perc/100, na.rm=T) + mean(d$neocortex.perc/100, na.rm=T)
+B_og_PI <- B_og |> apply(2, PI)
+B_og_mean <- B_og |> colMeans()
+
+B_new <- fit_m2$draws('B_miss', format='df') |> select(-starts_with('.'))
+B_new_PI <- B_new |> apply(2, PI)
+B_new_mean <- B_new |> colMeans()
+
+par(mfrow=c(1,2))
+plot(B_og_mean, seq_along(B_og_mean), xlab='Normal Prior', ylab='Missing idx', xlim=range(B_og_PI, B_new_PI))
+segments(y0=seq_along(B_og_mean), x0=B_new_PI[1,], x1=B_new_PI[2,])
+
+plot(B_new_mean, seq_along(B_new_mean), xlab='Beta Prior', ylab='Missing idx', xlim=range(B_og_PI, B_new_PI))
+segments(y0=seq_along(B_new_mean), x0=B_new_PI[1,], x1=B_new_PI[2,])
+
+```
+
+Error bars are roughly the same, but the points are much more centered in the beta prior.
+
+### M3
+
+Revisit the divorce exmaple, but this time double the standard errors:
+
+```{r}
+data(WaffleDivorce)
+d <- WaffleDivorce
+
+dlist <- list(
+  N     = nrow(d),
+  D_obs = standardize(d$Divorce),
+  D_se  = d$Divorce.SE * 2 / sd(d$Divorce), # Need to divide by the same sd that we used to standardize D_obs or else it wont make sense
+  A     = standardize(d$MedianAgeMarriage),
+  M     = standardize(d$Marriage)
+)
+
+mod <- cmdstan_model("mod_15.1.stan")
+
+fit <- mod$sample(
+  data            = dlist,
+  seed            = 123,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 1000,
+  refresh=500,
+  show_messages = F, show_exceptions = F
+)
+```
+
+Very poor inference. Let's look closer:
+
+```{r}
+#| fig-width: 15
+#| fig-height: 15
+library(bayesplot)
+
+mcmc_pairs(fit$draws(), pars=c('alpha', 'D_true[1]', 'beta_M', 'beta_A', 'sigma'), np=nuts_params(fit))
+```
+
+
+The sigma parameter effectively wants to load all the uncertainty onto the parameters. Because the model is so uncertain of the data, it shrinks sigma down to zero.
+
+
+### H7
+
+Andrew has an 8-sided spinner. Wanting to know if it is fair, we spins it multiple times and counts where it lands. The issue is that we are missing frequencies for sides 4 and 5. In this instance we do have missing completely at random (MCAR) since the coffee spill doesn't care about the values. 
+
+```{r}
+dat <- list(
+  N_obs     = 6,
+  x_obs     = c(18L, 19L, 22L, 19L, 20L, 22L),
+  obs_idx   = c(1L,  2L,  3L,  6L,  7L,  8L),
+  alpha_dir = rep(4, 8),
+  M_max     = 80L
+)
+
+mod <- cmdstan_model("mod_15.h7.stan")
+
+fit <- mod$sample(
+  data            = dat,
+  seed            = 123,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 2000,
+  refresh         = 500,
+  show_messages = F, show_exceptions = F
+)
+
+fit$summary(c("lambda", "x4_draw", "x5_draw", "M_draw"))
+
+# Joint posterior plot
+draws   <- fit$draws(format = "df")
+tab     <- table(x4 = draws$x4_draw, x5 = draws$x5_draw)
+x4_vals <- as.integer(rownames(tab))
+x5_vals <- as.integer(colnames(tab))
+
+image(x4_vals, x5_vals, as.matrix(tab),
+      col  = hcl.colors(50, "Blues", rev = TRUE),
+      xlab = "Count of 4s", ylab = "Count of 5s",
+      main = "Joint posterior: missing counts")
+contour(x4_vals, x5_vals, as.matrix(tab), add = TRUE, col = "gray30")
+abline(v = mean(draws$x4_draw), h = mean(draws$x5_draw),
+       lty = 2, col = "firebrick")
+```
+
+The joint distribution factors as:
+
+$$P(x_\text{obs},\, x_4,\, x_5,\, N,\, \theta) = \text{Multinomial}(x \mid N,\, \theta)\cdot P(N \mid \lambda)\cdot P(\theta)$$
+
+Marginalizing over the unknowns $x_4$, $x_5$, and $N$:
+
+$$P(x_\text{obs} \mid \theta,\, \lambda) = \sum_{N=120}^{\infty} P(N \mid \lambda) \sum_{\substack{x_4 \ge 0,\; x_5 \ge 0 \\ x_4 + x_5 = N - 120}} \text{Multinomial}(x_\text{obs}, x_4, x_5 \mid N,\, \theta)$$
+
+Let $M = N - 120$ denote the total number of unobserved spins. For fixed $M$, the inner sum over all ways to split $M$ spins between faces 4 and 5 applies the **multinomial theorem**:
+
+$$\sum_{x_4 + x_5 = M} \frac{M!}{x_4!\, x_5!}\,\theta_4^{x_4}\,\theta_5^{x_5} = (\theta_4 + \theta_5)^M$$
+
+Substituting back, the double sum collapses to a **single sum over** $M$:
+
+$$P(x_\text{obs} \mid \theta,\, \lambda) = \frac{\prod_{i \notin \{4,5\}} \theta_i^{x_i}}{\prod_{i \notin \{4,5\}} x_i!} \sum_{M=0}^{\infty} P(N = 120 + M \mid \lambda)\cdot \frac{(120+M)!}{M!} \cdot (\theta_4 + \theta_5)^M$$
+
+With $N \sim \text{Poisson}(\lambda)$, each term in the sum is:
+
+$$\log p_M = \text{Poisson-lpmf}(120 + M \mid \lambda) + \log(120+M)! - \log M! + M\log(\theta_4 + \theta_5)$$
+
+and the marginal log-likelihood is:
+
+$$\log P(x_\text{obs} \mid \theta,\, \lambda) = \underbrace{\sum_{i \notin \{4,5\}} x_i \log\theta_i - \log x_i!}_{\text{observed faces}} + \log\sum_{M=0}^{\infty} \exp(p_M)$$
